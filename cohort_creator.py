@@ -56,14 +56,12 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
     print("\nInstalling datasets")
 
     for dataset_ in datasets["DatasetName"]:
-        mask = openneuro.name == dataset_
-
         print(f"\n {dataset_}")
 
+        mask = openneuro.name == dataset_
         if mask.sum() == 0:
             print(f"  {dataset_} not found in openneuro")
             continue
-
         dataset_df = openneuro[mask]
 
         for dataset_type in DATASET_TYPES:
@@ -74,58 +72,46 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
             if data_pth.exists():
                 print(f"  {dataset_type} data already present at {data_pth}")
             else:
-                print(f"  cloning {dataset_type} data at: {data_pth}")
+                print(f"  installing {dataset_type} data at: {data_pth}")
                 if uri := dataset_df[dataset_type].values[0]:
                     api.install(path=data_pth, source=uri)
 
 
 def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame):
-    for dataset_ in datasets["DatasetName"]:
-        mask = participants["DatasetName"] == dataset_
+    print("\nGetting data")
 
+    for dataset_ in datasets["DatasetName"]:
+        print(f"\n {dataset_}")
+
+        mask = participants["DatasetName"] == dataset_
+        if mask.sum() == 0:
+            print(f"  no participants in dataset {dataset_}")
+            continue
         participants_df = participants[mask]
         participants_ids = participants_df["SubjectID"].tolist()
 
-        print(f"  getting data participants: {participants_ids}")
+        print(f"  getting data for: {participants_ids}")
 
-        if "raw" in DATASET_TYPES:
-            print(f"\n{dataset_}")
+        for dataset_type in DATASET_TYPES:
+            print(f"   {dataset_type}")
 
-            dl_dataset = api.Dataset(dataset_path(sourcedata, dataset_))
+            derivative = None if dataset_type == "raw" else dataset_type
 
-            for participant in participants_ids:
-                files = (dataset_path(sourcedata, dataset_) / participant / DATA_TYPE).glob(
-                    f"*_{SUFFIX}.{EXT}"
-                )
-                if not files:
-                    print(f"  no files found for participant: {participant}")
-                    continue
-                print(f"  getting data for participant: {participant}")
-                dl_dataset.get(path=files, jobs=NB_JOBS)
+            glob_pattern = (
+                f"*_{SUFFIX}.{EXT}" if dataset_type == "raw" else f"*{SPACE}*_{SUFFIX}.{EXT}"
+            )
 
-        if "fmriprep" in DATASET_TYPES:
-            print(f"\n{dataset_}-fmriprep")
+            data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
-            dl_dataset = api.Dataset(dataset_path(sourcedata, dataset_, derivative="fmriprep"))
-
-            print(f"  getting data participants: {participants_ids}")
+            dl_dataset = api.Dataset(data_pth)
 
             for participant in participants_ids:
-                files = (
-                    dataset_path(sourcedata, dataset_, derivative="fmriprep")
-                    / participant
-                    / DATA_TYPE
-                ).glob(f"*{SPACE}*_{SUFFIX}.{EXT}")
-                files = [
-                    f.relative_to(dataset_path(sourcedata, dataset_, derivative="fmriprep"))
-                    for f in files
-                ]
+                files = (data_pth / participant / DATA_TYPE).glob(glob_pattern)
                 if not files:
-                    print(f"  no files found for participant: {participant}")
+                    print(f"    no files found for: {str(participant)}")
                     continue
-                print(
-                    f"  getting data for participant: {participant}\n   {[str(f) for f in files]}"
-                )
+                files = [f.relative_to(data_pth) for f in files]
+                print(f"    {str(participant)}")
                 dl_dataset.get(path=files, jobs=NB_JOBS)
 
 
