@@ -78,32 +78,6 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
                 if uri := dataset_df[dataset_type].values[0]:
                     api.install(path=data_pth, source=uri)
 
-        # if "raw" in DATASET_TYPES:
-
-        #     if dataset_path(sourcedata, dataset_).exists():
-        #         print(f"  raw data already present at {dataset_path(sourcedata, dataset_)}")
-        #     else:
-        #         print(f"  cloning raw data at: {dataset_path(sourcedata, dataset_)}")
-        #         raw_uri = dataset_df.raw.values[0]
-        #         api.install(path=dataset_path(sourcedata, dataset_), source=raw_uri)
-
-        # if "fmriprep" in DATASET_TYPES:
-        #     if frmirprep_uri := dataset_df.fmriprep.values[0]:
-        #         if dataset_path(sourcedata, dataset_, derivative="fmriprep").exists():
-        #             print(
-        #                 "  fmriprep data already present at "
-        #                 f"{dataset_path(sourcedata, dataset_, derivative='fmriprep')}"
-        #             )
-        #         else:
-        #             print(
-        #                 f"  cloning fmriprep data at: "
-        #                 f"{dataset_path(sourcedata, dataset_, derivative='fmriprep')}"
-        #             )
-        #             api.install(
-        #                 path=dataset_path(sourcedata, dataset_, derivative="fmriprep"),
-        #                 source=frmirprep_uri,
-        #             )
-
 
 def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame):
     for dataset_ in datasets["DatasetName"]:
