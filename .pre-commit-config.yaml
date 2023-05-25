@@ -1,49 +1,64 @@
+---
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+-   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      - id: check-ast
-      - id: check-case-conflict
-      - id: check-json
-      - id: check-merge-conflict
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
+    -   id: check-ast
+    -   id: check-case-conflict
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+-   repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+    rev: 0.2.3
     hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
+    -   id: yamlfmt
+        args: [--mapping, '4', --sequence, '4', --offset, '0']
 
-  - repo: https://github.com/ikamensh/flynt/
-    rev: "0.78"
+
+-   repo: https://github.com/asottile/reorder-python-imports
+    rev: v3.9.0
+    hooks:
+    -   id: reorder-python-imports
+        args: [--py37-plus, --add-import, from __future__ import annotations]
+
+-   repo: https://github.com/ikamensh/flynt/
+    rev: '0.78'
     hooks:
     -   id: flynt
 
-  - repo: https://github.com/asottile/pyupgrade
+-   repo: https://github.com/asottile/pyupgrade
     rev: v3.4.0
     hooks:
-      - id: pyupgrade
-        args: [--py311-plus]
+    -   id: pyupgrade
+        args: [--py38-plus]
 
-  - repo: https://github.com/psf/black
+-   repo: https://github.com/psf/black
     rev: 23.3.0
     hooks:
-      - id: black
-        args: [--config=pyproject.toml]
+    -   id: black
+        args: [--verbose, --config=pyproject.toml]
 
-  - repo: https://github.com/codespell-project/codespell
+-   repo: https://github.com/codespell-project/codespell
     rev: v2.2.4
     hooks:
-      - id: codespell
+    -   id: codespell
 
-  - repo: https://github.com/pyCQA/flake8
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
+    hooks:
+    -   id: mypy
+        additional_dependencies: [types-all]
+        args: [--config-file, pyproject.toml]
+
+-   repo: https://github.com/pyCQA/flake8
     rev: 6.0.0
     hooks:
-      - id: flake8
+    -   id: flake8
         args: [--verbose, --config, .flake8]
         additional_dependencies: [flake8-docstrings]
