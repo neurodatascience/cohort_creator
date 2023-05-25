@@ -1,0 +1,3 @@
+PortalURI	DatasetFilePath	DatasetName	NumMatchingSubjects	AvailableImageModalities
+https://openneuro.org/datasets/ds000001	https://github.com/OpenNeuroDatasets/ds000001	ds000001	5	[T1,T2,bold]
+https://openneuro.org/datasets/ds000002	https://github.com/OpenNeuroDatasets/ds000002	ds000002	6	[T1,T2,bold]

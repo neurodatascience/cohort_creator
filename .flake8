@@ -1,0 +1,18 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+	env,
+	venv,
+    build,
+    dist
+--select = D,E,F,W,C90
+docstring-convention = numpy
+max-line-length = 79
+max_complexity = 43
+max_function_length = 150
+ignore = D100, D103, D405, D407, E712, W503
+extend_select=B950
+# for compatibility with black
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
+extend-ignore = E203, E501
