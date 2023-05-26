@@ -146,7 +146,7 @@ def get_data_this_subject(
 
 def construct_cohort(
     datasets: pd.DataFrame,
-    ouput_dir: Path,
+    output_dir: Path,
     sourcedata: Path,
     participants: pd.DataFrame,
     dataset_types: list[str],
@@ -164,7 +164,7 @@ def construct_cohort(
             extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
 
             src_dir = dataset_path(sourcedata, dataset_, derivative=derivative)
-            target_dir = dataset_path(ouput_dir, dataset_, derivative=derivative)
+            target_dir = dataset_path(output_dir, dataset_, derivative=derivative)
 
             target_dir.mkdir(exist_ok=True, parents=True)
 
@@ -245,14 +245,17 @@ def main(argv: Any = sys.argv) -> None:
     participants_listing = Path(args.participants_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
     action = args.action[0]
+
+    jobs = args.jobs
+    if isinstance(jobs, list):
+        jobs = jobs[0]
+
     dataset_types = args.dataset_types
-    verbosity = args.verbosity
-
-    if isinstance(verbosity, list):
-        verbosity = verbosity[0]
-
     validate_dataset_types(dataset_types)
 
+    verbosity = args.verbosity
+    if isinstance(verbosity, list):
+        verbosity = verbosity[0]
     if verbosity == 0:
         cc_log.setLevel("ERROR")
     elif verbosity == 1:
@@ -273,13 +276,29 @@ def main(argv: Any = sys.argv) -> None:
     openneuro = pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
 
     if action in ["install", "all"]:
-        install_datasets(datasets, openneuro, sourcedata, dataset_types)
+        install_datasets(
+            datasets=datasets,
+            openneuro=openneuro,
+            sourcedata=sourcedata,
+            dataset_types=dataset_types,
+        )
 
     if action in ["get", "all"]:
-        get_data(datasets, sourcedata, participants, dataset_types)
+        get_data(
+            datasets=datasets,
+            sourcedata=sourcedata,
+            participants=participants,
+            dataset_types=dataset_types,
+        )
 
     if action in ["copy", "all"]:
-        construct_cohort(datasets, output_dir, sourcedata, participants, dataset_types)
+        construct_cohort(
+            datasets=datasets,
+            output_dir=output_dir,
+            sourcedata=sourcedata,
+            participants=participants,
+            dataset_types=dataset_types,
+        )
 
 
 if __name__ == "__main__":

@@ -99,6 +99,14 @@ def common_parser() -> MuhParser:
         nargs="+",
     )
     parser.add_argument(
+        "--jobs",
+        help="""Number of jobs: passed to datalad to speed up getting files.""",
+        required=False,
+        default=6,
+        type=int,
+        nargs=1,
+    )
+    parser.add_argument(
         "--dry_run",
         help="""
         When set to ``true`` this will generate and save the SPM batches,

@@ -1,8 +1,13 @@
 # Cohort creator
 
-Creates a cohort by grabbing specific subjects from opennneuro datasets.
+**TL;DR**
 
-Takes 2 files as inputthat should list:
+    Creates a cohort by grabbing specific subjects from opennneuro datasets.
+
+Install a set of datalad datasets from openneuro and get the data for a set of participants.
+Then copy the data to a new directory structure to create a "cohort".
+
+Takes 2 files as input that should list:
 - source datasets
 - subject in each dataset to be included in the cohort
 
@@ -34,17 +39,14 @@ Make sure you have the following installed:
 - fork the repo
 - clone your fork
 - otpional: create a virtual environment
-- install the requirements: `pip install -r requirements.txt`
+- install the requirements:
+
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage
 
-Run:
-
-```bash
-python cohort_creator.py path_to_datasets_listing participants_listing output_dir
-```
-
-Maybe try on a subset of datasets / participants first to make sure things are OK.
 
 ```
 usage: cohort_creator.py [-h] [-v] [--action {all,install,get,copy}] [--verbosity {0,1,2,3}] [--task TASK [TASK ...]]
@@ -75,6 +77,8 @@ options:
 
 For a more readable version of this help section, see the online doc https://github.com/neurodatascience/cohort_creator
 ```
+
+Maybe try on a subset of datasets / participants first to make sure things are OK.
 
 <!--
 Change the global variables at the top of the `src/cohort_creator.py` script
@@ -173,6 +177,13 @@ outputs
     ├── ds001226-fmriprep
     └── ds001226-mriqc
 ```
+
+## Limitations
+
+This package in part relies on the content of the datalad superdataset
+to fetch datasets and data from openneuro.
+
+So it may be that very recent datasets are not available yet.
 
 ## Demo
 
