@@ -116,6 +116,27 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
                 )
 
 
+def get_data_this_participant(
+    suffix_list: list[str],
+    extension_list: list[str],
+    participant: str,
+    dataset_type: str,
+    data_pth: Path,
+    dl_dataset: api.Dataset,
+) -> None:
+    for suffix in suffix_list:
+        for ext in extension_list:
+            glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+
+            # TODO handle session level
+            files = list_files_for_participant(data_pth, participant, glob_pattern)
+            if not files:
+                print(f"    no files found for: {participant}")
+                continue
+            print(f"    {participant} - getting files:\n     {files}")
+            dl_dataset.get(path=files, jobs=NB_JOBS)
+
+
 def construct_cohort(
     datasets: pd.DataFrame, ouput_dir: Path, sourcedata: Path, participants: pd.DataFrame
 ) -> None:
@@ -146,45 +167,37 @@ def construct_cohort(
                 continue
 
             for participant in participants_ids:
-                for suffix in SUFFIX:
-                    for ext in extension_list:
-                        glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
-
-                        files = list_files_for_participant(src_dir, participant, glob_pattern)
-                        if not files:
-                            print(f"    no files found for: {str(participant)}")
-                            continue
-
-                        print(f"    {str(participant)} - copying files:\n     {list(files)}")
-                        for f in files:
-                            sub_dirs = Path(f).parents
-                            (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-                            if (target_dir / f).exists():
-                                print(f"      file '{f}' already present")
-                                continue
-                            shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
-                            # TODO deal with permission
+                copy_this_participant(
+                    SUFFIX, extension_list, participant, dataset_type, src_dir, target_dir
+                )
 
 
-def get_data_this_participant(
+def copy_this_participant(
     suffix_list: list[str],
-    ext_list: list[str],
+    extension_list: list[str],
     participant: str,
     dataset_type: str,
-    data_pth: Path,
-    dl_dataset: api.Dataset,
+    src_dir: Path,
+    target_dir: Path,
 ) -> None:
     for suffix in suffix_list:
-        for ext in ext_list:
+        for ext in extension_list:
             glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
 
-            # TODO handle session level
-            files = list_files_for_participant(data_pth, participant, glob_pattern)
+            files = list_files_for_participant(src_dir, participant, glob_pattern)
             if not files:
                 print(f"    no files found for: {participant}")
                 continue
-            print(f"    {participant} - getting files:\n     {files}")
-            dl_dataset.get(path=files, jobs=NB_JOBS)
+
+            print(f"    {participant} - copying files:\n     {files}")
+            for f in files:
+                sub_dirs = Path(f).parents
+                (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+                if (target_dir / f).exists():
+                    print(f"      file '{f}' already present")
+                    continue
+                shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                # TODO deal with permission
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
