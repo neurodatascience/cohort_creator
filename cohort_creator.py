@@ -19,16 +19,6 @@ from rich.logging import RichHandler
 
 from utils import get_sessions
 
-"""
-TODO:
-
-- use pybids to get the file lists
-    - take care of inhritance principle for tsv and json files
-- for functional get the events.tsv files
-- create a single list of files per subject and per dataset to speed up the copy
-  with over N jobs
-"""
-
 DATASET_LISTING_FILENAME = "datasets_with_mriqc.tsv"  # "datasets.tsv"
 PARTICIPANT_LISTING_FILENAME = "participants_with_mriqc.tsv"  # "participants.tsv"
 
@@ -60,6 +50,8 @@ def cc_logger(log_level: str = "INFO") -> logging.Logger:
 def main() -> None:
     cc_log = cc_logger()
     cc_log.setLevel(LOG_LEVEL)
+
+    logging.getLogger("datalad").setLevel(logging.WARNING)
 
     root_dir = Path(__file__).parent
 
