@@ -14,13 +14,17 @@ from datalad import api
 from datalad.support.exceptions import (
     IncompleteResultsError,
 )
-from rich import print
 from rich.logging import RichHandler
 
 from utils import get_sessions
+from utils import validate_dataset_types
 
-DATASET_LISTING_FILENAME = "datasets_with_mriqc.tsv"  # "datasets.tsv"
-PARTICIPANT_LISTING_FILENAME = "participants_with_mriqc.tsv"  # "participants.tsv"
+# from rich import print
+
+DATASET_LISTING_FILENAME = "datasets.tsv"  # "datasets_with_mriqc.tsv"  # "datasets.tsv"
+PARTICIPANT_LISTING_FILENAME = (
+    "participants.tsv"  # "participants_with_mriqc.tsv"  # "participants.tsv"
+)
 
 DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
@@ -29,7 +33,9 @@ EXT = "nii.gz"
 DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
 SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
 
-LOG_LEVEL = "WARNING"
+OUTPUT_DIR = Path(__file__).parent / "outputs"
+
+LOG_LEVEL = "INFO"
 
 NB_JOBS = 6
 
@@ -47,40 +53,21 @@ def cc_logger(log_level: str = "INFO") -> logging.Logger:
     return logging.getLogger("cohort_creator")
 
 
-def main() -> None:
-    cc_log = cc_logger()
-    cc_log.setLevel(LOG_LEVEL)
+cc_log = cc_logger()
+cc_log.setLevel(LOG_LEVEL)
 
-    logging.getLogger("datalad").setLevel(logging.WARNING)
-
-    root_dir = Path(__file__).parent
-
-    input_dir = root_dir / "inputs"
-
-    ouput_dir = root_dir / "outputs"
-    sourcedata = ouput_dir / "sourcedata"
-    sourcedata.mkdir(exist_ok=True, parents=True)
-
-    datasets = pd.read_csv(input_dir / DATASET_LISTING_FILENAME, sep="\t")
-    participants = pd.read_csv(input_dir / PARTICIPANT_LISTING_FILENAME, sep="\t")
-    openneuro = pd.read_csv(input_dir / "openneuro_derivatives.tsv", sep="\t")
-
-    install_datasets(datasets, openneuro, sourcedata)
-
-    get_data(datasets, sourcedata, participants)
-
-    construct_cohort(datasets, ouput_dir, sourcedata, participants)
+logging.getLogger("datalad").setLevel(logging.WARNING)
 
 
 def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata: Path) -> None:
-    print_step_name("Installing datasets")
+    cc_log.info("Installing datasets")
 
     for dataset_ in datasets["DatasetName"]:
-        print_dataset_name(dataset_)
+        cc_log.info(dataset_)
 
         mask = openneuro.name == dataset_
         if mask.sum() == 0:
-            print(f"  {dataset_} not found in openneuro")
+            cc_log.warning(f"  {dataset_} not found in openneuro")
             continue
         dataset_df = openneuro[mask]
 
@@ -90,28 +77,28 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             if data_pth.exists():
-                print(f"  {dataset_type} data already present at {data_pth}")
+                cc_log.info(f"  {dataset_type} data already present at {data_pth}")
             else:
-                print(f"  installing {dataset_type} data at: {data_pth}")
+                cc_log.info(f"  installing {dataset_type} data at: {data_pth}")
                 if uri := dataset_df[dataset_type].values[0]:
                     api.install(path=data_pth, source=uri)
 
 
 def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame) -> None:
-    print_step_name("Getting data")
+    cc_log.info("Getting data")
 
     for dataset_ in datasets["DatasetName"]:
-        print_dataset_name(dataset_)
+        cc_log.info(dataset_)
 
         participants_ids = get_participant_ids(participants, dataset_)
         if not participants_ids:
-            print(f"  no participants in dataset {dataset_}")
+            cc_log.warning(f"  no participants in dataset {dataset_}")
             continue
 
-        print(f"  getting data for: {participants_ids}")
+        cc_log.info(f"  getting data for: {participants_ids}")
 
         for dataset_type in DATASET_TYPES:
-            print_dataset_type(dataset_type)
+            cc_log.info(dataset_type)
 
             derivative = None if dataset_type == "raw" else dataset_type
 
@@ -160,27 +147,27 @@ def get_data_this_subject(
                         glob_pattern=glob_pattern,
                     )
                     if not files:
-                        print(
+                        cc_log.warning(
                             f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
                         )
                         continue
-                    print(f"    {subject} - getting files:\n     {files}")
+                    cc_log.info(f"    {subject} - getting files:\n     {files}")
                     try:
                         dl_dataset.get(path=files, jobs=NB_JOBS)
                     except IncompleteResultsError:
-                        print(f"    {subject} - failed to get files:\n     {files}")
+                        cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
 
 def construct_cohort(
     datasets: pd.DataFrame, ouput_dir: Path, sourcedata: Path, participants: pd.DataFrame
 ) -> None:
-    print_step_name("Constructing cohort")
+    cc_log.info("Constructing cohort")
 
     for dataset_ in datasets["DatasetName"]:
-        print_dataset_name(dataset_)
+        cc_log.info(dataset_)
 
         for dataset_type in DATASET_TYPES:
-            print_dataset_type(dataset_type)
+            cc_log.info(dataset_type)
 
             derivative = None if dataset_type == "raw" else dataset_type
 
@@ -197,7 +184,7 @@ def construct_cohort(
 
             participants_ids = get_participant_ids(participants, dataset_)
             if not participants_ids:
-                print(f"  no participants in dataset {dataset_}")
+                cc_log.warning(f"  no participants in dataset {dataset_}")
                 continue
 
             for subject in participants_ids:
@@ -238,23 +225,23 @@ def copy_this_subject(
                         glob_pattern=glob_pattern,
                     )
                     if not files:
-                        print(
+                        cc_log.warning(
                             f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
                         )
                         continue
 
-                    print(f"    {subject} - copying files:\n     {files}")
+                    cc_log.info(f"    {subject} - copying files:\n     {files}")
                     for f in files:
                         sub_dirs = Path(f).parents
                         (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
                         if (target_dir / f).exists():
-                            print(f"      file '{f}' already present")
+                            cc_log.info(f"      file '{f}' already present")
                             continue
                         try:
                             shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
                             # TODO deal with permission
                         except FileNotFoundError:
-                            print(f"      Could not find file '{f}'")
+                            cc_log.error(f"      Could not find file '{f}'")
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
@@ -267,7 +254,7 @@ def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Pa
 def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[str] | None:
     mask = participants["DatasetName"] == dataset_name
     if mask.sum() == 0:
-        print(f"  no participants in dataset {dataset_name}")
+        cc_log.warning(f"  no participants in dataset {dataset_name}")
         return None
     participants_df = participants[mask]
     return participants_df["SubjectID"].tolist()
@@ -288,16 +275,25 @@ def create_glob_pattern(dataset_type: str, suffix: str, ext: str) -> str:
     return f"*_{suffix}.{ext}" if dataset_type in {"raw", "mriqc"} else f"*{SPACE}*_{suffix}.{ext}"
 
 
-def print_step_name(name: str) -> None:
-    print(f"\n[green] {name.upper()} [/green]")
+def main() -> None:
+    validate_dataset_types(DATASET_TYPES)
 
+    root_dir = Path(__file__).parent
+    input_dir = root_dir / "inputs"
 
-def print_dataset_name(name: str) -> None:
-    print(f"\n[blue]  {name.upper()} [/blue]")
+    ouput_dir = OUTPUT_DIR
+    sourcedata = ouput_dir / "sourcedata"
+    sourcedata.mkdir(exist_ok=True, parents=True)
 
+    datasets = pd.read_csv(input_dir / DATASET_LISTING_FILENAME, sep="\t")
+    participants = pd.read_csv(input_dir / PARTICIPANT_LISTING_FILENAME, sep="\t")
+    openneuro = pd.read_csv(input_dir / "openneuro_derivatives.tsv", sep="\t")
 
-def print_dataset_type(name: str) -> None:
-    print(f"\n[yellow]   {name.upper()} [/yellow]")
+    install_datasets(datasets, openneuro, sourcedata)
+
+    get_data(datasets, sourcedata, participants)
+
+    construct_cohort(datasets, ouput_dir, sourcedata, participants)
 
 
 if __name__ == "__main__":
