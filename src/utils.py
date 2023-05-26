@@ -49,7 +49,7 @@ def get_sessions(participants: pd.DataFrame, dataset_: str, participant: str) ->
 
 
 def validate_dataset_types(dataset_types: list[str]) -> None:
-    SUPPORTED_DATASET_TYPES = {"raw", "fmriprep", "mriqc", "freesurfer"}
+    SUPPORTED_DATASET_TYPES = {"raw", "fmriprep", "mriqc"}
     for dataset_type in dataset_types:
         if dataset_type not in SUPPORTED_DATASET_TYPES:
             raise ValueError(

@@ -30,7 +30,6 @@ DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
 SUFFIX = ["T1w"]
 EXT = "nii.gz"
-DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
 SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
 
 NB_JOBS = 6
@@ -40,7 +39,9 @@ cc_log = cc_logger()
 logging.getLogger("datalad").setLevel(logging.WARNING)
 
 
-def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata: Path) -> None:
+def install_datasets(
+    datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata: Path, dataset_types: list[str]
+) -> None:
     cc_log.info("Installing datasets")
 
     for dataset_ in datasets["DatasetName"]:
@@ -52,20 +53,22 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
             continue
         dataset_df = openneuro[mask]
 
-        for dataset_type in DATASET_TYPES:
-            derivative = None if dataset_type == "raw" else dataset_type
+        for dataset_type_ in dataset_types:
+            derivative = None if dataset_type_ == "raw" else dataset_type_
 
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             if data_pth.exists():
-                cc_log.info(f"  {dataset_type} data already present at {data_pth}")
+                cc_log.info(f"  {dataset_type_} data already present at {data_pth}")
             else:
-                cc_log.info(f"    installing {dataset_type} data at: {data_pth}")
-                if uri := dataset_df[dataset_type].values[0]:
+                cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
+                if uri := dataset_df[dataset_type_].values[0]:
                     api.install(path=data_pth, source=uri)
 
 
-def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame) -> None:
+def get_data(
+    datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame, dataset_types: list[str]
+) -> None:
     cc_log.info("Getting data")
 
     for dataset_ in datasets["DatasetName"]:
@@ -78,12 +81,12 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
 
         cc_log.info(f"  getting data for: {participants_ids}")
 
-        for dataset_type in DATASET_TYPES:
-            cc_log.info(f"  {dataset_type}")
+        for dataset_type_ in dataset_types:
+            cc_log.info(f"  {dataset_type_}")
 
-            derivative = None if dataset_type == "raw" else dataset_type
+            derivative = None if dataset_type_ == "raw" else dataset_type_
 
-            extension_list = ["json"] if dataset_type == "mriqc" else [EXT, "json"]
+            extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
 
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
@@ -97,7 +100,7 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
                     data_type_list=DATA_TYPES,
                     suffix_list=SUFFIX,
                     extension_list=extension_list,
-                    dataset_type=dataset_type,
+                    dataset_type=dataset_type_,
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
                 )
@@ -142,19 +145,23 @@ def get_data_this_subject(
 
 
 def construct_cohort(
-    datasets: pd.DataFrame, ouput_dir: Path, sourcedata: Path, participants: pd.DataFrame
+    datasets: pd.DataFrame,
+    ouput_dir: Path,
+    sourcedata: Path,
+    participants: pd.DataFrame,
+    dataset_types: list[str],
 ) -> None:
     cc_log.info("Constructing cohort")
 
     for dataset_ in datasets["DatasetName"]:
         cc_log.info(f" {dataset_}")
 
-        for dataset_type in DATASET_TYPES:
-            cc_log.info(f"  {dataset_type}")
+        for dataset_type_ in dataset_types:
+            cc_log.info(f"  {dataset_type_}")
 
-            derivative = None if dataset_type == "raw" else dataset_type
+            derivative = None if dataset_type_ == "raw" else dataset_type_
 
-            extension_list = ["json"] if dataset_type == "mriqc" else [EXT, "json"]
+            extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
 
             src_dir = dataset_path(sourcedata, dataset_, derivative=derivative)
             target_dir = dataset_path(ouput_dir, dataset_, derivative=derivative)
@@ -178,7 +185,7 @@ def construct_cohort(
                     data_type_list=DATA_TYPES,
                     suffix_list=SUFFIX,
                     extension_list=extension_list,
-                    dataset_type=dataset_type,
+                    dataset_type=dataset_type_,
                     src_dir=src_dir,
                     target_dir=target_dir,
                 )
@@ -237,12 +244,14 @@ def main(argv: Any = sys.argv) -> None:
     datasets_listing = Path(args.datasets_listing[0]).resolve()
     participants_listing = Path(args.participants_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
+    action = args.action[0]
+    dataset_types = args.dataset_types
     verbosity = args.verbosity
 
     if isinstance(verbosity, list):
         verbosity = verbosity[0]
 
-    validate_dataset_types(DATASET_TYPES)
+    validate_dataset_types(dataset_types)
 
     if verbosity == 0:
         cc_log.setLevel("ERROR")
@@ -263,11 +272,14 @@ def main(argv: Any = sys.argv) -> None:
     participants = pd.read_csv(participants_listing, sep="\t")
     openneuro = pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
 
-    install_datasets(datasets, openneuro, sourcedata)
+    if action in ["install", "all"]:
+        install_datasets(datasets, openneuro, sourcedata, dataset_types)
 
-    get_data(datasets, sourcedata, participants)
+    if action in ["get", "all"]:
+        get_data(datasets, sourcedata, participants, dataset_types)
 
-    construct_cohort(datasets, output_dir, sourcedata, participants)
+    if action in ["copy", "all"]:
+        construct_cohort(datasets, output_dir, sourcedata, participants, dataset_types)
 
 
 if __name__ == "__main__":

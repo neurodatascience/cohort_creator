@@ -173,3 +173,17 @@ outputs
     ├── ds001226-fmriprep
     └── ds001226-mriqc
 ```
+
+## Demo
+
+Get from openneuro derivatives for all T1w
+
+- the MRIQC output for each file
+- the corresponding T1W file
+
+```bash
+python cohort_creator.py \
+  inputs/datasets_with_mriqc.tsv \
+  inputs/datasets_with_mriqc.tsv \
+  outputs
+```

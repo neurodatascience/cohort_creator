@@ -40,5 +40,5 @@ jobs:
         #     run: |
         #         pip install pytest
         #         pytest tests
-        -   name: System test
-            run: python src/cohort_creator.py inputs/datasets.tsv inputs/participants.tsv outputs
+        -   name: System test anat
+            run: make demo_anat

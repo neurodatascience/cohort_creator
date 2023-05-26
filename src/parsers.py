@@ -59,14 +59,21 @@ def common_parser() -> MuhParser:
         nargs=1,
     )
     parser.add_argument(
+        "--dataset_types",
+        help="""Dataset to install and get data from.""",
+        choices=[
+            "raw",
+            "mriqc",
+            "fmriprep",
+        ],
+        required=False,
+        default=["raw"],
+        type=str,
+        nargs="+",
+    )
+    parser.add_argument(
         "--verbosity",
-        help="""Verbosity level.
-
-- 0: errors
-- 1: warning
-- 2: info
-- 3: debug
-        """,
+        help="""Verbosity level.""",
         required=False,
         choices=[0, 1, 2, 3],
         default=2,
