@@ -19,7 +19,7 @@ NB_JOBS = 6
 
 SPACE = "MNI152NLin2009cAsym"
 DATA_TYPE = "anat"
-SUFFIX = "T1w"
+SUFFIX = ["T1w"]
 EXT = "nii.gz"
 DATASET_TYPES = ["raw", "fmriprep"]
 
@@ -104,20 +104,21 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
 
             derivative = None if dataset_type == "raw" else dataset_type
 
-            glob_pattern = create_glob_pattern(dataset_type)
-
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
 
             for participant in participants_ids:
-                # TODO handle session level
-                files = list_files_for_participant(data_pth, participant, glob_pattern)
-                if not files:
-                    print(f"    no files found for: {str(participant)}")
-                    continue
-                print(f"    {str(participant)} - getting files:\n     {list(files)}")
-                dl_dataset.get(path=files, jobs=NB_JOBS)
+                for suffix in SUFFIX:
+                    for ext in [EXT, "json"]:
+                        glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+                        # TODO handle session level
+                        files = list_files_for_participant(data_pth, participant, glob_pattern)
+                        if not files:
+                            print(f"    no files found for: {str(participant)}")
+                            continue
+                        print(f"    {str(participant)} - getting files:\n     {list(files)}")
+                        dl_dataset.get(path=files, jobs=NB_JOBS)
 
 
 def construct_cohort(
@@ -132,8 +133,6 @@ def construct_cohort(
             print(f"   {dataset_type}")
 
             derivative = None if dataset_type == "raw" else dataset_type
-
-            glob_pattern = create_glob_pattern(dataset_type)
 
             src_dir = dataset_path(sourcedata, dataset_, derivative=derivative)
             target_dir = dataset_path(ouput_dir, dataset_, derivative=derivative)
@@ -150,20 +149,22 @@ def construct_cohort(
                 continue
 
             for participant in participants_ids:
-                (target_dir / participant).mkdir(exist_ok=True, parents=True)
-                files = list_files_for_participant(src_dir, participant, glob_pattern)
-                if not files:
-                    print(f"    no files found for: {str(participant)}")
-                    continue
-                print(f"    {str(participant)} - copying files:\n     {list(files)}")
-                for f in files:
-                    sub_dirs = Path(f).parents
-                    (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-                    if (target_dir / f).exists():
-                        print(f"      file '{f}' already present")
-                        continue
-                    shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
-                    # deal with permission
+                for suffix in SUFFIX:
+                    for ext in [EXT, "json"]:
+                        glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+                        files = list_files_for_participant(src_dir, participant, glob_pattern)
+                        if not files:
+                            print(f"    no files found for: {str(participant)}")
+                            continue
+                        print(f"    {str(participant)} - copying files:\n     {list(files)}")
+                        for f in files:
+                            sub_dirs = Path(f).parents
+                            (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+                            if (target_dir / f).exists():
+                                print(f"      file '{f}' already present")
+                                continue
+                            shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                            # TODO deal with permission
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
@@ -188,8 +189,8 @@ def list_files_for_participant(data_pth: Path, participant: str, glob_pattern: s
     return [str(f.relative_to(data_pth)) for f in files]
 
 
-def create_glob_pattern(dataset_type: str) -> str:
-    return f"*_{SUFFIX}.{EXT}" if dataset_type == "raw" else f"*{SPACE}*_{SUFFIX}.{EXT}"
+def create_glob_pattern(dataset_type: str, suffix: str, ext: str) -> str:
+    return f"*_{suffix}.{ext}" if dataset_type == "raw" else f"*{SPACE}*_{suffix}.{ext}"
 
 
 if __name__ == "__main__":
