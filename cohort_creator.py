@@ -1,6 +1,7 @@
 """Install a set of datalad datasets from openneuro and get the data for a set of participants.
 
 Then copy the data to a new directory structure to create a "cohort".
+
 """
 from __future__ import annotations
 
@@ -10,18 +11,32 @@ from pathlib import Path
 
 import pandas as pd
 from datalad import api
+from datalad.support.exceptions import (
+    IncompleteResultsError,
+)
 from rich import print
 from rich.logging import RichHandler
+
+from utils import get_sessions
+
+"""
+TODO:
+
+- use pybids to get the file lists
+    - take care of inhritance principle for tsv and json files
+- for functional get the events.tsv files
+"""
+
+DATA_TYPES = ["anat"]
+TASKS = ["*"]  # TODO: implement filtering by task
+SUFFIX = ["T1w"]
+EXT = "nii.gz"
+DATASET_TYPES = ["raw", "fmriprep", "mriqc"]
+SPACE = "MNI152NLin2009cAsym"
 
 LOG_LEVEL = "WARNING"
 
 NB_JOBS = 6
-
-SPACE = "MNI152NLin2009cAsym"
-DATA_TYPES = ["func"]
-SUFFIX = ["bold"]
-EXT = "nii.gz"
-DATASET_TYPES = ["fmriprep", "mriqc"]
 
 
 def cc_logger(log_level: str = "INFO") -> logging.Logger:
@@ -110,9 +125,11 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
 
             dl_dataset = api.Dataset(data_pth)
 
-            for participant in participants_ids:
-                get_data_this_participant(
-                    participant=participant,
+            for subject in participants_ids:
+                sessions = get_sessions(participants, dataset_, subject)
+                get_data_this_subject(
+                    subject=subject,
+                    sessions=sessions,
                     data_type_list=DATA_TYPES,
                     suffix_list=SUFFIX,
                     extension_list=extension_list,
@@ -122,8 +139,9 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
                 )
 
 
-def get_data_this_participant(
-    participant: str,
+def get_data_this_subject(
+    subject: str,
+    sessions: list[str | None],
     data_type_list: list[str],
     suffix_list: list[str],
     extension_list: list[str],
@@ -131,20 +149,30 @@ def get_data_this_participant(
     data_pth: Path,
     dl_dataset: api.Dataset,
 ) -> None:
-    for data_type in data_type_list:
-        for suffix in suffix_list:
-            for ext in extension_list:
-                glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+    for session_ in sessions:
+        for data_type in data_type_list:
+            for suffix in suffix_list:
+                for ext in extension_list:
+                    glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
 
-                # TODO handle session level
-                files = list_files_for_participant(
-                    data_pth, participant, data_type=data_type, glob_pattern=glob_pattern
-                )
-                if not files:
-                    print(f"    no files found for: {participant}")
-                    continue
-                print(f"    {participant} - getting files:\n     {files}")
-                dl_dataset.get(path=files, jobs=NB_JOBS)
+                    # TODO handle session level
+                    files = list_files_for_subject(
+                        data_pth,
+                        subject,
+                        session=session_,
+                        data_type=data_type,
+                        glob_pattern=glob_pattern,
+                    )
+                    if not files:
+                        print(
+                            f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
+                        )
+                        continue
+                    print(f"    {subject} - getting files:\n     {files}")
+                    try:
+                        dl_dataset.get(path=files, jobs=NB_JOBS)
+                    except IncompleteResultsError:
+                        print(f"    {subject} - failed to get files:\n     {files}")
 
 
 def construct_cohort(
@@ -176,9 +204,11 @@ def construct_cohort(
                 print(f"  no participants in dataset {dataset_}")
                 continue
 
-            for participant in participants_ids:
-                copy_this_participant(
-                    participant=participant,
+            for subject in participants_ids:
+                sessions = get_sessions(participants, dataset_, subject)
+                copy_this_subject(
+                    subject=subject,
+                    sessions=sessions,
                     data_type_list=DATA_TYPES,
                     suffix_list=SUFFIX,
                     extension_list=extension_list,
@@ -188,8 +218,9 @@ def construct_cohort(
                 )
 
 
-def copy_this_participant(
-    participant: str,
+def copy_this_subject(
+    subject: str,
+    sessions: list[str | None],
     data_type_list: list[str],
     suffix_list: list[str],
     extension_list: list[str],
@@ -197,30 +228,37 @@ def copy_this_participant(
     src_dir: Path,
     target_dir: Path,
 ) -> None:
-    for data_type in data_type_list:
-        for suffix in suffix_list:
-            for ext in extension_list:
-                glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+    for session_ in sessions:
+        for data_type in data_type_list:
+            for suffix in suffix_list:
+                for ext in extension_list:
+                    glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
 
-                files = list_files_for_participant(
-                    data_pth=src_dir,
-                    participant=participant,
-                    data_type=data_type,
-                    glob_pattern=glob_pattern,
-                )
-                if not files:
-                    print(f"    no files found for: {participant}")
-                    continue
-
-                print(f"    {participant} - copying files:\n     {files}")
-                for f in files:
-                    sub_dirs = Path(f).parents
-                    (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-                    if (target_dir / f).exists():
-                        print(f"      file '{f}' already present")
+                    files = list_files_for_subject(
+                        data_pth=src_dir,
+                        subject=subject,
+                        session=session_,
+                        data_type=data_type,
+                        glob_pattern=glob_pattern,
+                    )
+                    if not files:
+                        print(
+                            f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
+                        )
                         continue
-                    shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
-                    # TODO deal with permission
+
+                    print(f"    {subject} - copying files:\n     {files}")
+                    for f in files:
+                        sub_dirs = Path(f).parents
+                        (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+                        if (target_dir / f).exists():
+                            print(f"      file '{f}' already present")
+                            continue
+                        try:
+                            shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                            # TODO deal with permission
+                        except FileNotFoundError:
+                            print(f"      Could not find file '{f}'")
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
@@ -239,11 +277,14 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
     return participants_df["SubjectID"].tolist()
 
 
-def list_files_for_participant(
-    data_pth: Path, participant: str, data_type: str, glob_pattern: str
+def list_files_for_subject(
+    data_pth: Path, subject: str, session: str | None, data_type: str, glob_pattern: str
 ) -> list[str]:
     """Return a list of files for a participant with path relative to data_pth."""
-    files = (data_pth / participant / data_type).glob(glob_pattern)
+    if not session:
+        files = (data_pth / subject / data_type).glob(glob_pattern)
+    else:
+        files = (data_pth / subject / f"ses-{session}" / data_type).glob(glob_pattern)
     return [str(f.relative_to(data_pth)) for f in files]
 
 

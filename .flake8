@@ -11,6 +11,8 @@ max-line-length = 99
 max_complexity = 10
 max_function_length = 150
 ignore = D103
+per-file-ignores =
+	utils.py: D100
 # for compatibility with black
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#flake8
 extend-ignore = E203, E501

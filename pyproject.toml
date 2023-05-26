@@ -13,9 +13,18 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = [
-    'datalad',
+    'datalad.*',
     'rich',
     'rich.logging',
     'pandas'
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    'tests_utils',
+]
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_incomplete_defs = false
+disallow_untyped_defs = false
