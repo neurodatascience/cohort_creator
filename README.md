@@ -38,16 +38,51 @@ Make sure you have the following installed:
 
 ## Usage
 
-Add the your input files in the inputs folder.
+Run:
 
-Change the global variables at the top of the `cohort_creator` script
+```bash
+python cohort_creator.py path_to_datasets_listing participants_listing output_dir
+```
+
+Maybe try on a subset of datasets / participants first to make sure things are OK.
+
+```
+usage: cohort_creator.py [-h] [-v] [--action {all,install,get,copy}] [--verbosity {0,1,2,3}] [--task TASK [TASK ...]]
+                         [--space SPACE [SPACE ...]] [--dry_run] [--bids_filter_file BIDS_FILTER_FILE]
+                         datasets_listing participants_listing output_dir
+
+Creates a cohort by grabbing specific subjects from opennneuro datasets.
+
+positional arguments:
+  datasets_listing      Path to TSV file containing the list of datasets to install.
+  participants_listing  Path to TSV file containing the list of participants to get.
+  output_dir            Fullpath to the directory where the output files will be stored.
+
+options:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  --action {all,install,get,copy}
+                        Action to perform.
+  --verbosity {0,1,2,3}
+                        Verbosity level.
+  --task TASK [TASK ...]
+                        Tasks of the input data.
+  --space SPACE [SPACE ...]
+                        Space of the input data.
+  --dry_run             When set to ``true`` this will generate and save the SPM batches, but not actually run them.
+  --bids_filter_file BIDS_FILTER_FILE
+                        Fullpath to a JSON file describing custom BIDS input filters.
+
+For a more readable version of this help section, see the online doc https://github.com/neurodatascience/cohort_creator
+```
+
+<!--
+Change the global variables at the top of the `src/cohort_creator.py` script
 to match your input files.
 
 Some of the other global variables can be changed but are not thourouhgly tested yet.
+-->
 
-Run the script: `python cohort_creator.py`
-
-Maybe try on a subset of datasets / participants first to make sure things are OK.
 
 ## Output
 

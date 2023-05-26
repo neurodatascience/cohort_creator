@@ -17,7 +17,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                python-version: ['3.11']
+                python-version: ['3.8', '3.9', '3.10', '3.11']
 
         runs-on: ubuntu-latest
 
@@ -36,5 +36,9 @@ jobs:
                 datalad wtf
                 git config --global --add user.name "Ford Escort"
                 git config --global --add user.email 42@H2G2.com
-        -   name: Test script
-            run: python cohort_creator/src/cohort_creator.py inputs/datasets.tsv inputs/participants.tsv outputs
+        -   name: unit tests
+            run: |
+                pip install pytest
+                pytest tests
+        -   name: System test
+            run: python src/cohort_creator.py inputs/datasets.tsv inputs/participants.tsv outputs

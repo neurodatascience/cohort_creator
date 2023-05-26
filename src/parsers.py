@@ -31,30 +31,22 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "datasets_listing",
-        help="""
-        Path to TSV file containing the list of datasets to install.
-        """,
+        help="Path to TSV file containing the list of datasets to install.",
         nargs=1,
     )
     parser.add_argument(
         "participants_listing",
-        help="""
-        Path to TSV file containing the list of participants to get.
-        """,
+        help="Path to TSV file containing the list of participants to get.",
         nargs=1,
     )
     parser.add_argument(
         "output_dir",
-        help="""
-        Fullpath to the directory where the output files will be stored.
-        """,
+        help="Fullpath to the directory where the output files will be stored.",
         nargs=1,
     )
     parser.add_argument(
         "--action",
-        help="""
-        Action to perform.
-        """,
+        help="Action to perform.",
         choices=[
             "all",
             "install",
@@ -68,8 +60,12 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "--verbosity",
-        help="""
-        Verbosity level.
+        help="""Verbosity level.
+
+- 0: errors
+- 1: warning
+- 2: info
+- 3: debug
         """,
         required=False,
         choices=[0, 1, 2, 3],

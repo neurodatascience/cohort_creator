@@ -25,12 +25,6 @@ from utils import get_sessions
 from utils import list_files_for_subject
 from utils import validate_dataset_types
 
-# from rich import print
-
-# DATASET_LISTING_FILENAME = "datasets.tsv"  # "datasets_with_mriqc.tsv"  # "datasets.tsv"
-# PARTICIPANT_LISTING_FILENAME = (
-#     "participants.tsv"  # "participants_with_mriqc.tsv"  # "participants.tsv"
-# )
 
 DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
@@ -39,12 +33,9 @@ EXT = "nii.gz"
 DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
 SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
 
-LOG_LEVEL = "INFO"
-
 NB_JOBS = 6
 
 cc_log = cc_logger()
-cc_log.setLevel(LOG_LEVEL)
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 
@@ -53,7 +44,7 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
     cc_log.info("Installing datasets")
 
     for dataset_ in datasets["DatasetName"]:
-        cc_log.info(dataset_)
+        cc_log.info(f" {dataset_}")
 
         mask = openneuro.name == dataset_
         if mask.sum() == 0:
@@ -69,7 +60,7 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
             if data_pth.exists():
                 cc_log.info(f"  {dataset_type} data already present at {data_pth}")
             else:
-                cc_log.info(f"  installing {dataset_type} data at: {data_pth}")
+                cc_log.info(f"    installing {dataset_type} data at: {data_pth}")
                 if uri := dataset_df[dataset_type].values[0]:
                     api.install(path=data_pth, source=uri)
 
@@ -78,7 +69,7 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
     cc_log.info("Getting data")
 
     for dataset_ in datasets["DatasetName"]:
-        cc_log.info(dataset_)
+        cc_log.info(f" {dataset_}")
 
         participants_ids = get_participant_ids(participants, dataset_)
         if not participants_ids:
@@ -88,7 +79,7 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
         cc_log.info(f"  getting data for: {participants_ids}")
 
         for dataset_type in DATASET_TYPES:
-            cc_log.info(dataset_type)
+            cc_log.info(f"  {dataset_type}")
 
             derivative = None if dataset_type == "raw" else dataset_type
 
@@ -156,10 +147,10 @@ def construct_cohort(
     cc_log.info("Constructing cohort")
 
     for dataset_ in datasets["DatasetName"]:
-        cc_log.info(dataset_)
+        cc_log.info(f" {dataset_}")
 
         for dataset_type in DATASET_TYPES:
-            cc_log.info(dataset_type)
+            cc_log.info(f"  {dataset_type}")
 
             derivative = None if dataset_type == "raw" else dataset_type
 
@@ -246,8 +237,21 @@ def main(argv: Any = sys.argv) -> None:
     datasets_listing = Path(args.datasets_listing[0]).resolve()
     participants_listing = Path(args.participants_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
+    verbosity = args.verbosity
+
+    if isinstance(verbosity, list):
+        verbosity = verbosity[0]
 
     validate_dataset_types(DATASET_TYPES)
+
+    if verbosity == 0:
+        cc_log.setLevel("ERROR")
+    elif verbosity == 1:
+        cc_log.setLevel("WARNING")
+    elif verbosity == 2:
+        cc_log.setLevel("INFO")
+    elif verbosity == 3:
+        cc_log.setLevel("DEBUG")
 
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"

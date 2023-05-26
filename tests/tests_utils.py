@@ -9,8 +9,6 @@ import pytest
 from src.utils import get_sessions
 from src.utils import validate_dataset_types
 
-# noinspection PyUnresolvedReferences
-
 
 def test_get_sessions():
     inpute_file = Path(__file__).parent / "inputs" / "participants.tsv"
