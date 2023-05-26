@@ -21,7 +21,7 @@ SPACE = "MNI152NLin2009cAsym"
 DATA_TYPE = "anat"
 SUFFIX = ["T1w"]
 EXT = "nii.gz"
-DATASET_TYPES = ["raw", "fmriprep"]
+DATASET_TYPES = ["raw", "fmriprep", "mriqc"]
 
 
 def cc_logger(log_level: str = "INFO") -> logging.Logger:
@@ -62,10 +62,10 @@ def main() -> None:
 
 
 def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata: Path) -> None:
-    print("\nInstalling datasets")
+    print_step_name("Installing datasets")
 
     for dataset_ in datasets["DatasetName"]:
-        print(f"\n {dataset_}")
+        print_dataset_name(dataset_)
 
         mask = openneuro.name == dataset_
         if mask.sum() == 0:
@@ -87,10 +87,10 @@ def install_datasets(datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata
 
 
 def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame) -> None:
-    print("\nGetting data")
+    print_step_name("Getting data")
 
     for dataset_ in datasets["DatasetName"]:
-        print(f"\n {dataset_}")
+        print_dataset_name(dataset_)
 
         participants_ids = get_participant_ids(participants, dataset_)
         if not participants_ids:
@@ -100,39 +100,36 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
         print(f"  getting data for: {participants_ids}")
 
         for dataset_type in DATASET_TYPES:
-            print(f"   {dataset_type}")
+            print_dataset_type(dataset_type)
 
             derivative = None if dataset_type == "raw" else dataset_type
+
+            extension_list = ["json"] if dataset_type == "mriqc" else [EXT, "json"]
 
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
 
             for participant in participants_ids:
-                for suffix in SUFFIX:
-                    for ext in [EXT, "json"]:
-                        glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
-                        # TODO handle session level
-                        files = list_files_for_participant(data_pth, participant, glob_pattern)
-                        if not files:
-                            print(f"    no files found for: {str(participant)}")
-                            continue
-                        print(f"    {str(participant)} - getting files:\n     {list(files)}")
-                        dl_dataset.get(path=files, jobs=NB_JOBS)
+                get_data_this_participant(
+                    SUFFIX, extension_list, participant, dataset_type, data_pth, dl_dataset
+                )
 
 
 def construct_cohort(
     datasets: pd.DataFrame, ouput_dir: Path, sourcedata: Path, participants: pd.DataFrame
 ) -> None:
-    print("\nConstructing cohort")
+    print_step_name("Constructing cohort")
 
     for dataset_ in datasets["DatasetName"]:
-        print(f"\n {dataset_}")
+        print_dataset_name(dataset_)
 
         for dataset_type in DATASET_TYPES:
-            print(f"   {dataset_type}")
+            print_dataset_type(dataset_type)
 
             derivative = None if dataset_type == "raw" else dataset_type
+
+            extension_list = ["json"] if dataset_type == "mriqc" else [EXT, "json"]
 
             src_dir = dataset_path(sourcedata, dataset_, derivative=derivative)
             target_dir = dataset_path(ouput_dir, dataset_, derivative=derivative)
@@ -150,12 +147,14 @@ def construct_cohort(
 
             for participant in participants_ids:
                 for suffix in SUFFIX:
-                    for ext in [EXT, "json"]:
+                    for ext in extension_list:
                         glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+
                         files = list_files_for_participant(src_dir, participant, glob_pattern)
                         if not files:
                             print(f"    no files found for: {str(participant)}")
                             continue
+
                         print(f"    {str(participant)} - copying files:\n     {list(files)}")
                         for f in files:
                             sub_dirs = Path(f).parents
@@ -165,6 +164,27 @@ def construct_cohort(
                                 continue
                             shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
                             # TODO deal with permission
+
+
+def get_data_this_participant(
+    suffix_list: list[str],
+    ext_list: list[str],
+    participant: str,
+    dataset_type: str,
+    data_pth: Path,
+    dl_dataset: api.Dataset,
+) -> None:
+    for suffix in suffix_list:
+        for ext in ext_list:
+            glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+
+            # TODO handle session level
+            files = list_files_for_participant(data_pth, participant, glob_pattern)
+            if not files:
+                print(f"    no files found for: {participant}")
+                continue
+            print(f"    {participant} - getting files:\n     {files}")
+            dl_dataset.get(path=files, jobs=NB_JOBS)
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
@@ -190,7 +210,19 @@ def list_files_for_participant(data_pth: Path, participant: str, glob_pattern: s
 
 
 def create_glob_pattern(dataset_type: str, suffix: str, ext: str) -> str:
-    return f"*_{suffix}.{ext}" if dataset_type == "raw" else f"*{SPACE}*_{suffix}.{ext}"
+    return f"*_{suffix}.{ext}" if dataset_type in {"raw", "mriqc"} else f"*{SPACE}*_{suffix}.{ext}"
+
+
+def print_step_name(name: str) -> None:
+    print(f"\n[green] {name.upper()} [/green]")
+
+
+def print_dataset_name(name: str) -> None:
+    print(f"\n[blue]  {name.upper()} [/blue]")
+
+
+def print_dataset_type(name: str) -> None:
+    print(f"\n[yellow]   {name.upper()} [/yellow]")
 
 
 if __name__ == "__main__":
