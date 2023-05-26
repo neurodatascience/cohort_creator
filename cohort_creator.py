@@ -29,11 +29,14 @@ TODO:
   with over N jobs
 """
 
+DATASET_LISTING_FILENAME = "datasets_with_mriqc.tsv"  # "datasets.tsv"
+PARTICIPANT_LISTING_FILENAME = "participants_with_mriqc.tsv"  # "participants.tsv"
+
 DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
 SUFFIX = ["T1w"]
 EXT = "nii.gz"
-DATASET_TYPES = ["raw", "fmriprep", "mriqc"]
+DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep
 SPACE = "MNI152NLin2009cAsym"
 
 LOG_LEVEL = "WARNING"
@@ -67,8 +70,8 @@ def main() -> None:
     sourcedata = ouput_dir / "sourcedata"
     sourcedata.mkdir(exist_ok=True, parents=True)
 
-    datasets = pd.read_csv(input_dir / "datasets.tsv", sep="\t")
-    participants = pd.read_csv(input_dir / "participants.tsv", sep="\t")
+    datasets = pd.read_csv(input_dir / DATASET_LISTING_FILENAME, sep="\t")
+    participants = pd.read_csv(input_dir / PARTICIPANT_LISTING_FILENAME, sep="\t")
     openneuro = pd.read_csv(input_dir / "openneuro_derivatives.tsv", sep="\t")
 
     install_datasets(datasets, openneuro, sourcedata)
