@@ -66,12 +66,18 @@ dev = [
     "black",
     "flake8",
     "flake8-docstrings",
+    "codespell",
     "mypy",
     "pandas-stubs",
-    "codespell"
 ]
 docs = ["cohort_creator[doc]"]
 tests = ["cohort_creator[test]"]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q -vv"
+testpaths = [
+    "tests/",
+]
 
 [tool.black]
 line-length = 99
