@@ -4,22 +4,36 @@ Creates a cohort by grabbing specific subjects from opennneuro datasets.
 
 Takes 2 files as inputthat should list:
 - source datasets
-- subeject in each dataset to be included in the cohort
+- subject in each dataset to be included in the cohort
 
 For examples of 2 inputs TSV files see: https://github.com/neurobagel/documentation/wiki/Query-Tool#example-data
 
 ## Requirements
 
+It is recommended to use this package on a linux / Mac OS.
+
+If you are on Windows, we suggest to use WSL (Windows Subsystem for Linux) to run this package:
+windows does not handle symbolic links well, and this package relies on symlinks.
+If you decided to go ahead anyway make sure you have got a LOT of disk space available.
+
+More information here: https://handbook.datalad.org/en/latest/intro/windows.html#ohnowindows
+
 Make sure you have the following installed:
 
 - python3 >= 3.8
-- datalad: https://handbook.datalad.org/en/latest/
+- datalad:
+    - if you are have anaconda / conda, it should be 'just' a matter of running
+      ```
+      conda install -c conda-forge datalad
+      ```
+    - But check the installation instructions for more details:
+      https://handbook.datalad.org/en/latest/intro/installation.html#install
 
 ## Installation
 
 - fork the repo
 - clone your fork
-- create a virtual environment
+- otpional: create a virtual environment
 - install the requirements: `pip install -r requirements.txt`
 
 ## Usage

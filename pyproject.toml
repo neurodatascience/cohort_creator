@@ -16,7 +16,8 @@ module = [
     'datalad.*',
     'rich',
     'rich.logging',
-    'pandas'
+    'pandas',
+    'pytest',
 ]
 ignore_missing_imports = true
 
