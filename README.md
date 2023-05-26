@@ -2,7 +2,7 @@
 
 **TL;DR**
 
-    Creates a cohort by grabbing specific subjects from opennneuro datasets.
+    Creates a neuroimaging cohort by aggregating data across datasets.
 
 Install a set of datalad datasets from openneuro and get the data for a set of participants.
 Then copy the data to a new directory structure to create a "cohort".

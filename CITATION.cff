@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+
+title: "cohort_creator"
+
+version: 0.1.0
+
+abstract:
+  "Creates a neuroimaging cohort by aggregating data across datasets."
+
+message: "If you use this software, please cite it as below."
+
+repository-code: "https://github.com/neurodatascience/cohort_creator.git"
+
+
+contact:
+  - affiliation: "Origami lab, McGill University, Québec, Canada"
+    email: remi.gau@gmail.com
+    family-names: Gau
+    given-names: Rémi
+
+authors:
+  - family-names: "Gau"
+    given-names: "Rémi"
+    orcid: "https://orcid.org/0000-0002-1535-9767"
+    affiliation: Origami lab, McGill University, Québec, Canada"
+
+license: MIT
+
+keywords:
+  - BIDS
+  - brain imaging data structure
+  - neuroimaging
+  - dataset
