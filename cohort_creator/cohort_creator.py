@@ -68,7 +68,11 @@ def install_datasets(
 
 
 def get_data(
-    datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFrame, dataset_types: list[str]
+    datasets: pd.DataFrame,
+    sourcedata: Path,
+    participants: pd.DataFrame,
+    dataset_types: list[str],
+    jobs: int,
 ) -> None:
     cc_log.info("Getting data")
 
@@ -104,6 +108,7 @@ def get_data(
                     dataset_type=dataset_type_,
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
+                    jobs=jobs,
                 )
 
 
@@ -116,6 +121,7 @@ def get_data_this_subject(
     dataset_type: str,
     data_pth: Path,
     dl_dataset: api.Dataset,
+    jobs: int,
 ) -> None:
     for session_ in sessions:
         for data_type in data_type_list:
@@ -140,7 +146,7 @@ def get_data_this_subject(
                         continue
                     cc_log.info(f"    {subject} - getting files:\n     {files}")
                     try:
-                        dl_dataset.get(path=files, jobs=NB_JOBS)
+                        dl_dataset.get(path=files, jobs=jobs)
                     except IncompleteResultsError:
                         cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
@@ -237,7 +243,8 @@ def copy_this_subject(
                             cc_log.error(f"      Could not find file '{f}'")
 
 
-def main(argv: Any = sys.argv) -> None:
+def cli(argv: Any = sys.argv) -> None:
+    """Entry point."""
     parser = common_parser()
 
     args, unknowns = parser.parse_known_args(argv[1:])
@@ -257,15 +264,27 @@ def main(argv: Any = sys.argv) -> None:
     verbosity = args.verbosity
     if isinstance(verbosity, list):
         verbosity = verbosity[0]
-    if verbosity == 0:
-        cc_log.setLevel("ERROR")
-    elif verbosity == 1:
-        cc_log.setLevel("WARNING")
-    elif verbosity == 2:
-        cc_log.setLevel("INFO")
-    elif verbosity == 3:
-        cc_log.setLevel("DEBUG")
 
+    main(
+        datasets_listing=datasets_listing,
+        participants_listing=participants_listing,
+        output_dir=output_dir,
+        action=action,
+        dataset_types=dataset_types,
+        verbosity=verbosity,
+        jobs=jobs,
+    )
+
+
+def main(
+    datasets_listing: Path,
+    participants_listing: Path,
+    output_dir: Path,
+    action: str,
+    dataset_types: list[str],
+    verbosity: int,
+    jobs: int,
+) -> None:
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"
 
@@ -275,6 +294,15 @@ def main(argv: Any = sys.argv) -> None:
     datasets = pd.read_csv(datasets_listing, sep="\t")
     participants = pd.read_csv(participants_listing, sep="\t")
     openneuro = pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
+
+    if verbosity == 0:
+        cc_log.setLevel("ERROR")
+    elif verbosity == 1:
+        cc_log.setLevel("WARNING")
+    elif verbosity == 2:
+        cc_log.setLevel("INFO")
+    elif verbosity == 3:
+        cc_log.setLevel("DEBUG")
 
     if action in ["install", "all"]:
         install_datasets(
@@ -290,6 +318,7 @@ def main(argv: Any = sys.argv) -> None:
             sourcedata=sourcedata,
             participants=participants,
             dataset_types=dataset_types,
+            jobs=jobs,
         )
 
     if action in ["copy", "all"]:
@@ -300,7 +329,3 @@ def main(argv: Any = sys.argv) -> None:
             participants=participants,
             dataset_types=dataset_types,
         )
-
-
-if __name__ == "__main__":
-    main()

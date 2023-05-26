@@ -35,7 +35,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.scripts]
-cohort_creator = "cohort_creator.cohort_creator:main"
+cohort_creator = "cohort_creator.cohort_creator:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cohort_creator"]
@@ -110,5 +110,6 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
     'tests.*',
+    'integration.*',
 ]
 ignore_errors = true
