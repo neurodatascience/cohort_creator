@@ -37,7 +37,7 @@ TASKS = ["*"]  # TODO: implement filtering by task
 SUFFIX = ["T1w"]
 EXT = "nii.gz"
 DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
-SPACE = "MNI152NLin2009cAsym"
+SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
 
 LOG_LEVEL = "WARNING"
 
