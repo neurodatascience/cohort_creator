@@ -10,8 +10,6 @@ from typing import Any
 
 import pandas as pd
 
-from utils import output_dir
-
 # adapt to your set up
 # LOCAL_DIR = Path(__file__).resolve().parent / "inputs"
 LOCAL_DIR = "/home/remi/datalad/datasets.datalad.org"
@@ -91,13 +89,14 @@ def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> None:
+    output_dir = Path(__file__).parent / "inputs"
     datalad_superdataset = Path(LOCAL_DIR)
 
     datasets = init_dataset()
     datasets = list_openneuro_derivatives(datalad_superdataset, datasets)
     df = pd.DataFrame.from_dict(datasets)
     df.to_csv(
-        output_dir() / "datasets_with_mriqc.tsv",
+        output_dir / "datasets_with_mriqc.tsv",
         index=False,
         sep="\t",
     )
@@ -106,7 +105,7 @@ def main() -> None:
     datasets = list_participants(datasets)
     df = pd.DataFrame.from_dict(datasets)
     df.to_csv(
-        output_dir() / "participants_with_mriqc.tsv",
+        output_dir / "participants_with_mriqc.tsv",
         index=False,
         sep="\t",
     )

@@ -18,6 +18,9 @@ module = [
     'rich.logging',
     'pandas',
     'pytest',
+    'utils',
+    'logger',
+    'parsers'
 ]
 ignore_missing_imports = true
 

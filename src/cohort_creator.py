@@ -7,24 +7,30 @@ from __future__ import annotations
 
 import logging
 import shutil
+import sys
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from datalad import api
 from datalad.support.exceptions import (
     IncompleteResultsError,
 )
-from rich.logging import RichHandler
-
+from logger import cc_logger
+from parsers import common_parser
+from utils import create_glob_pattern
+from utils import dataset_path
+from utils import get_participant_ids
 from utils import get_sessions
+from utils import list_files_for_subject
 from utils import validate_dataset_types
 
 # from rich import print
 
-DATASET_LISTING_FILENAME = "datasets.tsv"  # "datasets_with_mriqc.tsv"  # "datasets.tsv"
-PARTICIPANT_LISTING_FILENAME = (
-    "participants.tsv"  # "participants_with_mriqc.tsv"  # "participants.tsv"
-)
+# DATASET_LISTING_FILENAME = "datasets.tsv"  # "datasets_with_mriqc.tsv"  # "datasets.tsv"
+# PARTICIPANT_LISTING_FILENAME = (
+#     "participants.tsv"  # "participants_with_mriqc.tsv"  # "participants.tsv"
+# )
 
 DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
@@ -33,25 +39,9 @@ EXT = "nii.gz"
 DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
 SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
 
-OUTPUT_DIR = Path(__file__).parent / "outputs"
-
 LOG_LEVEL = "INFO"
 
 NB_JOBS = 6
-
-
-def cc_logger(log_level: str = "INFO") -> logging.Logger:
-    FORMAT = "%(message)s"
-
-    logging.basicConfig(
-        level=log_level,
-        format=FORMAT,
-        datefmt="[%X]",
-        handlers=[RichHandler()],
-    )
-
-    return logging.getLogger("cohort_creator")
-
 
 cc_log = cc_logger()
 cc_log.setLevel(LOG_LEVEL)
@@ -136,7 +126,9 @@ def get_data_this_subject(
         for data_type in data_type_list:
             for suffix in suffix_list:
                 for ext in extension_list:
-                    glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+                    glob_pattern = create_glob_pattern(
+                        dataset_type, suffix=suffix, ext=ext, space=SPACE
+                    )
 
                     # TODO handle session level
                     files = list_files_for_subject(
@@ -215,7 +207,9 @@ def copy_this_subject(
         for data_type in data_type_list:
             for suffix in suffix_list:
                 for ext in extension_list:
-                    glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+                    glob_pattern = create_glob_pattern(
+                        dataset_type, suffix=suffix, ext=ext, space=SPACE
+                    )
 
                     files = list_files_for_subject(
                         data_pth=src_dir,
@@ -244,56 +238,32 @@ def copy_this_subject(
                             cc_log.error(f"      Could not find file '{f}'")
 
 
-def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
-    if derivative is None:
-        return root / dataset_
-    name = f"{dataset_}-{derivative}"
-    return (root / dataset_).with_name(name)
+def main(argv: Any = sys.argv) -> None:
+    parser = common_parser()
 
+    args, unknowns = parser.parse_known_args(argv[1:])
 
-def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[str] | None:
-    mask = participants["DatasetName"] == dataset_name
-    if mask.sum() == 0:
-        cc_log.warning(f"  no participants in dataset {dataset_name}")
-        return None
-    participants_df = participants[mask]
-    return participants_df["SubjectID"].tolist()
+    datasets_listing = Path(args.datasets_listing[0]).resolve()
+    participants_listing = Path(args.participants_listing[0]).resolve()
+    output_dir = Path(args.output_dir[0]).resolve()
 
-
-def list_files_for_subject(
-    data_pth: Path, subject: str, session: str | None, data_type: str, glob_pattern: str
-) -> list[str]:
-    """Return a list of files for a participant with path relative to data_pth."""
-    if not session:
-        files = (data_pth / subject / data_type).glob(glob_pattern)
-    else:
-        files = (data_pth / subject / f"ses-{session}" / data_type).glob(glob_pattern)
-    return [str(f.relative_to(data_pth)) for f in files]
-
-
-def create_glob_pattern(dataset_type: str, suffix: str, ext: str) -> str:
-    return f"*_{suffix}.{ext}" if dataset_type in {"raw", "mriqc"} else f"*{SPACE}*_{suffix}.{ext}"
-
-
-def main() -> None:
     validate_dataset_types(DATASET_TYPES)
 
     root_dir = Path(__file__).parent
-    input_dir = root_dir / "inputs"
+    data_dir = root_dir / "data"
 
-    ouput_dir = OUTPUT_DIR
-    sourcedata = ouput_dir / "sourcedata"
+    sourcedata = output_dir / "sourcedata"
     sourcedata.mkdir(exist_ok=True, parents=True)
 
-    datasets = pd.read_csv(input_dir / DATASET_LISTING_FILENAME, sep="\t")
-    participants = pd.read_csv(input_dir / PARTICIPANT_LISTING_FILENAME, sep="\t")
-    openneuro = pd.read_csv(input_dir / "openneuro_derivatives.tsv", sep="\t")
+    datasets = pd.read_csv(datasets_listing, sep="\t")
+    participants = pd.read_csv(participants_listing, sep="\t")
+    openneuro = pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
 
     install_datasets(datasets, openneuro, sourcedata)
 
     get_data(datasets, sourcedata, participants)
 
-    construct_cohort(datasets, ouput_dir, sourcedata, participants)
+    construct_cohort(datasets, output_dir, sourcedata, participants)
 
 
 if __name__ == "__main__":

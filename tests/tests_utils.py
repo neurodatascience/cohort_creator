@@ -6,8 +6,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from utils import get_sessions
-from utils import validate_dataset_types
+from src.utils import get_sessions
+from src.utils import validate_dataset_types
 
 # noinspection PyUnresolvedReferences
 
