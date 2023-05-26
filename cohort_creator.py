@@ -25,6 +25,8 @@ TODO:
 - use pybids to get the file lists
     - take care of inhritance principle for tsv and json files
 - for functional get the events.tsv files
+- create a single list of files per subject and per dataset to speed up the copy
+  with over N jobs
 """
 
 DATA_TYPES = ["anat"]
