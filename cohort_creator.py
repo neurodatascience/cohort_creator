@@ -36,7 +36,7 @@ DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
 SUFFIX = ["T1w"]
 EXT = "nii.gz"
-DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep
+DATASET_TYPES = ["raw", "mriqc"]  # raw, mriqc, fmriprep, freesurfer
 SPACE = "MNI152NLin2009cAsym"
 
 LOG_LEVEL = "WARNING"
@@ -58,9 +58,8 @@ def cc_logger(log_level: str = "INFO") -> logging.Logger:
 
 
 def main() -> None:
-    # cc_log = cc_logger()
-    # cc_log.setLevel(LOG_LEVEL)
-    # cc_log.propagate = False
+    cc_log = cc_logger()
+    cc_log.setLevel(LOG_LEVEL)
 
     root_dir = Path(__file__).parent
 
