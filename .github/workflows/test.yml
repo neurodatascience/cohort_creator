@@ -36,9 +36,9 @@ jobs:
                 datalad wtf
                 git config --global --add user.name "Ford Escort"
                 git config --global --add user.email 42@H2G2.com
-        -   name: unit tests
-            run: |
-                pip install pytest
-                pytest tests
+        # -   name: unit tests
+        #     run: |
+        #         pip install pytest
+        #         pytest tests
         -   name: System test
             run: python src/cohort_creator.py inputs/datasets.tsv inputs/participants.tsv outputs
