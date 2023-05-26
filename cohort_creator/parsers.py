@@ -6,7 +6,7 @@ from typing import IO
 
 import rich
 
-__version__ = "0.1.0"
+from ._version import __version__
 
 
 class MuhParser(argparse.ArgumentParser):

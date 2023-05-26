@@ -30,15 +30,19 @@ jobs:
         -   name: Install dependencies
             run: |
                 sudo apt-get update
-                sudo apt-get install -y python3 git-annex
-                python -m pip install --upgrade pip setuptools
-                pip install -r requirements.txt
-                datalad wtf
+                sudo apt-get install -y git-annex
+                python -m pip install --upgrade pip
+        -   name: Install
+            run: pip install .[test]
+        -   name: Post-install
+            run: |
                 git config --global --add user.name "Ford Escort"
                 git config --global --add user.email 42@H2G2.com
-        # -   name: unit tests
-        #     run: |
-        #         pip install pytest
-        #         pytest tests
+        -   name: Check set up
+            run: |
+                datalad wtf
+                cohort_creator --version
+        -   name: unit tests
+            run: python -m pytest tests
         -   name: System test anat
             run: make demo_anat

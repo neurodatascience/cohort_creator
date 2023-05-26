@@ -16,14 +16,15 @@ from datalad import api
 from datalad.support.exceptions import (
     IncompleteResultsError,
 )
-from logger import cc_logger
-from parsers import common_parser
-from utils import create_glob_pattern
-from utils import dataset_path
-from utils import get_participant_ids
-from utils import get_sessions
-from utils import list_files_for_subject
-from utils import validate_dataset_types
+
+from cohort_creator.logger import cc_logger
+from cohort_creator.parsers import common_parser
+from cohort_creator.utils import create_glob_pattern
+from cohort_creator.utils import dataset_path
+from cohort_creator.utils import get_participant_ids
+from cohort_creator.utils import get_sessions
+from cohort_creator.utils import list_files_for_subject
+from cohort_creator.utils import validate_dataset_types
 
 
 DATA_TYPES = ["anat"]

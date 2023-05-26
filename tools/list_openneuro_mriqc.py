@@ -89,7 +89,7 @@ def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> None:
-    output_dir = Path(__file__).parent / "inputs"
+    output_dir = Path(__file__).parent.parent / "inputs"
     datalad_superdataset = Path(LOCAL_DIR)
 
     datasets = init_dataset()

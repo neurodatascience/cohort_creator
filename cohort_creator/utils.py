@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-from logger import cc_logger
+
+from .logger import cc_logger
 
 cc_log = cc_logger()
 

@@ -6,12 +6,16 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.utils import get_sessions
-from src.utils import validate_dataset_types
+from cohort_creator.utils import get_sessions
+from cohort_creator.utils import validate_dataset_types
+
+
+def root_dir():
+    return Path(__file__).parent.parent
 
 
 def test_get_sessions():
-    inpute_file = Path(__file__).parent / "inputs" / "participants.tsv"
+    inpute_file = root_dir() / "inputs" / "participants.tsv"
     participants = pd.read_csv(inpute_file, sep="\t")
 
     assert get_sessions(participants, "ds000002", "sub-13") == [None]

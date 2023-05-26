@@ -1,3 +1,78 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cohort_creator"
+description = "Creates a neuroimaging cohort by aggregating data across datasets."
+long_description = { file = "README.md" }
+authors = [{ name = "Rémi Gau" }]
+maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "pandas",
+    "rich",
+    "datalad",
+]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved",
+  "Programming Language :: Python",
+  "Topic :: Software Development",
+  "Topic :: Scientific/Engineering",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+
+[project.scripts]
+cohort_creator = "cohort_creator.cohort_creator:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cohort_creator"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "cohort_creator/_version.py"
+
+[project.urls]
+Homepage = "https://github.com/neurodatascience/cohort_creator"
+Documentation = "https://github.com/neurodatascience/cohort_creator"
+"Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
+
+[project.optional-dependencies]
+test = ["pytest"]
+doc = [
+	"furo",
+	"myst-parser",
+	"numpydoc",
+	"sphinx",
+	"sphinx-copybutton",
+    "sphinx-argparse"
+]
+dev = [
+    "cohort_creator[doc,test]",
+    "pre-commit",
+    "black",
+    "flake8",
+    "flake8-docstrings",
+    "mypy",
+    "pandas-stubs",
+    "codespell"
+]
+docs = ["cohort_creator[doc]"]
+tests = ["cohort_creator[test]"]
+
 [tool.black]
 line-length = 99
 safe = true
@@ -5,8 +80,8 @@ safe = true
 [tool.codespell]
 skip = "./.git,.mypy_cache,env,venv,outputs"
 
-
 [tool.mypy]
+exclude = ['./tests/tests_utils\.py']
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -22,17 +97,11 @@ module = [
     'rich.logging',
     'pandas',
     'pytest',
-    'utils',
-    'logger',
-    'parsers'
 ]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    'tests_utils',
+    'tests.*',
 ]
-ignore_missing_imports = true
-check_untyped_defs = true
-disallow_incomplete_defs = false
 disallow_untyped_defs = false

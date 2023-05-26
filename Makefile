@@ -1,5 +1,5 @@
 demo_anat:
-	python src/cohort_creator.py \
+	cohort_creator \
 		inputs/datasets.tsv \
 		inputs/participants.tsv \
 		outputs \

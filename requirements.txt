@@ -1,4 +1,0 @@
-pandas
-rich
-datalad
-pandas-stubs
