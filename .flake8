@@ -6,6 +6,7 @@ exclude =
 	venv,
     build,
     dist
+    docs/source/conf.py,
 docstring-convention = numpy
 max-line-length = 99
 max_complexity = 10

@@ -31,22 +31,30 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "datasets_listing",
-        help="Path to TSV file containing the list of datasets to install.",
+        help="""
+        Path to TSV file containing the list of datasets to install.
+        """,
         nargs=1,
     )
     parser.add_argument(
         "participants_listing",
-        help="Path to TSV file containing the list of participants to get.",
+        help="""
+        Path to TSV file containing the list of participants to get.
+        """,
         nargs=1,
     )
     parser.add_argument(
         "output_dir",
-        help="Fullpath to the directory where the output files will be stored.",
+        help="""
+        Fullpath to the directory where the output files will be stored.
+        """,
         nargs=1,
     )
     parser.add_argument(
         "--action",
-        help="Action to perform.",
+        help="""
+        Action to perform.
+        """,
         choices=[
             "all",
             "install",
@@ -60,7 +68,9 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "--dataset_types",
-        help="""Dataset to install and get data from.""",
+        help="""
+        Dataset to install and get data from.
+        """,
         choices=[
             "raw",
             "mriqc",
@@ -73,7 +83,9 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "--verbosity",
-        help="""Verbosity level.""",
+        help="""
+        Verbosity level.
+        """,
         required=False,
         choices=[0, 1, 2, 3],
         default=2,
@@ -100,7 +112,9 @@ def common_parser() -> MuhParser:
     )
     parser.add_argument(
         "--jobs",
-        help="""Number of jobs: passed to datalad to speed up getting files.""",
+        help="""
+        Number of jobs: passed to datalad to speed up getting files.
+        """,
         required=False,
         default=6,
         type=int,
@@ -109,8 +123,7 @@ def common_parser() -> MuhParser:
     parser.add_argument(
         "--dry_run",
         help="""
-        When set to ``true`` this will generate and save the SPM batches,
-        but not actually run them.
+        Foo Bar
         """,
         action="store_true",
         default=False,
@@ -118,7 +131,7 @@ def common_parser() -> MuhParser:
     parser.add_argument(
         "--bids_filter_file",
         help="""
-        Fullpath to a JSON file describing custom BIDS input filters.
+        Foo Bar
         """,
         required=False,
         type=str,

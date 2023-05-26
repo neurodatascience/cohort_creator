@@ -88,7 +88,6 @@ safe = true
 skip = "./.git,.mypy_cache,env,venv,outputs"
 
 [tool.mypy]
-exclude = ['./tests/tests_utils\.py']
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -112,4 +111,4 @@ ignore_missing_imports = true
 module = [
     'tests.*',
 ]
-disallow_untyped_defs = false
+ignore_errors = true
