@@ -2,6 +2,10 @@
 line-length = 99
 safe = true
 
+[tool.codespell]
+skip = "./.git,.mypy_cache,env,venv,outputs"
+
+
 [tool.mypy]
 check_untyped_defs = true
 disallow_any_generics = true

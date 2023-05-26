@@ -20,7 +20,6 @@ repos:
     -   id: yamlfmt
         args: [--mapping, '4', --sequence, '4', --offset, '0']
 
-
 -   repo: https://github.com/asottile/reorder-python-imports
     rev: v3.9.0
     hooks:
@@ -48,6 +47,8 @@ repos:
     rev: v2.2.4
     hooks:
     -   id: codespell
+        args: [--toml=pyproject.toml]
+        additional_dependencies: [tomli]
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.3.0

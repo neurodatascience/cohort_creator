@@ -10,7 +10,7 @@ docstring-convention = numpy
 max-line-length = 99
 max_complexity = 10
 max_function_length = 150
-ignore = D101, D103
+ignore = D101, D103, I
 per-file-ignores =
     __init__.py: D104
 	utils.py: D100
