@@ -18,10 +18,10 @@ LOG_LEVEL = "WARNING"
 NB_JOBS = 6
 
 SPACE = "MNI152NLin2009cAsym"
-DATA_TYPE = "anat"
-SUFFIX = ["T1w"]
+DATA_TYPES = ["func"]
+SUFFIX = ["bold"]
 EXT = "nii.gz"
-DATASET_TYPES = ["raw", "fmriprep", "mriqc"]
+DATASET_TYPES = ["fmriprep", "mriqc"]
 
 
 def cc_logger(log_level: str = "INFO") -> logging.Logger:
@@ -112,29 +112,39 @@ def get_data(datasets: pd.DataFrame, sourcedata: Path, participants: pd.DataFram
 
             for participant in participants_ids:
                 get_data_this_participant(
-                    SUFFIX, extension_list, participant, dataset_type, data_pth, dl_dataset
+                    participant=participant,
+                    data_type_list=DATA_TYPES,
+                    suffix_list=SUFFIX,
+                    extension_list=extension_list,
+                    dataset_type=dataset_type,
+                    data_pth=data_pth,
+                    dl_dataset=dl_dataset,
                 )
 
 
 def get_data_this_participant(
+    participant: str,
+    data_type_list: list[str],
     suffix_list: list[str],
     extension_list: list[str],
-    participant: str,
     dataset_type: str,
     data_pth: Path,
     dl_dataset: api.Dataset,
 ) -> None:
-    for suffix in suffix_list:
-        for ext in extension_list:
-            glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+    for data_type in data_type_list:
+        for suffix in suffix_list:
+            for ext in extension_list:
+                glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
 
-            # TODO handle session level
-            files = list_files_for_participant(data_pth, participant, glob_pattern)
-            if not files:
-                print(f"    no files found for: {participant}")
-                continue
-            print(f"    {participant} - getting files:\n     {files}")
-            dl_dataset.get(path=files, jobs=NB_JOBS)
+                # TODO handle session level
+                files = list_files_for_participant(
+                    data_pth, participant, data_type=data_type, glob_pattern=glob_pattern
+                )
+                if not files:
+                    print(f"    no files found for: {participant}")
+                    continue
+                print(f"    {participant} - getting files:\n     {files}")
+                dl_dataset.get(path=files, jobs=NB_JOBS)
 
 
 def construct_cohort(
@@ -168,36 +178,49 @@ def construct_cohort(
 
             for participant in participants_ids:
                 copy_this_participant(
-                    SUFFIX, extension_list, participant, dataset_type, src_dir, target_dir
+                    participant=participant,
+                    data_type_list=DATA_TYPES,
+                    suffix_list=SUFFIX,
+                    extension_list=extension_list,
+                    dataset_type=dataset_type,
+                    src_dir=src_dir,
+                    target_dir=target_dir,
                 )
 
 
 def copy_this_participant(
+    participant: str,
+    data_type_list: list[str],
     suffix_list: list[str],
     extension_list: list[str],
-    participant: str,
     dataset_type: str,
     src_dir: Path,
     target_dir: Path,
 ) -> None:
-    for suffix in suffix_list:
-        for ext in extension_list:
-            glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
+    for data_type in data_type_list:
+        for suffix in suffix_list:
+            for ext in extension_list:
+                glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext)
 
-            files = list_files_for_participant(src_dir, participant, glob_pattern)
-            if not files:
-                print(f"    no files found for: {participant}")
-                continue
-
-            print(f"    {participant} - copying files:\n     {files}")
-            for f in files:
-                sub_dirs = Path(f).parents
-                (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-                if (target_dir / f).exists():
-                    print(f"      file '{f}' already present")
+                files = list_files_for_participant(
+                    data_pth=src_dir,
+                    participant=participant,
+                    data_type=data_type,
+                    glob_pattern=glob_pattern,
+                )
+                if not files:
+                    print(f"    no files found for: {participant}")
                     continue
-                shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
-                # TODO deal with permission
+
+                print(f"    {participant} - copying files:\n     {files}")
+                for f in files:
+                    sub_dirs = Path(f).parents
+                    (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+                    if (target_dir / f).exists():
+                        print(f"      file '{f}' already present")
+                        continue
+                    shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                    # TODO deal with permission
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
@@ -216,9 +239,11 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
     return participants_df["SubjectID"].tolist()
 
 
-def list_files_for_participant(data_pth: Path, participant: str, glob_pattern: str) -> list[str]:
+def list_files_for_participant(
+    data_pth: Path, participant: str, data_type: str, glob_pattern: str
+) -> list[str]:
     """Return a list of files for a participant with path relative to data_pth."""
-    files = (data_pth / participant / DATA_TYPE).glob(glob_pattern)
+    files = (data_pth / participant / data_type).glob(glob_pattern)
     return [str(f.relative_to(data_pth)) for f in files]
 
 
