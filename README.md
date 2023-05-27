@@ -1,3 +1,9 @@
+[![Test](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml/badge.svg)](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/neurodatascience/cohort_creator/main.svg)](https://results.pre-commit.ci/latest/github/neurodatascience/cohort_creator/main)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+![https://github.com/psf/black](https://img.shields.io/badge/code%20style-black-000000.svg)
+[![Sourcery](https://img.shields.io/badge/Sourcery-enabled-brightgreen)](https://sourcery.ai)
+[![Documentation Status](https://readthedocs.org/projects/cohort-creator/badge/?version=latest)](https://cohort-creator.readthedocs.io/en/latest/?badge=latest)
 # Cohort creator
 
 **TL;DR**
