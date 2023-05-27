@@ -22,7 +22,9 @@ from cohort_creator.parsers import common_parser
 from cohort_creator.utils import _is_dataset_in_openneuro
 from cohort_creator.utils import check_tsv_content
 from cohort_creator.utils import chek_participant_listing
+from cohort_creator.utils import copy_top_files
 from cohort_creator.utils import dataset_path
+from cohort_creator.utils import filter_excluded_participants
 from cohort_creator.utils import get_participant_ids
 from cohort_creator.utils import get_sessions
 from cohort_creator.utils import is_subject_in_dataset
@@ -176,15 +178,8 @@ def construct_cohort(
 
             target_dir.mkdir(exist_ok=True, parents=True)
 
-            top_files = ["dataset_description.json", "participants.*", "README*"]
-            if "func" in datatypes:
-                top_files.append("*task-*")
-            if "anat" in datatypes:
-                top_files.append("*T1w*")
-            for top_file_ in top_files:
-                for f in src_dir.glob(top_file_):
-                    shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
-            # TODO: filter out participants from participants.tsv that are not in participants_ids
+            copy_top_files(src_dir=src_dir, target_dir=target_dir, datatypes=datatypes)
+            filter_excluded_participants(pth=target_dir, participants=participants_ids)
 
             for subject in participants_ids:
                 if not is_subject_in_dataset(subject, src_dir):

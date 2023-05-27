@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +10,28 @@ import pandas as pd
 from .logger import cc_logger
 
 cc_log = cc_logger()
+
+
+def filter_excluded_participants(pth: Path, participants: list[str]) -> None:
+    """Remove subjects from participants.tsv that were not included in the cohort."""
+    participants_tsv = pth / "participants.tsv"
+    if not (participants_tsv).exists():
+        return
+    participants_df = pd.read_csv(participants_tsv, sep="\t")
+    participants_df = participants_df[participants_df["participant_id"].isin(participants)]
+    participants_df.to_csv(participants_tsv, sep="\t", index=False)
+
+
+def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> None:
+    """Copy top files from BIDS src_dir to BIDS target_dir."""
+    top_files = ["dataset_description.json", "participants.*", "README*"]
+    if "func" in datatypes:
+        top_files.append("*task-*")
+    if "anat" in datatypes:
+        top_files.append("*T1w*")
+    for top_file_ in top_files:
+        for f in src_dir.glob(top_file_):
+            shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
 
 
 def check_tsv_content(tsv_file: Path) -> pd.DataFrame:
