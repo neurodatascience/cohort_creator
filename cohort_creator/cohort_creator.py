@@ -19,52 +19,53 @@ from datalad.support.exceptions import (
 
 from cohort_creator.logger import cc_logger
 from cohort_creator.parsers import common_parser
+from cohort_creator.utils import _is_dataset_in_openneuro
 from cohort_creator.utils import create_glob_pattern
 from cohort_creator.utils import dataset_path
 from cohort_creator.utils import get_participant_ids
 from cohort_creator.utils import get_sessions
+from cohort_creator.utils import get_suffixes
 from cohort_creator.utils import list_files_for_subject
+from cohort_creator.utils import no_files_found_msg
+from cohort_creator.utils import openneuro_derivatives_df
 from cohort_creator.utils import validate_dataset_types
 
 
-DATA_TYPES = ["anat"]
 TASKS = ["*"]  # TODO: implement filtering by task
-SUFFIX = ["T1w"]
 EXT = "nii.gz"
-SPACE = "MNI152NLin2009cAsym"  # for fmriprep only
-
-NB_JOBS = 6
 
 cc_log = cc_logger()
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 
 
-def install_datasets(
-    datasets: pd.DataFrame, openneuro: pd.DataFrame, sourcedata: Path, dataset_types: list[str]
-) -> None:
+def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[str]) -> None:
     cc_log.info("Installing datasets")
-
-    for dataset_ in datasets["DatasetName"]:
+    for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
+        install(dataset_name=dataset_, dataset_types=dataset_types, output_path=sourcedata)
 
-        mask = openneuro.name == dataset_
-        if mask.sum() == 0:
-            cc_log.warning(f"  {dataset_} not found in openneuro")
-            continue
-        dataset_df = openneuro[mask]
 
-        for dataset_type_ in dataset_types:
-            derivative = None if dataset_type_ == "raw" else dataset_type_
+def install(dataset_name: str, dataset_types: list[str], output_path: Path) -> None:
+    if not _is_dataset_in_openneuro(dataset_name):
+        cc_log.warning(f"  {dataset_name} not found in openneuro")
+        return None
 
-            data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
+    openneuro = openneuro_derivatives_df()
+    mask = openneuro.name == dataset_name
+    dataset_df = openneuro[mask]
 
-            if data_pth.exists():
-                cc_log.info(f"  {dataset_type_} data already present at {data_pth}")
-            else:
-                cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
-                if uri := dataset_df[dataset_type_].values[0]:
-                    api.install(path=data_pth, source=uri)
+    for dataset_type_ in dataset_types:
+        derivative = None if dataset_type_ == "raw" else dataset_type_
+
+        data_pth = dataset_path(output_path, dataset_name, derivative=derivative)
+
+        if data_pth.exists():
+            cc_log.info(f"  {dataset_type_} data already present at {data_pth}")
+        else:
+            cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
+            if uri := dataset_df[dataset_type_].values[0]:
+                api.install(path=data_pth, source=uri)
 
 
 def get_data(
@@ -72,9 +73,14 @@ def get_data(
     sourcedata: Path,
     participants: pd.DataFrame,
     dataset_types: list[str],
+    datatypes: list[str],
+    space: str,
     jobs: int,
 ) -> None:
     cc_log.info("Getting data")
+
+    if isinstance(datatypes, str):
+        datatypes = [datatypes]
 
     for dataset_ in datasets["DatasetName"]:
         cc_log.info(f" {dataset_}")
@@ -102,8 +108,8 @@ def get_data(
                 get_data_this_subject(
                     subject=subject,
                     sessions=sessions,
-                    data_type_list=DATA_TYPES,
-                    suffix_list=SUFFIX,
+                    datatypes=datatypes,
+                    space=space,
                     extension_list=extension_list,
                     dataset_type=dataset_type_,
                     data_pth=data_pth,
@@ -115,8 +121,8 @@ def get_data(
 def get_data_this_subject(
     subject: str,
     sessions: list[str | None],
-    data_type_list: list[str],
-    suffix_list: list[str],
+    datatypes: list[str],
+    space: str,
     extension_list: list[str],
     dataset_type: str,
     data_pth: Path,
@@ -124,11 +130,11 @@ def get_data_this_subject(
     jobs: int,
 ) -> None:
     for session_ in sessions:
-        for data_type in data_type_list:
-            for suffix in suffix_list:
+        for datatype_ in datatypes:
+            for suffix in get_suffixes(datatype_):
                 for ext in extension_list:
                     glob_pattern = create_glob_pattern(
-                        dataset_type, suffix=suffix, ext=ext, space=SPACE
+                        dataset_type, suffix=suffix, ext=ext, space=space
                     )
 
                     # TODO handle session level
@@ -136,12 +142,12 @@ def get_data_this_subject(
                         data_pth,
                         subject,
                         session=session_,
-                        data_type=data_type,
+                        datatype=datatype_,
                         glob_pattern=glob_pattern,
                     )
                     if not files:
                         cc_log.warning(
-                            f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
+                            no_files_found_msg(subject, session_, datatype_, suffix, ext)
                         )
                         continue
                     cc_log.info(f"    {subject} - getting files:\n     {files}")
@@ -154,9 +160,11 @@ def get_data_this_subject(
 def construct_cohort(
     datasets: pd.DataFrame,
     output_dir: Path,
-    sourcedata: Path,
+    sourcedata_dir: Path,
     participants: pd.DataFrame,
     dataset_types: list[str],
+    datatypes: list[str],
+    space: str,
 ) -> None:
     cc_log.info("Constructing cohort")
 
@@ -170,7 +178,7 @@ def construct_cohort(
 
             extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
 
-            src_dir = dataset_path(sourcedata, dataset_, derivative=derivative)
+            src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
             target_dir = dataset_path(output_dir, dataset_, derivative=derivative)
 
             target_dir.mkdir(exist_ok=True, parents=True)
@@ -189,10 +197,10 @@ def construct_cohort(
                 copy_this_subject(
                     subject=subject,
                     sessions=sessions,
-                    data_type_list=DATA_TYPES,
-                    suffix_list=SUFFIX,
+                    datatypes=datatypes,
                     extension_list=extension_list,
                     dataset_type=dataset_type_,
+                    space=space,
                     src_dir=src_dir,
                     target_dir=target_dir,
                 )
@@ -201,31 +209,31 @@ def construct_cohort(
 def copy_this_subject(
     subject: str,
     sessions: list[str | None],
-    data_type_list: list[str],
-    suffix_list: list[str],
+    datatypes: list[str],
     extension_list: list[str],
     dataset_type: str,
+    space: str,
     src_dir: Path,
     target_dir: Path,
 ) -> None:
     for session_ in sessions:
-        for data_type in data_type_list:
-            for suffix in suffix_list:
+        for datatype_ in datatypes:
+            for suffix in get_suffixes(datatype_):
                 for ext in extension_list:
                     glob_pattern = create_glob_pattern(
-                        dataset_type, suffix=suffix, ext=ext, space=SPACE
+                        dataset_type, suffix=suffix, ext=ext, space=space
                     )
 
                     files = list_files_for_subject(
                         data_pth=src_dir,
                         subject=subject,
                         session=session_,
-                        data_type=data_type,
+                        datatype=datatype_,
                         glob_pattern=glob_pattern,
                     )
                     if not files:
                         cc_log.warning(
-                            f"    no files found for: {subject} - {session_} - {data_type} - {suffix} - {ext}"
+                            no_files_found_msg(subject, session_, datatype_, suffix, ext)
                         )
                         continue
 
@@ -253,6 +261,9 @@ def cli(argv: Any = sys.argv) -> None:
     participants_listing = Path(args.participants_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
     action = args.action[0]
+    datatypes = args.datatypes
+    # task = args.task
+    space = args.space
 
     jobs = args.jobs
     if isinstance(jobs, list):
@@ -271,6 +282,8 @@ def cli(argv: Any = sys.argv) -> None:
         output_dir=output_dir,
         action=action,
         dataset_types=dataset_types,
+        datatypes=datatypes,
+        space=space,
         verbosity=verbosity,
         jobs=jobs,
     )
@@ -282,18 +295,18 @@ def main(
     output_dir: Path,
     action: str,
     dataset_types: list[str],
+    datatypes: list[str],
+    space: str,
     verbosity: int,
     jobs: int,
 ) -> None:
-    root_dir = Path(__file__).parent
-    data_dir = root_dir / "data"
-
-    sourcedata = output_dir / "sourcedata"
-    sourcedata.mkdir(exist_ok=True, parents=True)
+    sourcedata_dir = output_dir / "sourcedata"
+    sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
     datasets = pd.read_csv(datasets_listing, sep="\t")
     participants = pd.read_csv(participants_listing, sep="\t")
-    openneuro = pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
+
+    datasets_to_install = participants["DatasetName"].unique()
 
     if verbosity == 0:
         cc_log.setLevel("ERROR")
@@ -306,18 +319,19 @@ def main(
 
     if action in ["install", "all"]:
         install_datasets(
-            datasets=datasets,
-            openneuro=openneuro,
-            sourcedata=sourcedata,
+            datasets=datasets_to_install,
+            sourcedata=sourcedata_dir,
             dataset_types=dataset_types,
         )
 
     if action in ["get", "all"]:
         get_data(
             datasets=datasets,
-            sourcedata=sourcedata,
+            sourcedata=sourcedata_dir,
             participants=participants,
             dataset_types=dataset_types,
+            datatypes=datatypes,
+            space=space,
             jobs=jobs,
         )
 
@@ -325,7 +339,9 @@ def main(
         construct_cohort(
             datasets=datasets,
             output_dir=output_dir,
-            sourcedata=sourcedata,
+            sourcedata_dir=sourcedata_dir,
             participants=participants,
             dataset_types=dataset_types,
+            datatypes=datatypes,
+            space=space,
         )

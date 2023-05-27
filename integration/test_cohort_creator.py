@@ -15,6 +15,7 @@ def test_main(tmp_path):
     participants_listing = root_dir() / "inputs" / "participants.tsv"
     output_dir = tmp_path
     action = "all"
+    datatypes = ["anat"]
     dataset_types = ["raw", "mriqc", "fmriprep"]
     verbosity = 3
     jobs = 3
@@ -25,6 +26,8 @@ def test_main(tmp_path):
         output_dir=output_dir,
         action=action,
         dataset_types=dataset_types,
+        datatypes=datatypes,
+        space="MNI152NLin2009cAsym",
         verbosity=verbosity,
         jobs=jobs,
     )

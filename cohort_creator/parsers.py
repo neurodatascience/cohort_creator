@@ -93,22 +93,38 @@ def common_parser() -> MuhParser:
         nargs=1,
     )
     parser.add_argument(
-        "--task",
+        "--datatypes",
         help="""
-        Tasks of the input data.
+        Datatype to get.
         """,
+        choices=[
+            "anat",
+            "func",
+        ],
         required=False,
+        default=["anat"],
         type=str,
         nargs="+",
     )
     parser.add_argument(
-        "--space",
+        "--task",
         help="""
-        Space of the input data.
+        Tasks of get.
         """,
         required=False,
+        default="*",
         type=str,
-        nargs="+",
+        nargs=1,
+    )
+    parser.add_argument(
+        "--space",
+        help="""
+        Space of the input data. Only applies when dataset_types requested includes fmriprep.
+        """,
+        required=False,
+        default="MNI152NLin2009cAsym",
+        type=str,
+        nargs=1,
     )
     parser.add_argument(
         "--jobs",
@@ -128,15 +144,15 @@ def common_parser() -> MuhParser:
         action="store_true",
         default=False,
     )
-    parser.add_argument(
-        "--bids_filter_file",
-        help="""
-        Foo Bar
-        """,
-        required=False,
-        type=str,
-        nargs=1,
-    )
+    # parser.add_argument(
+    #     "--bids_filter_file",
+    #     help="""
+    #     Foo Bar
+    #     """,
+    #     required=False,
+    #     type=str,
+    #     nargs=1,
+    # )
     # parser.add_argument(
     #     "--skip_validation",
     #     help="""

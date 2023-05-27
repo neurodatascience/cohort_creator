@@ -48,7 +48,7 @@ version-file = "cohort_creator/_version.py"
 
 [project.urls]
 Homepage = "https://github.com/neurodatascience/cohort_creator"
-Documentation = "https://github.com/neurodatascience/cohort_creator"
+Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
 "Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
 
 [project.optional-dependencies]
