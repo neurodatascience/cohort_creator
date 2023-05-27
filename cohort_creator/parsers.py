@@ -107,16 +107,6 @@ def common_parser() -> MuhParser:
         nargs="+",
     )
     parser.add_argument(
-        "--task",
-        help="""
-        Tasks of get.
-        """,
-        required=False,
-        default="*",
-        type=str,
-        nargs=1,
-    )
-    parser.add_argument(
         "--space",
         help="""
         Space of the input data. Only applies when dataset_types requested includes fmriprep.

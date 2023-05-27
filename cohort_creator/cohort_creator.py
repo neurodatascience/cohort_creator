@@ -20,19 +20,17 @@ from datalad.support.exceptions import (
 from cohort_creator.logger import cc_logger
 from cohort_creator.parsers import common_parser
 from cohort_creator.utils import _is_dataset_in_openneuro
-from cohort_creator.utils import create_glob_pattern
+from cohort_creator.utils import check_tsv_content
 from cohort_creator.utils import dataset_path
 from cohort_creator.utils import get_participant_ids
 from cohort_creator.utils import get_sessions
-from cohort_creator.utils import get_suffixes
 from cohort_creator.utils import is_subject_in_dataset
-from cohort_creator.utils import list_files_for_subject
+from cohort_creator.utils import list_all_files
 from cohort_creator.utils import no_files_found_msg
 from cohort_creator.utils import openneuro_derivatives_df
 from cohort_creator.utils import validate_dataset_types
 
 
-TASKS = ["*"]  # TODO: implement filtering by task
 EXT = "nii.gz"
 
 cc_log = cc_logger()
@@ -98,8 +96,6 @@ def get_data(
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
 
-            extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
-
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
@@ -114,7 +110,6 @@ def get_data(
                     sessions=sessions,
                     datatypes=datatypes,
                     space=space,
-                    extension_list=extension_list,
                     dataset_type=dataset_type_,
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
@@ -127,38 +122,28 @@ def get_data_this_subject(
     sessions: list[str | None],
     datatypes: list[str],
     space: str,
-    extension_list: list[str],
     dataset_type: str,
     data_pth: Path,
     dl_dataset: api.Dataset,
     jobs: int,
 ) -> None:
-    for session_ in sessions:
-        for datatype_ in datatypes:
-            for suffix in get_suffixes(datatype_):
-                for ext in extension_list:
-                    glob_pattern = create_glob_pattern(
-                        dataset_type, suffix=suffix, ext=ext, space=space
-                    )
-
-                    # TODO handle session level
-                    files = list_files_for_subject(
-                        data_pth,
-                        subject,
-                        session=session_,
-                        datatype=datatype_,
-                        glob_pattern=glob_pattern,
-                    )
-                    if not files:
-                        cc_log.warning(
-                            no_files_found_msg(subject, session_, datatype_, suffix, ext)
-                        )
-                        continue
-                    cc_log.info(f"    {subject} - getting files:\n     {files}")
-                    try:
-                        dl_dataset.get(path=files, jobs=jobs)
-                    except IncompleteResultsError:
-                        cc_log.error(f"    {subject} - failed to get files:\n     {files}")
+    for datatype_ in datatypes:
+        files = list_all_files(
+            data_pth=data_pth,
+            dataset_type=dataset_type,
+            subject=subject,
+            sessions=sessions,
+            datatype=datatype_,
+            space=space,
+        )
+        if not files:
+            cc_log.warning(no_files_found_msg(subject, datatype_))
+            continue
+        cc_log.info(f"    {subject} - getting files:\n     {files}")
+        try:
+            dl_dataset.get(path=files, jobs=jobs)
+        except IncompleteResultsError:
+            cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
 
 def construct_cohort(
@@ -175,12 +160,17 @@ def construct_cohort(
     for dataset_ in datasets["DatasetName"]:
         cc_log.info(f" {dataset_}")
 
+        participants_ids = get_participant_ids(participants, dataset_)
+        if not participants_ids:
+            cc_log.warning(f"  no participants in dataset {dataset_}")
+            continue
+
+        cc_log.info(f"  creating cohort with: {participants_ids}")
+
         for dataset_type_ in dataset_types:
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-
-            extension_list = ["json"] if dataset_type_ == "mriqc" else [EXT, "json"]
 
             src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
             target_dir = dataset_path(output_dir, dataset_, derivative=derivative)
@@ -191,18 +181,15 @@ def construct_cohort(
                 src=(src_dir / "dataset_description.json"), dst=target_dir, follow_symlinks=True
             )
 
-            participants_ids = get_participant_ids(participants, dataset_)
-            if not participants_ids:
-                cc_log.warning(f"  no participants in dataset {dataset_}")
-                continue
-
             for subject in participants_ids:
+                if not is_subject_in_dataset(subject, src_dir):
+                    cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
+                    continue
                 sessions = get_sessions(participants, dataset_, subject)
                 copy_this_subject(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
-                    extension_list=extension_list,
                     dataset_type=dataset_type_,
                     space=space,
                     src_dir=src_dir,
@@ -214,45 +201,36 @@ def copy_this_subject(
     subject: str,
     sessions: list[str | None],
     datatypes: list[str],
-    extension_list: list[str],
     dataset_type: str,
     space: str,
     src_dir: Path,
     target_dir: Path,
 ) -> None:
-    for session_ in sessions:
-        for datatype_ in datatypes:
-            for suffix in get_suffixes(datatype_):
-                for ext in extension_list:
-                    glob_pattern = create_glob_pattern(
-                        dataset_type, suffix=suffix, ext=ext, space=space
-                    )
+    for datatype_ in datatypes:
+        files = list_all_files(
+            data_pth=src_dir,
+            dataset_type=dataset_type,
+            subject=subject,
+            sessions=sessions,
+            datatype=datatype_,
+            space=space,
+        )
+        if not files:
+            cc_log.warning(no_files_found_msg(subject, datatype_))
+            continue
 
-                    files = list_files_for_subject(
-                        data_pth=src_dir,
-                        subject=subject,
-                        session=session_,
-                        datatype=datatype_,
-                        glob_pattern=glob_pattern,
-                    )
-                    if not files:
-                        cc_log.warning(
-                            no_files_found_msg(subject, session_, datatype_, suffix, ext)
-                        )
-                        continue
-
-                    cc_log.info(f"    {subject} - copying files:\n     {files}")
-                    for f in files:
-                        sub_dirs = Path(f).parents
-                        (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-                        if (target_dir / f).exists():
-                            cc_log.info(f"      file '{f}' already present")
-                            continue
-                        try:
-                            shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
-                            # TODO deal with permission
-                        except FileNotFoundError:
-                            cc_log.error(f"      Could not find file '{f}'")
+        cc_log.info(f"    {subject} - copying files:\n     {files}")
+        for f in files:
+            sub_dirs = Path(f).parents
+            (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+            if (target_dir / f).exists():
+                cc_log.info(f"      file '{f}' already present")
+                continue
+            try:
+                shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                # TODO deal with permission
+            except FileNotFoundError:
+                cc_log.error(f"      Could not find file '{f}'")
 
 
 def cli(argv: Any = sys.argv) -> None:
@@ -266,7 +244,6 @@ def cli(argv: Any = sys.argv) -> None:
     output_dir = Path(args.output_dir[0]).resolve()
     action = args.action[0]
     datatypes = args.datatypes
-    # task = args.task
     space = args.space
 
     jobs = args.jobs
@@ -307,8 +284,8 @@ def main(
     sourcedata_dir = output_dir / "sourcedata"
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
-    datasets = pd.read_csv(datasets_listing, sep="\t")
-    participants = pd.read_csv(participants_listing, sep="\t")
+    datasets = check_tsv_content(datasets_listing)
+    participants = check_tsv_content(participants_listing)
 
     datasets_to_install = participants["DatasetName"].unique()
 
