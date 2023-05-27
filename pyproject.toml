@@ -35,7 +35,7 @@ classifiers = [
 dynamic = ["version"]
 
 [project.scripts]
-cohort_creator = "cohort_creator.cohort_creator:cli"
+cohort_creator = "cohort_creator.cli:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cohort_creator"]

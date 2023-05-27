@@ -7,9 +7,7 @@ from __future__ import annotations
 
 import logging
 import shutil
-import sys
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 from datalad import api
@@ -18,10 +16,7 @@ from datalad.support.exceptions import (
 )
 
 from cohort_creator.logger import cc_logger
-from cohort_creator.parsers import common_parser
 from cohort_creator.utils import _is_dataset_in_openneuro
-from cohort_creator.utils import check_participant_listing
-from cohort_creator.utils import check_tsv_content
 from cohort_creator.utils import copy_top_files
 from cohort_creator.utils import dataset_path
 from cohort_creator.utils import filter_excluded_participants
@@ -31,7 +26,6 @@ from cohort_creator.utils import is_subject_in_dataset
 from cohort_creator.utils import list_all_files
 from cohort_creator.utils import no_files_found_msg
 from cohort_creator.utils import openneuro_derivatives_df
-from cohort_creator.utils import validate_dataset_types
 
 
 cc_log = cc_logger()
@@ -247,100 +241,3 @@ def copy_this_subject(
                 # TODO deal with permission
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}'")
-
-
-def cli(argv: Any = sys.argv) -> None:
-    """Entry point."""
-    parser = common_parser()
-
-    args, unknowns = parser.parse_known_args(argv[1:])
-
-    datasets_listing = Path(args.datasets_listing[0]).resolve()
-    participants_listing = Path(args.participants_listing[0]).resolve()
-    output_dir = Path(args.output_dir[0]).resolve()
-    action = args.action[0]
-    datatypes = args.datatypes
-    space = args.space
-
-    jobs = args.jobs
-    if isinstance(jobs, list):
-        jobs = jobs[0]
-
-    dataset_types = args.dataset_types
-    validate_dataset_types(dataset_types)
-
-    verbosity = args.verbosity
-    if isinstance(verbosity, list):
-        verbosity = verbosity[0]
-
-    main(
-        datasets_listing=datasets_listing,
-        participants_listing=participants_listing,
-        output_dir=output_dir,
-        action=action,
-        dataset_types=dataset_types,
-        datatypes=datatypes,
-        space=space,
-        verbosity=verbosity,
-        jobs=jobs,
-    )
-
-
-def main(
-    datasets_listing: Path,
-    participants_listing: Path,
-    output_dir: Path,
-    action: str,
-    dataset_types: list[str],
-    datatypes: list[str],
-    space: str,
-    verbosity: int,
-    jobs: int,
-) -> None:
-    sourcedata_dir = output_dir / "sourcedata"
-    sourcedata_dir.mkdir(exist_ok=True, parents=True)
-
-    datasets = check_tsv_content(datasets_listing)
-
-    participants = check_tsv_content(participants_listing)
-    check_participant_listing(participants)
-
-    datasets_to_install = list(participants["DatasetName"].unique())
-
-    if verbosity == 0:
-        cc_log.setLevel("ERROR")
-    elif verbosity == 1:
-        cc_log.setLevel("WARNING")
-    elif verbosity == 2:
-        cc_log.setLevel("INFO")
-    elif verbosity == 3:
-        cc_log.setLevel("DEBUG")
-
-    if action in ["install", "all"]:
-        install_datasets(
-            datasets=datasets_to_install,
-            sourcedata=sourcedata_dir,
-            dataset_types=dataset_types,
-        )
-
-    if action in ["get", "all"]:
-        get_data(
-            datasets=datasets,
-            sourcedata=sourcedata_dir,
-            participants=participants,
-            dataset_types=dataset_types,
-            datatypes=datatypes,
-            space=space,
-            jobs=jobs,
-        )
-
-    if action in ["copy", "all"]:
-        construct_cohort(
-            datasets=datasets,
-            output_dir=output_dir,
-            sourcedata_dir=sourcedata_dir,
-            participants=participants,
-            dataset_types=dataset_types,
-            datatypes=datatypes,
-            space=space,
-        )
