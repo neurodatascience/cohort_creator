@@ -41,10 +41,10 @@ def check_tsv_content(tsv_file: Path) -> pd.DataFrame:
     return df
 
 
-def chek_participant_listing(participants_listing: pd.DataFrame) -> None:
+def check_participant_listing(participants_listing: pd.DataFrame) -> None:
     for col in ["SessionID", "SubjectID"]:
         if "SubjectID" not in participants_listing.columns:
-            raise ValueError(f"Column '{col} not found in pariticpants listing data.")
+            raise ValueError(f"Column '{col}' not found in participants listing data.")
 
 
 def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[str] | None:
@@ -94,17 +94,6 @@ def openneuro_derivatives_df() -> pd.DataFrame:
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"
     return pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
-
-
-def list_files_for_subject(
-    data_pth: Path, subject: str, session: str | None, datatype: str, glob_pattern: str
-) -> list[str]:
-    """Return a list of files for a participant with path relative to data_pth."""
-    if not session:
-        files = (data_pth / subject / datatype).glob(glob_pattern)
-    else:
-        files = (data_pth / subject / f"ses-{session}" / datatype).glob(glob_pattern)
-    return [str(f.relative_to(data_pth)) for f in files]
 
 
 def list_all_files(

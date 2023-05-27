@@ -20,8 +20,8 @@ from datalad.support.exceptions import (
 from cohort_creator.logger import cc_logger
 from cohort_creator.parsers import common_parser
 from cohort_creator.utils import _is_dataset_in_openneuro
+from cohort_creator.utils import check_participant_listing
 from cohort_creator.utils import check_tsv_content
-from cohort_creator.utils import chek_participant_listing
 from cohort_creator.utils import copy_top_files
 from cohort_creator.utils import dataset_path
 from cohort_creator.utils import filter_excluded_participants
@@ -40,6 +40,22 @@ logging.getLogger("datalad").setLevel(logging.WARNING)
 
 
 def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[str]) -> None:
+    """Will install several datalad datasets from openneuro.
+
+    Parameters
+    ----------
+    datasets : list[str]
+        List of dataset names.
+
+        Example: ["ds000001", "ds000002"]
+
+    sourcedata : Path
+        Path where the datasets will be installed.
+
+    dataset_types : list[str]
+        Can contain any of: "raw", "fmriprep", "mriqc".
+
+    """
     cc_log.info("Installing datasets")
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
@@ -287,9 +303,9 @@ def main(
     datasets = check_tsv_content(datasets_listing)
 
     participants = check_tsv_content(participants_listing)
-    chek_participant_listing(participants_listing)
+    check_participant_listing(participants)
 
-    datasets_to_install = participants["DatasetName"].unique()
+    datasets_to_install = list(participants["DatasetName"].unique())
 
     if verbosity == 0:
         cc_log.setLevel("ERROR")

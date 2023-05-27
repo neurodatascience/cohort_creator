@@ -52,7 +52,10 @@ Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
 "Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = [
+    "pytest",
+    "pytest-cov",
+]
 doc = [
 	"furo",
 	"myst-parser",
@@ -75,17 +78,23 @@ docs = ["cohort_creator[doc]"]
 tests = ["cohort_creator[test]"]
 
 [tool.pytest.ini_options]
-addopts = "-ra -q -vv"
+addopts = "-ra -q -vv --cov cohort_creator "
 testpaths = [
     "tests/",
 ]
+norecursedirs = "data"
 
 [tool.black]
 line-length = 99
 safe = true
+extend-exclude = '''
+(
+  ^/tests/data
+)
+'''
 
 [tool.codespell]
-skip = "./.git,.mypy_cache,env,venv,outputs"
+skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples"
 
 [tool.mypy]
 check_untyped_defs = true
@@ -111,5 +120,8 @@ ignore_missing_imports = true
 module = [
     'tests.*',
     'integration.*',
+    'format_v016_to_v020',
+    'format_v020_to_v030',
+    'rename'
 ]
 ignore_errors = true
