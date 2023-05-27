@@ -44,5 +44,5 @@ jobs:
                 cohort_creator --version
         -   name: unit tests
             run: python -m pytest tests
-        -   name: System test anat
-            run: make demo_anat
+        -   name: System test
+            run: make demo_all

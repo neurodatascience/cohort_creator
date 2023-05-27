@@ -25,6 +25,7 @@ from cohort_creator.utils import dataset_path
 from cohort_creator.utils import get_participant_ids
 from cohort_creator.utils import get_sessions
 from cohort_creator.utils import get_suffixes
+from cohort_creator.utils import is_subject_in_dataset
 from cohort_creator.utils import list_files_for_subject
 from cohort_creator.utils import no_files_found_msg
 from cohort_creator.utils import openneuro_derivatives_df
@@ -104,6 +105,9 @@ def get_data(
             dl_dataset = api.Dataset(data_pth)
 
             for subject in participants_ids:
+                if not is_subject_in_dataset(subject, data_pth):
+                    cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
+                    continue
                 sessions = get_sessions(participants, dataset_, subject)
                 get_data_this_subject(
                     subject=subject,

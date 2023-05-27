@@ -25,6 +25,10 @@ def _is_dataset_in_openneuro(dataset_name: str) -> bool:
     return mask.sum() != 0
 
 
+def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
+    return (dataset_pth / subject).exists()
+
+
 def get_suffixes(datatype: str) -> list[str]:
     if datatype == "func":
         return ["bold"]
