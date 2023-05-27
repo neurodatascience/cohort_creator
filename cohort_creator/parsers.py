@@ -9,17 +9,17 @@ import rich
 from ._version import __version__
 
 
-class MuhParser(argparse.ArgumentParser):
+class _MuhParser(argparse.ArgumentParser):
     def _print_message(self, message: str, file: IO[str] | None = None) -> None:
         rich.print(message, file=file)
 
 
-def common_parser() -> MuhParser:
-    parser = MuhParser(
+def common_parser() -> _MuhParser:
+    parser = _MuhParser(
         description="Creates a cohort by grabbing specific subjects from opennneuro datasets.",
         epilog="""
         For a more readable version of this help section,
-        see the online doc https://github.com/neurodatascience/cohort_creator
+        see the online doc https://cohort-creator.readthedocs.io/en/latest/
         """,
     )
 

@@ -18,6 +18,12 @@ def check_tsv_content(tsv_file: Path) -> pd.DataFrame:
     return df
 
 
+def chek_participant_listing(participants_listing: pd.DataFrame) -> None:
+    for col in ["SessionID", "SubjectID"]:
+        if "SubjectID" not in participants_listing.columns:
+            raise ValueError(f"Column '{col} not found in pariticpants listing data.")
+
+
 def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[str] | None:
     mask = participants["DatasetName"] == dataset_name
     if mask.sum() == 0:
