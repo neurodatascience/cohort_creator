@@ -9,13 +9,12 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from utils import get_subjects
+from utils import URL_OPENNEURO
 
 # adapt to your set up
 # LOCAL_DIR = Path(__file__).resolve().parent / "inputs"
 LOCAL_DIR = "/home/remi/datalad/datasets.datalad.org"
-
-URL_OPENNEURO = "https://github.com/OpenNeuro/"
-URL_OPENNEURO_DERIVATIVES = "https://github.com/OpenNeuroDerivatives/"
 
 
 def init_dataset() -> dict[str, list[str]]:
@@ -71,7 +70,7 @@ def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
     for dataset_pth in mriqc_datasets:
         dataset_name = dataset_pth.name.replace("-mriqc", "")
 
-        subjects = [x.name for x in dataset_pth.glob("sub-*") if x.is_dir()]
+        subjects = get_subjects(dataset_pth)
         sessions = [
             x.name.replace("ses-", "") for x in dataset_pth.glob("sub-*/ses-*") if x.is_dir()
         ]

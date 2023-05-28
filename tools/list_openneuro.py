@@ -1,4 +1,7 @@
-"""List datasets contents on openneuro and write the results in a tsv file."""
+"""List datasets contents on openneuro and write the results in a tsv file.
+
+Also checks for derivatives folders for mriqc, frmiprep and freesurfer.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,6 +9,7 @@ from typing import Any
 from warnings import warn
 
 import pandas as pd
+from utils import config
 from utils import get_nb_subjects
 from utils import has_participant_tsv
 from utils import init_dataset
@@ -19,31 +23,22 @@ from utils import URL_OPENNEURO_DERIVATIVES
 
 DEBUG = False
 
-# adapt to your set up
-# LOCAL_DIR = Path(__file__).resolve().parent / "inputs"
-LOCAL_DIR = "/home/remi/datalad/datasets.datalad.org"
 
-
-def main() -> None:
-    datalad_superdataset = Path(LOCAL_DIR)
-
+def list_openneuro(debug: bool = DEBUG) -> dict[str, list[Any]]:
     datasets = init_dataset()
-    datasets = list_openneuro(datalad_superdataset, datasets)
-    datasets_df = pd.DataFrame.from_dict(datasets)
-    datasets_df.to_csv(Path() / "openneuro.tsv", index=False, sep="\t")
+    path = Path(config()["local_paths"]["openneuro"]["OpenNeuroDatasets"])
+    datasets = list_datasets_in_dir(datasets, path, debug)
+    path = Path(config()["local_paths"]["datalad"]["OpenNeuroDatasets"])
+    datasets = list_datasets_in_dir(datasets, path, debug)
+    return datasets
 
 
-def list_openneuro(
-    datalad_superdataset: Path, datasets: dict[str, list[Any]], debug: bool = DEBUG
+def list_datasets_in_dir(
+    datasets: dict[str, list[Any]], path: Path, debug: bool = DEBUG
 ) -> dict[str, list[Any]]:
-    """Indexes content of dataset on openneuro.
+    print(f"Listing datasets in {path}")
 
-    Also checks for derivatives folders for mriqc, frmiprep and freesurfer.
-    """
-    openneuro = datalad_superdataset / "openneuro"
-    print(f"Listing derivatives in {openneuro}")
-
-    raw_datasets = sorted(list(openneuro.glob("ds*")))
+    raw_datasets = sorted(list(path.glob("ds*")))
 
     derivatives = known_derivatives()
 
@@ -62,8 +57,7 @@ def list_openneuro(
         ):
             tasks = list_tasks(dataset_pth)
             check_task(tasks, modalities, dataset_pth)
-
-        dataset["tasks"] = tasks
+            dataset["tasks"] = tasks
         dataset["modalities"] = modalities
 
         tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
@@ -73,6 +67,9 @@ def list_openneuro(
         dataset["has_phenotype_dir"] = bool((dataset_pth / "phenotype").exists())
 
         dataset = add_derivatives(dataset, dataset_pth, derivatives)
+
+        if dataset["name"] in datasets["name"]:
+            Exception(f"dataset {dataset['name']} already in datasets")
 
         for keys in datasets:
             datasets[keys].append(dataset[keys])
@@ -112,6 +109,12 @@ def add_derivatives(
                 dataset[der] = f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
 
     return dataset
+
+
+def main() -> None:
+    datasets = list_openneuro()
+    datasets_df = pd.DataFrame.from_dict(datasets)
+    datasets_df.to_csv(Path() / "openneuro.tsv", index=False, sep="\t")
 
 
 if __name__ == "__main__":

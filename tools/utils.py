@@ -8,6 +8,7 @@ from warnings import warn
 
 import pandas as pd
 import requests
+import yaml
 from rich import print
 
 USERNAME = "Remi-Gau"
@@ -15,9 +16,16 @@ USERNAME = "Remi-Gau"
 TOKEN_FILE = Path("/home/remi/Documents/tokens/gh_read_repo_for_orga.txt")
 
 OPENNEURO = "OpenNeuroDatasets"
-URL_OPENNEURO = "https://github.com/OpenNeuroDatasets/"
+URL_OPENNEURO = f"https://github.com/{OPENNEURO}/"
 OPENNEURO_DERIVATIVES = "OpenNeuroDerivatives"
-URL_OPENNEURO_DERIVATIVES = "https://github.com/OpenNeuroDerivatives/"
+URL_OPENNEURO_DERIVATIVES = f"https://github.com/{OPENNEURO_DERIVATIVES}/"
+
+
+@functools.lru_cache(maxsize=1)
+def config() -> dict[str, Any]:
+    """Return the configuration."""
+    with open(Path(__file__).parent / "config.yml") as f:
+        return yaml.safe_load(f)
 
 
 def root_dir() -> Path:
@@ -29,8 +37,14 @@ def gh_api_base_url() -> str:
 
 
 def known_derivatives() -> list[str]:
-    tsv = Path(__file__).parent / "OpenNeuroDerivatives.tsv"
+    tsv = Path(__file__).parent / f"{OPENNEURO_DERIVATIVES}.tsv"
     return pd.read_csv(tsv, sep="\t")["name"].values.tolist()
+
+
+def datasets_in_datalad_superdataset(subds: str) -> list[str]:
+    assert subds in [OPENNEURO, OPENNEURO_DERIVATIVES]
+    path = Path(config()["local_paths"]["datalad"][subds])
+    return [x.name for x in path.glob("*") if x.is_dir()]
 
 
 @functools.lru_cache(maxsize=1)
@@ -74,9 +88,12 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
     }
 
 
+def get_subjects(pth: Path) -> list[str]:
+    return [v.name for v in pth.glob("sub-*") if v.is_dir()]
+
+
 def get_nb_subjects(pth: Path) -> int:
-    tmp = [v for v in pth.glob("sub-*") if v.is_dir()]
-    return len(tmp)
+    return len(get_subjects(pth))
 
 
 def has_participant_tsv(pth: Path) -> tuple[bool, bool, str | list[str]]:
