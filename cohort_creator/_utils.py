@@ -100,7 +100,7 @@ def no_files_found_msg(
 def openneuro_derivatives_df() -> pd.DataFrame:
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"
-    return pd.read_csv(data_dir / "openneuro_derivatives.tsv", sep="\t")
+    return pd.read_csv(data_dir / "openneuro.tsv", sep="\t")
 
 
 def list_all_files(

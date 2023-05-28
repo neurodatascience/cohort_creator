@@ -94,7 +94,7 @@ extend-exclude = '''
 '''
 
 [tool.codespell]
-skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples"
+skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,cohort_creator/data/openneuro.tsv"
 
 [tool.mypy]
 check_untyped_defs = true

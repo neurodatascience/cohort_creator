@@ -2,74 +2,23 @@
 from __future__ import annotations
 
 from pathlib import Path
-from warnings import warn
 
 import pandas as pd
-import requests
 from datalad import api
 from rich import print
+from utils import get_list_of_datasets
+from utils import known_datasets_tsv
+from utils import OPENNEURO_DERIVATIVES
 
-USERNAME = "Remi-Gau"
-
-TOKEN_FILE = Path("/home/remi/Documents/tokens/gh_read_repo_for_orga.txt")
-
-OPENNEURO = "OpenNeuroDatasets"
-OPENNEURO_DERIVATIVES = "OpenNeuroDerivatives"
+# from utils import init_dataset
 
 
-def root_dir() -> Path:
-    return Path(__file__).parent.parent
-
-
-def known_datasets_tsv() -> Path:
-    return root_dir() / "cohort_creator" / "data" / "openneuro_derivatives.tsv"
-
-
-def gh_api_base_url() -> str:
-    return "https://api.github.com/orgs/"
-
-
-def request_list_of_repos(
-    gh_orga: str, page: int, auth: tuple[str, str] | None = None
-) -> dict[str, str] | None:
-    url = f"{gh_api_base_url()}{gh_orga}/repos?per_page=100&page={page}"
-    print(url)
-    response = requests.get(url, auth=auth)
-    if response.status_code != 200:
-        warn(f"Error {response.status_code}: {response.text}")
-        return None
-    return response.json()
-
-
-def get_list_of_datasets() -> list[str]:
-    auth = get_auth()
-    datasets: list[str] = []
-    resp: dict[str, str] | None = {}
-    page = 1
-    while resp:
-        resp = request_list_of_repos(OPENNEURO_DERIVATIVES, page=page, auth=auth)
-        if resp is None:
-            break
-        datasets.extend(repo["name"] for repo in resp)  # type: ignore
-        page += 1
-    return datasets
-
-
-def get_auth() -> tuple[str, str] | None:
-    TOKEN = None
-    if TOKEN_FILE.exists():
-        with open(TOKEN_FILE) as f:
-            TOKEN = f.read().strip()
-    auth = None if USERNAME is None or TOKEN is None else (USERNAME, TOKEN)
-    return auth
-
-
-def main() -> None:
-    known_datasets = pd.read_csv(known_datasets_tsv(), sep="\t")
+def create_listing_new_datasets(gh_orga: str) -> None:
+    known_datasets = pd.read_csv(known_datasets_tsv(gh_orga), sep="\t")
     print(known_datasets["name"].values)
     print(len(known_datasets))
 
-    datasets = get_list_of_datasets()
+    datasets = get_list_of_datasets(gh_orga)
 
     unknown_datasets = [
         repo
@@ -84,7 +33,7 @@ def main() -> None:
         print("No new dataset found")
         return
 
-    output_dir = Path(__file__).parent / "tmp"
+    output_dir = Path(__file__).parent / "tmp" / gh_orga
     output_dir.mkdir(exist_ok=True)
 
     for dataset in unknown_datasets:
@@ -95,8 +44,29 @@ def main() -> None:
         else:
             print(f"    installing : {data_pth}")
             api.install(
-                path=data_pth, source=f"https://github.com/{OPENNEURO_DERIVATIVES}/{dataset}"
+                path=data_pth,
+                source=f"https://github.com/{gh_orga}/{dataset}",
+                recursive=False,
             )
+            # TODO
+            # if (data_pth / "sourcedata" / "raw").exists():
+            #     cwd = os.getcwd()
+            #     os.chdir(data_pth)
+            #     result = run("git submodule update --init sourcedata/raw")
+            #     os.chdir(cwd)
+
+    # datasets = init_dataset()
+    # datasets = list_derivatives(output_dir, datasets)
+    # datasets_df = pd.DataFrame.from_dict(datasets)
+    # datasets_df.to_csv(
+    #     output_dir / f"{gh_orga}.tsv",
+    #     index=False,
+    #     sep="\t",
+    # )
+
+
+def main() -> None:
+    create_listing_new_datasets(OPENNEURO_DERIVATIVES)
 
 
 if __name__ == "__main__":
