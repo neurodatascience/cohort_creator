@@ -6,9 +6,9 @@
 [![Documentation Status](https://readthedocs.org/projects/cohort-creator/badge/?version=latest)](https://cohort-creator.readthedocs.io/en/latest/?badge=latest)
 # Cohort creator
 
-**TL;DR**
-
-    Creates a neuroimaging cohort by aggregating data across datasets.
+> **TL;DR**
+>
+> Creates a neuroimaging cohort by aggregating data across datasets.
 
 Install a set of datalad datasets from openneuro and get the data for a set of participants.
 Then copy the data to a new directory structure to create a "cohort".
@@ -52,117 +52,58 @@ cd cohort_creator
 pip install .
 ```
 
-## Output
-
-At the moment everything is saved in the `outputs` folder.
-
-It contains a sourcedata where all the datalad datasets are installed.
-
-In the outputs folder itself is where the cohort is created:
-relevant files are copied out of the sourcedata folder
-and into a separate folder for each dataset.
-
-```
-outputs
-├── ds000001
-│   ├── dataset_description.json
-│   ├── participants.tsv
-│   ├── README
-│   ├── sub-03
-│   │   └── anat
-│   │       └── sub-03_T1w.nii.gz
-│   ├── sub-12
-│   │   └── anat
-│   │       └── sub-12_T1w.nii.gz
-│   └── sub-13
-│       └── anat
-│           └── sub-13_T1w.nii.gz
-├── ds000001-fmriprep
-│   ├── dataset_description.json
-│   ├── README.md
-│   ├── sub-03
-│   │   └── anat
-│   │       ├── sub-03_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.json
-│   │       └── sub-03_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.nii.gz
-│   ├── sub-12
-│   │   └── anat
-│   │       ├── sub-12_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.json
-│   │       └── sub-12_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.nii.gz
-│   └── sub-13
-│       └── anat
-│           ├── sub-13_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.json
-│           └── sub-13_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.nii.gz
-├── ds000001-mriqc
-│   ├── dataset_description.json
-│   ├── README.md
-│   ├── sub-03
-│   │   └── anat
-│   │       └── sub-03_T1w.json
-│   ├── sub-12
-│   │   └── anat
-│   │       └── sub-12_T1w.json
-│   └── sub-13
-│       └── anat
-│           └── sub-13_T1w.json
-├── ds000002
-│   ├── sub-03
-│   ├── sub-12
-│   ├── sub-13
-│   └── sub-17
-├── ds000002-fmriprep
-│   ├── sub-03
-│   ├── sub-12
-│   ├── sub-13
-│   └── sub-17
-├── ds000002-mriqc
-│   ├── sub-03
-│   ├── sub-12
-│   ├── sub-13
-│   └── sub-17
-├── ds001226
-│   ├── sub-CON03
-│   ├── sub-CON04
-│   ├── sub-CON07
-│   └── sub-CON11
-├── ds001226-fmriprep
-│   ├── sub-CON03
-│   ├── sub-CON04
-│   ├── sub-CON07
-│   └── sub-CON11
-├── ds001226-mriqc
-│   ├── sub-CON03
-│   ├── sub-CON04
-│   ├── sub-CON07
-│   └── sub-CON11
-└── sourcedata
-    ├── ds000001
-    ├── ds000001-fmriprep
-    ├── ds000001-mriqc
-    ├── ds000002
-    ├── ds000002-fmriprep
-    ├── ds000002-mriqc
-    ├── ds001226
-    ├── ds001226-fmriprep
-    └── ds001226-mriqc
-```
-
 ## Limitations
+
+### Latest datasets
 
 This package in part relies on the content of the datalad superdataset
 to fetch datasets and data from openneuro.
 
 So it may be that very recent datasets are not available yet.
 
+**FIX** Set up a github action to update the listing of datasets regularly.
+
+### Freesurfer
+
+Not yet possible to get freesurfer data via the cohort creator,
+though the data is available in the sourcedata folder
+of the fmriprep datasets.
+
+### Blind spots
+
+It may be possible that that some metadata files (JSON, TSV)
+are not accessed over correctly if they are not in the root of the dataset
+or the same folder as the data file.
+
+**FIX** use pybids / ancpbids for data indexing and querying.
+
 ## Demo
 
-Get from openneuro derivatives for all T1w
-
+To get from openneuro-derivatives for all T1w
 - the MRIQC output for each file
 - the corresponding T1W file
 
+run the following command from within the cohort_creator folder:
+
 ```bash
-cohort_creator.py \
-  inputs/datasets_with_mriqc.tsv \
-  inputs/datasets_with_mriqc.tsv \
-  outputs
+cohort_creator install \
+  --datasets_listing inputs/datasets_with_mriqc.tsv \\
+  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --output_dir outputs \
+  --dataset_types raw mriqc \
+  --verbosity 3
+
+cohort_creator get \
+  --datasets_listing inputs/datasets_with_mriqc.tsv \\
+  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --output_dir outputs \
+  --dataset_types raw mriqc \
+  --verbosity 3
+
+cohort_creator copy \
+  --datasets_listing inputs/datasets_with_mriqc.tsv \\
+  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --output_dir outputs \
+  --dataset_types raw mriqc \
+  --verbosity 3
 ```

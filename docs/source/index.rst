@@ -12,6 +12,7 @@ Welcome to cohort creator's documentation!
 
    general_information
    usage_notes
+   output
    modules
 
 

@@ -17,25 +17,25 @@ dependencies = [
     "datalad",
 ]
 classifiers = [
-  "Intended Audience :: Science/Research",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved",
-  "Programming Language :: Python",
-  "Topic :: Software Development",
-  "Topic :: Scientific/Engineering",
-  "Operating System :: Microsoft :: Windows",
-  "Operating System :: POSIX",
-  "Operating System :: Unix",
-  "Operating System :: MacOS",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved",
+    "Programming Language :: Python",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 dynamic = ["version"]
 
 [project.scripts]
-cohort_creator = "cohort_creator.cli:cli"
+cohort_creator = "cohort_creator._cli:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cohort_creator"]
@@ -89,7 +89,7 @@ line-length = 99
 safe = true
 extend-exclude = '''
 (
-  ^/tests/data
+    ^/tests/data
 )
 '''
 

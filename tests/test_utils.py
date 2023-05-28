@@ -6,14 +6,14 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from cohort_creator.utils import _is_dataset_in_openneuro
-from cohort_creator.utils import check_participant_listing
-from cohort_creator.utils import check_tsv_content
-from cohort_creator.utils import get_participant_ids
-from cohort_creator.utils import get_sessions
-from cohort_creator.utils import is_subject_in_dataset
-from cohort_creator.utils import list_all_files
-from cohort_creator.utils import validate_dataset_types
+from cohort_creator._utils import _is_dataset_in_openneuro
+from cohort_creator._utils import check_participant_listing
+from cohort_creator._utils import check_tsv_content
+from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_sessions
+from cohort_creator._utils import is_subject_in_dataset
+from cohort_creator._utils import list_all_files
+from cohort_creator._utils import validate_dataset_types
 
 
 def root_dir():

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from cohort_creator.parsers import global_parser
+from cohort_creator._parsers import global_parser
 
 
 def test_parser_for_get_data():

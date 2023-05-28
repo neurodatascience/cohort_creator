@@ -15,17 +15,17 @@ from datalad.support.exceptions import (
     IncompleteResultsError,
 )
 
+from cohort_creator._utils import _is_dataset_in_openneuro
+from cohort_creator._utils import copy_top_files
+from cohort_creator._utils import dataset_path
+from cohort_creator._utils import filter_excluded_participants
+from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_sessions
+from cohort_creator._utils import is_subject_in_dataset
+from cohort_creator._utils import list_all_files
+from cohort_creator._utils import no_files_found_msg
+from cohort_creator._utils import openneuro_derivatives_df
 from cohort_creator.logger import cc_logger
-from cohort_creator.utils import _is_dataset_in_openneuro
-from cohort_creator.utils import copy_top_files
-from cohort_creator.utils import dataset_path
-from cohort_creator.utils import filter_excluded_participants
-from cohort_creator.utils import get_participant_ids
-from cohort_creator.utils import get_sessions
-from cohort_creator.utils import is_subject_in_dataset
-from cohort_creator.utils import list_all_files
-from cohort_creator.utils import no_files_found_msg
-from cohort_creator.utils import openneuro_derivatives_df
 
 
 cc_log = cc_logger()
@@ -41,22 +41,22 @@ def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[
     datasets : list[str]
         List of dataset names.
 
-        Example: ["ds000001", "ds000002"]
+        Example: ``["ds000001", "ds000002"]``
 
     sourcedata : Path
         Path where the datasets will be installed.
 
     dataset_types : list[str]
-        Can contain any of: "raw", "fmriprep", "mriqc".
+        Can contain any of: ``"raw"``, ``"fmriprep"``, ``"mriqc"``.
 
     """
     cc_log.info("Installing datasets")
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
-        install(dataset_name=dataset_, dataset_types=dataset_types, output_path=sourcedata)
+        _install(dataset_name=dataset_, dataset_types=dataset_types, output_path=sourcedata)
 
 
-def install(dataset_name: str, dataset_types: list[str], output_path: Path) -> None:
+def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> None:
     if not _is_dataset_in_openneuro(dataset_name):
         cc_log.warning(f"  {dataset_name} not found in openneuro")
         return None
@@ -87,6 +87,30 @@ def get_data(
     space: str,
     jobs: int,
 ) -> None:
+    """Get the data for specified participants / datatypes / space \
+    from preinstalled datalad datasets / dataset_types.
+
+    Parameters
+    ----------
+    datasets : pd.DataFrame
+
+    sourcedata : Path
+
+    participants : pd.DataFrame
+
+    dataset_types : list[str]
+        Can contain any of: ``"raw"``, ``"fmriprep"``, ``"mriqc"``.
+
+    datatypes : list[str]
+        Can contain any of: ``"anat'``, ``"func"``
+
+    space : str
+        Space of the data to get (only applies when dataset_types requested includes fmriprep).
+
+    jobs : int
+        Number of jobs to use for parallelization during datalad get operation.
+
+    """
     cc_log.info("Getting data")
 
     if isinstance(datatypes, str):
@@ -116,7 +140,7 @@ def get_data(
                     cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
                     continue
                 sessions = get_sessions(participants, dataset_, subject)
-                get_data_this_subject(
+                _get_data_this_subject(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
@@ -128,7 +152,7 @@ def get_data(
                 )
 
 
-def get_data_this_subject(
+def _get_data_this_subject(
     subject: str,
     sessions: list[str | None],
     datatypes: list[str],
@@ -166,6 +190,28 @@ def construct_cohort(
     datatypes: list[str],
     space: str,
 ) -> None:
+    """Copy the data from sourcedata_dir to output_dir, to create a cohort.
+
+    Parameters
+    ----------
+    datasets : pd.DataFrame
+
+    output_dir : Path
+
+    sourcedata_dir : Path
+
+    participants : pd.DataFrame
+
+    dataset_types : list[str]
+        Can contain any of: ``"raw"``, ``"fmriprep"``, ``"mriqc"``.
+
+    datatypes : list[str]
+        Can contain any of: ``"anat'``, ``"func"``
+
+    space : str
+        Space of the data to get (only applies when dataset_types requested includes fmriprep).
+
+    """
     cc_log.info("Constructing cohort")
 
     for dataset_ in datasets["DatasetName"]:
@@ -196,7 +242,7 @@ def construct_cohort(
                     cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
                     continue
                 sessions = get_sessions(participants, dataset_, subject)
-                copy_this_subject(
+                _copy_this_subject(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
@@ -207,7 +253,7 @@ def construct_cohort(
                 )
 
 
-def copy_this_subject(
+def _copy_this_subject(
     subject: str,
     sessions: list[str | None],
     datatypes: list[str],

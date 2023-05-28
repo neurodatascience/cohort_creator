@@ -5,14 +5,14 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+from cohort_creator._parsers import global_parser
+from cohort_creator._utils import check_participant_listing
+from cohort_creator._utils import check_tsv_content
+from cohort_creator._utils import validate_dataset_types
 from cohort_creator.cohort_creator import construct_cohort
 from cohort_creator.cohort_creator import get_data
 from cohort_creator.cohort_creator import install_datasets
 from cohort_creator.logger import cc_logger
-from cohort_creator.parsers import global_parser
-from cohort_creator.utils import check_participant_listing
-from cohort_creator.utils import check_tsv_content
-from cohort_creator.utils import validate_dataset_types
 
 cc_log = cc_logger()
 

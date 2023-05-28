@@ -9,13 +9,13 @@ import rich
 from ._version import __version__
 
 
-class _MuhParser(argparse.ArgumentParser):
+class MuhParser(argparse.ArgumentParser):
     def _print_message(self, message: str, file: IO[str] | None = None) -> None:
         rich.print(message, file=file)
 
 
-def _base_parser() -> _MuhParser:
-    parser = _MuhParser(
+def base_parser() -> MuhParser:
+    parser = MuhParser(
         prog="cohort_creator",
         description="Creates a cohort by grabbing specific subjects from opennneuro datasets.",
         epilog="""
@@ -32,7 +32,7 @@ def _base_parser() -> _MuhParser:
     return parser
 
 
-def _add_common_arguments(parser: _MuhParser) -> _MuhParser:
+def add_common_arguments(parser: MuhParser) -> MuhParser:
     parser.add_argument(
         "-d",
         "--datasets_listing",
@@ -94,71 +94,7 @@ def _add_common_arguments(parser: _MuhParser) -> _MuhParser:
     return parser
 
 
-def common_parser() -> _MuhParser:
-    parser = _base_parser()
-    parser = _add_common_arguments(parser)
-    parser.add_argument(
-        "--action",
-        help="""
-        Action to perform.
-        """,
-        choices=[
-            "all",
-            "install",
-            "get",
-            "copy",
-        ],
-        required=False,
-        default="all",
-        type=str,
-        nargs=1,
-    )
-    parser.add_argument(
-        "--datatypes",
-        help="""
-        Datatype to get.
-        """,
-        choices=[
-            "anat",
-            "func",
-        ],
-        required=False,
-        default=["anat"],
-        type=str,
-        nargs="+",
-    )
-    parser.add_argument(
-        "--space",
-        help="""
-        Space of the input data. Only applies when dataset_types requested includes fmriprep.
-        """,
-        required=False,
-        default="MNI152NLin2009cAsym",
-        type=str,
-        nargs=1,
-    )
-    # parser.add_argument(
-    #     "--bids_filter_file",
-    #     help="""
-    #     Foo Bar
-    #     """,
-    #     required=False,
-    #     type=str,
-    #     nargs=1,
-    # )
-    # parser.add_argument(
-    #     "--skip_validation",
-    #     help="""
-    #     To skip BIDS dataset and BIDS stats model validation.
-    #     """,
-    #     action="store_true",
-    #     default=False,
-    # )
-
-    return parser
-
-
-def _add_specialized_args(parser: _MuhParser) -> _MuhParser:
+def add_specialized_args(parser: MuhParser) -> MuhParser:
     """Add arguments for get and copy."""
     parser.add_argument(
         "--datatypes",
@@ -177,7 +113,7 @@ def _add_specialized_args(parser: _MuhParser) -> _MuhParser:
     parser.add_argument(
         "--space",
         help="""
-        Space of the input data. Only applies when dataset_types requested includes fmriprep.
+        Space of the input data. Only applies when `dataset_types` requested includes `fmriprep`.
         """,
         required=False,
         default="MNI152NLin2009cAsym",
@@ -187,8 +123,8 @@ def _add_specialized_args(parser: _MuhParser) -> _MuhParser:
     return parser
 
 
-def global_parser() -> _MuhParser:
-    parser = _base_parser()
+def global_parser() -> MuhParser:
+    parser = base_parser()
     subparsers = parser.add_subparsers(
         dest="command",
         help="Choose a subcommand",
@@ -198,18 +134,43 @@ def global_parser() -> _MuhParser:
         "install",
         help="""
         Install several openneuro datasets.
+
+        Example:
+
+        .. code-block:: bash
+
+            cohort_creator install \\
+                --datasets_listing inputs/datasets.tsv \\
+                --participants_listing inputs/participants.tsv \\
+                --output_dir outputs \\
+                --dataset_types raw mriqc fmriprep \\
+                --verbosity 3
         """,
     )
-    install_parser = _add_common_arguments(install_parser)
+    install_parser = add_common_arguments(install_parser)
 
     get_parser = subparsers.add_parser(
         "get",
         help="""
         Get specified data for a cohort of subjects.
+
+        Example:
+
+        .. code-block:: bash
+
+            cohort_creator get \\
+                --datasets_listing inputs/datasets.tsv \\
+                --participants_listing inputs/participants.tsv \\
+                --output_dir outputs \\
+                --dataset_types raw mriqc fmriprep \\
+                --datatype anat func \\
+                --space T1w MNI152NLin2009cAsym \\
+                --jobs 6 \\
+                --verbosity 3
         """,
     )
-    get_parser = _add_common_arguments(get_parser)
-    get_parser = _add_specialized_args(get_parser)
+    get_parser = add_common_arguments(get_parser)
+    get_parser = add_specialized_args(get_parser)
     get_parser.add_argument(
         "--jobs",
         help="""
@@ -224,8 +185,21 @@ def global_parser() -> _MuhParser:
         "copy",
         help="""
         Copy cohort of subjects into separate directory.
+
+        Example:
+
+        .. code-block:: bash
+
+            cohort_creator copy \\
+                --datasets_listing inputs/datasets.tsv \\
+                --participants_listing inputs/participants.tsv \\
+                --output_dir outputs \\
+                --dataset_types raw mriqc fmriprep \\
+                --datatype anat func \\
+                --space T1w MNI152NLin2009cAsym \\
+                --verbosity 3
         """,
     )
-    copy_parser = _add_common_arguments(copy_parser)
-    copy_parser = _add_specialized_args(copy_parser)
+    copy_parser = add_common_arguments(copy_parser)
+    copy_parser = add_specialized_args(copy_parser)
     return parser

@@ -20,22 +20,6 @@ cohort\_creator.logger module
    :undoc-members:
    :show-inheritance:
 
-cohort\_creator.parsers module
-------------------------------
-
-.. automodule:: cohort_creator.parsers
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-cohort\_creator.utils module
-----------------------------
-
-.. automodule:: cohort_creator.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
