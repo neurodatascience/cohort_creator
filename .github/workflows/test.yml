@@ -121,7 +121,7 @@ jobs:
                     --space T1w MNI152NLin2009cAsym \
                     --jobs 6 \
                     --verbosity 3
-        -   name: get data
+        -   name: copy data
             run: |
                 cohort_creator copy \
                     -d inputs/datasets.tsv \

@@ -29,7 +29,7 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
     if "func" in datatypes:
         top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
     if "anat" in datatypes:
-        top_files.append("*T1w*")
+        top_files.append("*T1w.json")
     for top_file_ in top_files:
         for f in src_dir.glob(top_file_):
             if (target_dir / f).exists():
@@ -130,7 +130,11 @@ def list_all_files(
 
 
 def create_glob_pattern(dataset_type: str, suffix: str, ext: str, space: str | None = None) -> str:
-    return f"*_{suffix}.{ext}" if dataset_type in {"raw", "mriqc"} else f"*{space}*_{suffix}.{ext}"
+    return (
+        f"*_{suffix}.{ext}"
+        if dataset_type in {"raw", "mriqc"}
+        else f"*{space}*preproc*_{suffix}.{ext}"
+    )
 
 
 def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:

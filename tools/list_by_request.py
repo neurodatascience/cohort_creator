@@ -80,20 +80,23 @@ def main() -> None:
     print(sorted(unknown_datasets))
     print(len(unknown_datasets))
 
-    if unknown_datasets:
-        output_dir = Path(__file__).parent / "tmp"
-        output_dir.mkdir(exist_ok=True)
+    if not unknown_datasets:
+        print("No new dataset found")
+        return
 
-        for dataset in unknown_datasets:
-            print(f"Downloading {dataset}")
-            data_pth = output_dir / dataset
-            if data_pth.exists():
-                print(f"  data already present at {data_pth}")
-            else:
-                print(f"    installing : {data_pth}")
-                api.install(
-                    path=data_pth, source=f"https://github.com/{OPENNEURO_DERIVATIVES}/{dataset}"
-                )
+    output_dir = Path(__file__).parent / "tmp"
+    output_dir.mkdir(exist_ok=True)
+
+    for dataset in unknown_datasets:
+        print(f"Downloading {dataset}")
+        data_pth = output_dir / dataset
+        if data_pth.exists():
+            print(f"  data already present at {data_pth}")
+        else:
+            print(f"    installing : {data_pth}")
+            api.install(
+                path=data_pth, source=f"https://github.com/{OPENNEURO_DERIVATIVES}/{dataset}"
+            )
 
 
 if __name__ == "__main__":
