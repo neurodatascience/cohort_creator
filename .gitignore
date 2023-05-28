@@ -1,4 +1,5 @@
 outputs
+tmp
 cohort_creator/_version.py
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
