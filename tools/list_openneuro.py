@@ -45,6 +45,10 @@ def list_datasets_in_dir(
     for i, dataset_pth in enumerate(raw_datasets):
         if debug and i > 10:
             break
+
+        if not dataset_pth.glob("sub-*"):
+            continue
+
         dataset_name = dataset_pth.name
         print(f" {dataset_name}")
 
@@ -114,6 +118,7 @@ def add_derivatives(
 def main() -> None:
     datasets = list_openneuro()
     datasets_df = pd.DataFrame.from_dict(datasets)
+    datasets_df = datasets_df.sort_values("name")
     datasets_df.to_csv(Path() / "openneuro.tsv", index=False, sep="\t")
 
 
