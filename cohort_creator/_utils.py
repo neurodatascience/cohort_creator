@@ -27,12 +27,18 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
     """Copy top files from BIDS src_dir to BIDS target_dir."""
     top_files = ["dataset_description.json", "participants.*", "README*"]
     if "func" in datatypes:
-        top_files.append("*task-*")
+        top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
     if "anat" in datatypes:
         top_files.append("*T1w*")
     for top_file_ in top_files:
         for f in src_dir.glob(top_file_):
-            shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
+            if (target_dir / f).exists():
+                cc_log.info(f"      file '{f}' already present")
+                continue
+            try:
+                shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
+            except FileNotFoundError:
+                cc_log.error(f"      Could not find file '{f}'")
 
 
 def check_tsv_content(tsv_file: Path) -> pd.DataFrame:

@@ -63,7 +63,9 @@ So it may be that very recent datasets are not available yet.
 
 **FIX** Set up a github action to update the listing of datasets regularly.
 
-### Freesurfer
+### Datatypes, suffixes, Freesurfer
+
+Only `anat` | `T1w` and `func` | `bold` data is supported at the moment.
 
 Not yet possible to get freesurfer data via the cohort creator,
 though the data is available in the sourcedata folder
