@@ -16,7 +16,6 @@ from utils import list_datasets_in_dir
 from utils import OPENNEURO
 
 from cohort_creator._utils import openneuro_df
-from cohort_creator._utils import openneuro_listing_tsv
 
 DEBUG = False
 
@@ -36,7 +35,10 @@ def main() -> None:
 
     datasets_df = pd.DataFrame.from_dict(datasets)
     datasets_df = datasets_df.sort_values("name")
-    datasets_df.to_csv(openneuro_listing_tsv(), index=False, sep="\t")
+
+    root_dir = Path(__file__).parent.parent
+    output_file = root_dir / "cohort_creator" / "data" / "openneuro.tsv"
+    datasets_df.to_csv(output_file, index=False, sep="\t")
 
 
 if __name__ == "__main__":
