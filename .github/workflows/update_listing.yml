@@ -10,6 +10,8 @@ on:
         branches: [main]
     pull_request:
         branches: ['*']
+    schedule:
+    -   cron: 0 0 * * 1   # every monday
 
 jobs:
 
@@ -49,8 +51,7 @@ jobs:
         -   name: Update datasets
             run: |
                 cd tools && make update
-                git diff
-
+                git status
 
         -   name: Create Pull Request
             uses: peter-evans/create-pull-request@v5
