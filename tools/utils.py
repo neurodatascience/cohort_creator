@@ -11,9 +11,6 @@ import requests
 import yaml
 from rich import print
 
-USERNAME = "Remi-Gau"
-
-TOKEN_FILE = Path("/home/remi/Documents/tokens/gh_read_repo_for_orga.txt")
 
 OPENNEURO = "OpenNeuroDatasets"
 URL_OPENNEURO = f"https://github.com/{OPENNEURO}/"
@@ -28,10 +25,6 @@ def config() -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
-def root_dir() -> Path:
-    return Path(__file__).parent.parent
-
-
 def gh_api_base_url() -> str:
     return "https://api.github.com/orgs/"
 
@@ -39,19 +32,6 @@ def gh_api_base_url() -> str:
 def known_derivatives() -> list[str]:
     tsv = Path(__file__).parent / f"{OPENNEURO_DERIVATIVES}.tsv"
     return pd.read_csv(tsv, sep="\t")["name"].values.tolist()
-
-
-def datasets_in_datalad_superdataset(subds: str) -> list[str]:
-    assert subds in [OPENNEURO, OPENNEURO_DERIVATIVES]
-    path = Path(config()["local_paths"]["datalad"][subds])
-    return [x.name for x in path.glob("*") if x.is_dir()]
-
-
-@functools.lru_cache(maxsize=1)
-def known_datasets_tsv(gh_orga: str) -> Path:
-    if gh_orga == OPENNEURO_DERIVATIVES:
-        return root_dir() / "cohort_creator" / "data" / "openneuro_derivatives.tsv"
-    return root_dir() / "cohort_creator" / "data" / "openneuro.tsv"
 
 
 def init_dataset() -> dict[str, list[Any]]:
@@ -170,6 +150,7 @@ def get_list_of_datasets(gh_orga: str) -> list[str]:
             break
         datasets.extend(repo["name"] for repo in resp)  # type: ignore
         page += 1
+    datasets = [x for x in datasets if x.startswith("ds")]
     return datasets
 
 
@@ -185,10 +166,14 @@ def request_list_of_repos(
     return response.json()
 
 
+@functools.lru_cache(maxsize=1)
 def get_auth() -> tuple[str, str] | None:
-    TOKEN = None
-    if TOKEN_FILE.exists():
-        with open(TOKEN_FILE) as f:
-            TOKEN = f.read().strip()
-    auth = None if USERNAME is None or TOKEN is None else (USERNAME, TOKEN)
+    username = config()["auth"]["username"]
+    token_file = Path(config()["auth"]["token_file"])
+
+    token = None
+    if token_file.exists():
+        with open(token_file) as f:
+            token = f.read().strip()
+    auth = None if username is None or token is None else (username, token)
     return auth

@@ -64,7 +64,7 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
 
 
 def _is_dataset_in_openneuro(dataset_name: str) -> bool:
-    openneuro = openneuro_derivatives_df()
+    openneuro = openneuro_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
 
@@ -97,7 +97,7 @@ def no_files_found_msg(
 
 
 @functools.lru_cache(maxsize=1)
-def openneuro_derivatives_df() -> pd.DataFrame:
+def openneuro_df() -> pd.DataFrame:
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"
     return pd.read_csv(data_dir / "openneuro.tsv", sep="\t")
@@ -107,7 +107,7 @@ def list_all_files(
     data_pth: Path,
     dataset_type: str,
     subject: str,
-    sessions: list[str | None],
+    sessions: list[str] | list[None],
     datatype: str,
     space: str,
 ) -> list[str]:
@@ -144,13 +144,20 @@ def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Pa
     return (root / dataset_).with_name(name)
 
 
-def get_sessions(participants: pd.DataFrame, dataset_: str, participant: str) -> list[str | None]:
+def get_sessions(
+    participants: pd.DataFrame, dataset_: str, participant: str
+) -> list[str] | list[None]:
     mask = (participants["DatasetName"] == dataset_) & (participants["SubjectID"] == participant)
     sessions = participants[mask].SessionID.values
-    if sessions[0] == "[]":
+    return listify(sessions[0])
+
+
+def listify(some_str: str) -> list[str] | list[None]:
+    """Return a list from a string literal `"['foo', 'bar']"`."""
+    if some_str == "[]":
         return [None]
     else:
-        return sessions[0].replace("[", "").replace("]", "").replace("'", "").split(", ")
+        return some_str.replace("[", "").replace("]", "").replace("'", "").split(", ")
 
 
 def validate_dataset_types(dataset_types: list[str]) -> None:

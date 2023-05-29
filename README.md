@@ -56,10 +56,23 @@ pip install .
 
 ### Latest datasets
 
-This package in part relies on the content of the datalad superdataset
-to fetch datasets and data from openneuro.
+Currently this should allow you to access:
 
-So it may be that very recent datasets are not available yet.
+Number of datasets: 877 with 37441 subjects including:
+- 692 datasets with MRI data
+ - with participants.tsv: 487
+ - with phenotype directory: 22
+ - with fmriprep: 90 (3937 subjects)
+   - with participants.tsv: 74
+   - with phenotype directory: 3
+ - with freesurfer: 36 (3322 subjects)
+   - with participants.tsv: 34
+   - with phenotype directory: 2
+ - with mriqc: 330 (14607 subjects)
+   - with participants.tsv: 248
+   - with phenotype directory: 18
+
+It may be that very recent datasets are not available yet.
 
 **FIX** Set up a github action to update the listing of datasets regularly.
 

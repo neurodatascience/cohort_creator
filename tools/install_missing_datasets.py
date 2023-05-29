@@ -3,22 +3,26 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pandas as pd
 from datalad import api
 from utils import config
-from utils import datasets_in_datalad_superdataset
 from utils import get_list_of_datasets
 from utils import OPENNEURO
 
+from cohort_creator._utils import openneuro_df
+
 
 def main() -> None:
-    known_datasets = datasets_in_datalad_superdataset(OPENNEURO)
+    known_datasets = openneuro_df()["name"].values.tolist()
 
     datasets = get_list_of_datasets(OPENNEURO)
-    datasets = [repo for repo in datasets if repo.startswith("ds")]
     unknown_datasets = set(datasets) - set(known_datasets)
 
     print(sorted(unknown_datasets))
     print(len(unknown_datasets))
+
+    df = pd.DataFrame({"name": datasets})
+    df.to_csv(Path(__file__).parent / f"{OPENNEURO}.tsv", sep="\t", index=False)
 
     if not unknown_datasets:
         print("No new dataset found")

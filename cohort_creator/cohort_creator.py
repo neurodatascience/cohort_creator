@@ -24,7 +24,7 @@ from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
-from cohort_creator._utils import openneuro_derivatives_df
+from cohort_creator._utils import openneuro_df
 from cohort_creator.logger import cc_logger
 
 
@@ -61,7 +61,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
         cc_log.warning(f"  {dataset_name} not found in openneuro")
         return None
 
-    openneuro = openneuro_derivatives_df()
+    openneuro = openneuro_df()
     mask = openneuro.name == dataset_name
     dataset_df = openneuro[mask]
 
@@ -154,7 +154,7 @@ def get_data(
 
 def _get_data_this_subject(
     subject: str,
-    sessions: list[str | None],
+    sessions: list[str] | list[None],
     datatypes: list[str],
     space: str,
     dataset_type: str,
@@ -255,7 +255,7 @@ def construct_cohort(
 
 def _copy_this_subject(
     subject: str,
-    sessions: list[str | None],
+    sessions: list[str] | list[None],
     datatypes: list[str],
     dataset_type: str,
     space: str,
