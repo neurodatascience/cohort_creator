@@ -46,14 +46,15 @@ def list_datasets_in_dir(
         if debug and i > 10:
             break
 
-        if not dataset_pth.glob("sub-*"):
-            continue
-
         dataset_name = dataset_pth.name
         print(f" {dataset_name}")
 
         dataset = new_dataset(dataset_name)
         dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
+
+        if dataset["nb_subjects"] == 0:
+            continue
+
         modalities = list_modalities(dataset_pth)
         if any(
             mod in modalities
@@ -61,8 +62,8 @@ def list_datasets_in_dir(
         ):
             tasks = list_tasks(dataset_pth)
             check_task(tasks, modalities, dataset_pth)
-            dataset["tasks"] = tasks
-        dataset["modalities"] = modalities
+            dataset["tasks"] = sorted(tasks)
+        dataset["modalities"] = sorted(modalities)
 
         tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
         dataset["has_participant_tsv"] = tsv_status
@@ -73,7 +74,7 @@ def list_datasets_in_dir(
         dataset = add_derivatives(dataset, dataset_pth, derivatives)
 
         if dataset["name"] in datasets["name"]:
-            Exception(f"dataset {dataset['name']} already in datasets")
+            raise Exception(f"dataset {dataset['name']} already in datasets")
 
         for keys in datasets:
             datasets[keys].append(dataset[keys])
