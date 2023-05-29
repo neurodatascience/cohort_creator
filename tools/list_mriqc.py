@@ -13,6 +13,7 @@ import pandas as pd
 from utils import config
 from utils import get_subjects
 from utils import known_derivatives
+from utils import OPENNEURO
 from utils import URL_OPENNEURO
 
 
@@ -80,10 +81,10 @@ def get_raw_dataset_path(dataset_name: str) -> Path:
 
     Look first in the datalad superdataset, then in locally installed openneuro datasets.
     """
-    path = Path(config()["local_paths"]["datalad"]["OpenNeuroDatasets"]) / dataset_name
+    path = Path(config()["local_paths"]["datalad"][OPENNEURO]) / dataset_name
     if path.exists():
         return path
-    path = Path(config()["local_paths"]["openneuro"]["OpenNeuroDatasets"]) / dataset_name
+    path = Path(config()["local_paths"]["openneuro"][OPENNEURO]) / dataset_name
     if path.exists():
         return path
     raise FileNotFoundError(f"Dataset {dataset_name} not found")
