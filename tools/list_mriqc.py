@@ -5,16 +5,15 @@ Also list participants in those datasets.
 """
 from __future__ import annotations
 
+import functools
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from utils import config
 from utils import get_subjects
+from utils import known_derivatives
 from utils import URL_OPENNEURO
-
-# adapt to your set up
-# LOCAL_DIR = Path(__file__).resolve().parent / "inputs"
-LOCAL_DIR = "/home/remi/datalad/datasets.datalad.org"
 
 
 def init_dataset() -> dict[str, list[str]]:
@@ -31,24 +30,16 @@ def new_dataset(name: str) -> dict[str, str | list[str]]:
     }
 
 
-def list_openneuro_derivatives(
-    datalad_superdataset: Path, datasets: dict[str, Any]
-) -> dict[str, Any]:
-    """Indexes content of dataset on openneuro derivatives.
+@functools.lru_cache(maxsize=1)
+def mriqc_datasets() -> list[str]:
+    derivatives = known_derivatives()
+    return sorted([x for x in derivatives if "mriqc" in x])
 
-    List mriqc datasets and eventually matching fmriprep dataset.
 
-    nb_subjects is the number of subjects in the mriqc dataset.
-    """
-    openneuro_derivatives = datalad_superdataset / "openneuro-derivatives"
-
-    mriqc_datasets = sorted(list(openneuro_derivatives.glob("*mriqc")))
-
-    for dataset_pth in mriqc_datasets:
-        dataset_name = dataset_pth.name.replace("-mriqc", "")
-
+def list_mriqc_in_derivatives(datasets: dict[str, Any]) -> dict[str, Any]:
+    for dataset_pth in mriqc_datasets():
+        dataset_name = dataset_pth.replace("-mriqc", "")
         dataset = new_dataset(dataset_name)
-
         for keys in datasets:
             datasets[keys].append(dataset[keys])
 
@@ -56,21 +47,18 @@ def list_openneuro_derivatives(
 
 
 def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
-    """List participants in openneuro datasets."""
-    datalad_superdataset = Path(LOCAL_DIR)
-
+    """List all participants in all mriqc datasets."""
     datasets.pop("PortalURI")
     datasets["SubjectID"] = []
     datasets["SessionID"] = []
 
-    openneuro_derivatives = datalad_superdataset / "openneuro-derivatives"
+    for dataset_name in mriqc_datasets():
+        dataset_name = dataset_name.replace("-mriqc", "")
 
-    mriqc_datasets = sorted(list(openneuro_derivatives.glob("*mriqc")))
-
-    for dataset_pth in mriqc_datasets:
-        dataset_name = dataset_pth.name.replace("-mriqc", "")
+        dataset_pth = get_raw_dataset_path(dataset_name)
 
         subjects = get_subjects(dataset_pth)
+
         sessions = [
             x.name.replace("ses-", "") for x in dataset_pth.glob("sub-*/ses-*") if x.is_dir()
         ]
@@ -87,12 +75,25 @@ def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
     return datasets
 
 
+def get_raw_dataset_path(dataset_name: str) -> Path:
+    """Return the path to the raw dataset.
+
+    Look first in the datalad superdataset, then in locally installed openneuro datasets.
+    """
+    path = Path(config()["local_paths"]["datalad"]["OpenNeuroDatasets"]) / dataset_name
+    if path.exists():
+        return path
+    path = Path(config()["local_paths"]["openneuro"]["OpenNeuroDatasets"]) / dataset_name
+    if path.exists():
+        return path
+    raise FileNotFoundError(f"Dataset {dataset_name} not found")
+
+
 def main() -> None:
     output_dir = Path(__file__).parent.parent / "inputs"
-    datalad_superdataset = Path(LOCAL_DIR)
 
     datasets = init_dataset()
-    datasets = list_openneuro_derivatives(datalad_superdataset, datasets)
+    datasets = list_mriqc_in_derivatives(datasets)
     df = pd.DataFrame.from_dict(datasets)
     df.to_csv(
         output_dir / "datasets_with_mriqc.tsv",

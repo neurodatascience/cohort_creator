@@ -1,6 +1,8 @@
 """List datasets contents on openneuro and write the results in a tsv file.
 
 Also checks for derivatives folders for mriqc, frmiprep and freesurfer.
+
+Rerun to update values of "old" datasets.
 """
 from __future__ import annotations
 
@@ -74,7 +76,7 @@ def list_datasets_in_dir(
         dataset = add_derivatives(dataset, dataset_pth, derivatives)
 
         if dataset["name"] in datasets["name"]:
-            raise Exception(f"dataset {dataset['name']} already in datasets")
+            raise ValueError(f"dataset {dataset['name']} already in datasets")
 
         for keys in datasets:
             datasets[keys].append(dataset[keys])
@@ -83,6 +85,7 @@ def list_datasets_in_dir(
 
 
 def check_task(tasks: list[str], modalities: list[str], dataset_pth: Path) -> None:
+    """Check if tasks are present in dataset with modalities that can have tasks."""
     if (
         any(mod in modalities for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
         and not tasks
@@ -97,6 +100,7 @@ def check_task(tasks: list[str], modalities: list[str], dataset_pth: Path) -> No
 def add_derivatives(
     dataset: dict[str, str | list[str] | bool | int], dataset_pth: Path, derivatives: list[str]
 ) -> dict[str, str | list[str] | bool | int]:
+    """Update dict with links to derivatives if they exist."""
     dataset_name = dataset["name"]
     for der in ["fmriprep", "mriqc"]:
         if f"{dataset_name}-{der}" in derivatives:

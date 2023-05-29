@@ -111,6 +111,7 @@ def list_all_files(
     datatype: str,
     space: str,
 ) -> list[str]:
+    """List all data files of a datatype for all sessions of a subject in a dataset."""
     files: list[str] = []
     for session_, suffix in itertools.product(sessions, get_suffixes(datatype)):
         if not session_:
@@ -153,7 +154,7 @@ def get_sessions(
 
 
 def listify(some_str: str) -> list[str] | list[None]:
-    """Return a list from a string literal `"['foo', 'bar']"`."""
+    """Return a list from a string literal like `"['foo', 'bar']"`."""
     if some_str == "[]":
         return [None]
     else:
