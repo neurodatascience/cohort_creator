@@ -50,3 +50,13 @@ jobs:
             run: |
                 cd tools && make update
                 git diff
+
+
+        -   name: Create Pull Request
+            uses: peter-evans/create-pull-request@v5
+            with:
+                commit-message: BIDS schema update
+                base: main
+                delete-branch: true
+                title: '[BOT] update datasets listing'
+                body: done via this [GitHub Action](https://github.com/neurodatascience/cohort_creator/tree/main/.github/workflows/update_listing.yml)
