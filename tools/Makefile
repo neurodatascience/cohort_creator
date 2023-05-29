@@ -7,4 +7,4 @@ OpenNeuroDerivatives.tsv:
 OpenNeuroDatasets.tsv:
 	python install_missing_datasets.py
 
-update: clean OpenNeuroDerivatives.tsv OpenNeuroDatasets.tsv
+update: OpenNeuroDerivatives.tsv OpenNeuroDatasets.tsv

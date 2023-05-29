@@ -96,11 +96,15 @@ def no_files_found_msg(
      - datatype: {datatype}"""
 
 
-@functools.lru_cache(maxsize=1)
-def openneuro_df() -> pd.DataFrame:
+def openneuro_listing_tsv() -> Path:
     root_dir = Path(__file__).parent
     data_dir = root_dir / "data"
-    return pd.read_csv(data_dir / "openneuro.tsv", sep="\t")
+    return data_dir / "openneuro.tsv"
+
+
+@functools.lru_cache(maxsize=1)
+def openneuro_df() -> pd.DataFrame:
+    return pd.read_csv(openneuro_listing_tsv(), sep="\t")
 
 
 def list_all_files(

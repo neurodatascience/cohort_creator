@@ -186,3 +186,88 @@ def get_auth() -> tuple[str, str] | None:
             token = f.read().strip()
     auth = None if username is None or token is None else (username, token)
     return auth
+
+
+def list_datasets_in_dir(
+    datasets: dict[str, list[Any]], path: Path, debug: bool
+) -> dict[str, list[Any]]:
+    print(f"Listing datasets in {path}")
+
+    raw_datasets = sorted(list(path.glob("ds*")))
+
+    derivatives = known_derivatives()
+
+    for i, dataset_pth in enumerate(raw_datasets):
+        if debug and i > 10:
+            break
+
+        dataset_name = dataset_pth.name
+        print(f" {dataset_name}")
+
+        dataset = new_dataset(dataset_name)
+        dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
+
+        if dataset["nb_subjects"] == 0:
+            continue
+
+        modalities = list_modalities(dataset_pth)
+        if any(
+            mod in modalities
+            for mod in ["func", "eeg", "ieeg", "meg", "beh", "perf", "pet", "motion"]
+        ):
+            tasks = list_tasks(dataset_pth)
+            check_task(tasks, modalities, dataset_pth)
+            dataset["tasks"] = sorted(tasks)
+        dataset["modalities"] = sorted(modalities)
+
+        tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
+        dataset["has_participant_tsv"] = tsv_status
+        dataset["has_participant_json"] = json_status
+        dataset["participant_columns"] = columns
+        dataset["has_phenotype_dir"] = bool((dataset_pth / "phenotype").exists())
+
+        dataset = add_derivatives(dataset, dataset_pth, derivatives)
+
+        if dataset["name"] in datasets["name"]:
+            raise ValueError(f"dataset {dataset['name']} already in datasets")
+
+        for keys in datasets:
+            datasets[keys].append(dataset[keys])
+
+    return datasets
+
+
+def check_task(tasks: list[str], modalities: list[str], dataset_pth: Path) -> None:
+    """Check if tasks are present in dataset with modalities that can have tasks."""
+    if (
+        any(mod in modalities for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
+        and not tasks
+    ):
+        warn(
+            f"no tasks found in {dataset_pth} "
+            f"with modalities {modalities} "
+            f"and files {list_data_files(dataset_pth)}"
+        )
+
+
+def add_derivatives(
+    dataset: dict[str, str | list[str] | bool | int], dataset_pth: Path, derivatives: list[str]
+) -> dict[str, str | list[str] | bool | int]:
+    """Update dict with links to derivatives if they exist."""
+    dataset_name = dataset["name"]
+    for der in ["fmriprep", "mriqc"]:
+        if f"{dataset_name}-{der}" in derivatives:
+            dataset[der] = f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}"
+
+    for der in [
+        "fmriprep",
+        "freesurfer",
+        "mriqc",
+    ]:
+        if dataset[der] != "n/a":
+            continue
+        if der_datasets := dataset_pth.glob(f"derivatives/*{der}*"):
+            for i in der_datasets:
+                dataset[der] = f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
+
+    return dataset
