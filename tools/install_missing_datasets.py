@@ -1,6 +1,7 @@
 """Install openneuro datasets that are not part of the datalad superdatasets."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -28,7 +29,10 @@ def main() -> None:
         print("No new dataset found")
         return
 
-    output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
+    if os.getenv("CI"):
+        output_dir = Path(__file__).parent / "tmp"
+    else:
+        output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
     output_dir.mkdir(exist_ok=True)
 
     for dataset in unknown_datasets:
