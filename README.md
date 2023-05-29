@@ -100,22 +100,22 @@ run the following command from within the cohort_creator folder:
 
 ```bash
 cohort_creator install \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \\
-  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --datasets_listing inputs/datasets_with_mriqc.tsv \
+  --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator get \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \\
-  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --datasets_listing inputs/datasets_with_mriqc.tsv \
+  --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator copy \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \\
-  --participants_listing inputs/participants_with_mriqc.tsv \\
+  --datasets_listing inputs/datasets_with_mriqc.tsv \
+  --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
