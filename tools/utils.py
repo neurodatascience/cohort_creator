@@ -29,8 +29,10 @@ def gh_api_base_url() -> str:
     return "https://api.github.com/orgs/"
 
 
-def known_derivatives() -> list[str]:
+def known_derivatives() -> list[str] | None:
     tsv = Path(__file__).parent / f"{OPENNEURO_DERIVATIVES}.tsv"
+    if not tsv.exists():
+        FileNotFoundError(f"{tsv} not found: run 'list_derivatives.py' script to create it.")
     return pd.read_csv(tsv, sep="\t")["name"].values.tolist()
 
 
@@ -168,6 +170,11 @@ def request_list_of_repos(
 
 @functools.lru_cache(maxsize=1)
 def get_auth() -> tuple[str, str] | None:
+    import os
+
+    if os.getenv("CI"):
+        return None
+
     username = config()["auth"]["username"]
     token_file = Path(config()["auth"]["token_file"])
 
