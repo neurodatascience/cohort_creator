@@ -47,4 +47,6 @@ jobs:
                 git config --global --add user.email 42@H2G2.com
 
         -   name: Update datasets
-            run: cd tools && make update
+            run: |
+                cd tools && make update
+                git diff
