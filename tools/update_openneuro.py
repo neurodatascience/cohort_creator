@@ -23,6 +23,8 @@ DEBUG = False
 
 def main() -> None:
     datasets = openneuro_df()
+    datasets.replace({pd.NA: "n/a"}, inplace=True)
+    datasets = datasets.to_dict(orient="list")
 
     new_openneuro_datasets = pd.read_csv(Path(__file__).parent / f"{OPENNEURO}.tsv", sep="\t")
     if len(new_openneuro_datasets) > 0:
