@@ -861,4 +861,3 @@ ds004574	146	True	True	['participant_id', 'GROUP', 'ID', 'EEG', 'BEHAVIOR', 'AGE
 ds004575	30	True	True	['participant_id', 'GROUP', 'ID', 'EEG', 'AGE', 'GENDER', 'MOCA', 'UPDRS', 'TYPE']	False	['eeg']	['IntervalTiming']	https://github.com/OpenNeuroDatasets/ds004575	n/a	n/a	n/a
 ds004577	103	True	False	['participant_id', 'sex']	False	['eeg']	['EEG']	https://github.com/OpenNeuroDatasets/ds004577	n/a	n/a	n/a
 ds004579	139	True	True	['participant_id', 'GROUP', 'ID', 'EEG', 'AGE', 'GENDER', 'MOCA', 'UPDRS', 'TYPE']	False	['eeg']	['IntervalTiming']	https://github.com/OpenNeuroDatasets/ds004579	n/a	n/a	n/a
-ds004580	147	True	True	['participant_id', 'GROUP', 'ID', 'EEG', 'BEHAVIOR', 'AGE', 'GENDER', 'MOCA', 'UPDRS', 'TYPE']	False	['beh', 'eeg']	['Simon']	https://github.com/OpenNeuroDatasets/ds004580	n/a	n/a	n/a

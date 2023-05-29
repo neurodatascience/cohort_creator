@@ -58,7 +58,7 @@ pip install .
 
 Currently this should allow you to access:
 
-Number of datasets: 877 with 37441 subjects including:
+Number of datasets: 863 with 37441 subjects including:
 - 692 datasets with MRI data
  - with participants.tsv: 487
  - with phenotype directory: 22
@@ -73,8 +73,6 @@ Number of datasets: 877 with 37441 subjects including:
    - with phenotype directory: 18
 
 It may be that very recent datasets are not available yet.
-
-**FIX** Set up a github action to update the listing of datasets regularly.
 
 ### Datatypes, suffixes, Freesurfer
 
