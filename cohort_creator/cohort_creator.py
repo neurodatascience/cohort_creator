@@ -230,8 +230,12 @@ def construct_cohort(
             derivative = None if dataset_type_ == "raw" else dataset_type_
 
             src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
-            target_dir = dataset_path(output_dir, dataset_, derivative=derivative)
 
+            study_dir = f"study-{dataset_}"
+            if dataset_type_ == "raw":
+                target_dir = dataset_path(output_dir, study_dir)
+            else:
+                target_dir = output_dir / study_dir / "derivatives" / dataset_type_
             target_dir.mkdir(exist_ok=True, parents=True)
 
             copy_top_files(src_dir=src_dir, target_dir=target_dir, datatypes=datatypes)
