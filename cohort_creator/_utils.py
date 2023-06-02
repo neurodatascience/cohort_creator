@@ -30,10 +30,11 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
         top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
     if "anat" in datatypes:
         top_files.append("*T1w.json")
+
     for top_file_ in top_files:
         for f in src_dir.glob(top_file_):
-            if (target_dir / f).exists():
-                cc_log.info(f"      file '{f}' already present")
+            if (target_dir / f.name).exists():
+                cc_log.info(f"      file '{(target_dir / f.name)}' already present")
                 continue
             try:
                 shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
