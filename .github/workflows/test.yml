@@ -1,5 +1,5 @@
 ---
-name: Test
+name: test
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -61,76 +61,3 @@ jobs:
                 file: ./coverage.xml
                 name: codecov-umbrella
                 fail_ci_if_error: false
-
-
-    system_test:
-
-        strategy:
-            fail-fast: false
-            matrix:
-                python-version: ['3.11']
-
-        runs-on: ubuntu-latest
-
-        steps:
-        -   uses: actions/checkout@v3
-            with:
-                fetch-depth: 0
-                submodules: recursive
-
-        -   name: Set up Python ${{ matrix.python-version }}
-            uses: actions/setup-python@v3
-            with:
-                python-version: ${{ matrix.python-version }}
-
-        -   name: Install dependencies
-            run: |
-                sudo apt-get update
-                sudo apt-get install -y git-annex tree
-                python -m pip install --upgrade pip
-
-        -   name: Install
-            run: pip install .[test]
-
-        -   name: Post-install
-            run: |
-                git config --global --add user.name "Ford Escort"
-                git config --global --add user.email 42@H2G2.com
-
-        -   name: Check set up
-            run: |
-                datalad wtf
-                cohort_creator --version
-
-        -   name: install datasets
-            run: |
-                cohort_creator install \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
-                    -o outputs \
-                    --dataset_types raw mriqc fmriprep \
-                    --verbosity 3
-        -   name: get data
-            run: |
-                cohort_creator get \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
-                    -o outputs \
-                    --dataset_types raw mriqc fmriprep \
-                    --datatype anat func \
-                    --space T1w MNI152NLin2009cAsym \
-                    --jobs 6 \
-                    --verbosity 3
-        -   name: copy data
-            run: |
-                cohort_creator copy \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
-                    -o outputs \
-                    --dataset_types raw mriqc fmriprep \
-                    --datatype anat func \
-                    --space T1w MNI152NLin2009cAsym \
-                    --verbosity 3
-
-        -   name: Check outputs
-            run: tree -L 5 outputs

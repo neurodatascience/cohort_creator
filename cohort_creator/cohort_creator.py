@@ -5,9 +5,11 @@ Then copy the data to a new directory structure to create a "cohort".
 """
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from datalad import api
@@ -25,6 +27,7 @@ from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import openneuro_df
+from cohort_creator._version import __version__
 from cohort_creator.logger import cc_logger
 
 
@@ -214,8 +217,16 @@ def construct_cohort(
     """
     cc_log.info("Constructing cohort")
 
+    create_ds_description(output_dir)
+
+    add_study_tsv(output_dir, datasets)
+
+    with open(output_dir / "README.md", "w") as f:
+        f.write("# README\n\n")
+
     for dataset_ in datasets["DatasetName"]:
         cc_log.info(f" {dataset_}")
+        study_ID = f"study-{dataset_}"
 
         participants_ids = get_participant_ids(participants, dataset_)
         if not participants_ids:
@@ -231,11 +242,10 @@ def construct_cohort(
 
             src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
 
-            study_dir = f"study-{dataset_}"
             if dataset_type_ == "raw":
-                target_dir = dataset_path(output_dir, study_dir)
+                target_dir = dataset_path(output_dir, study_ID)
             else:
-                target_dir = output_dir / study_dir / "derivatives" / dataset_type_
+                target_dir = output_dir / study_ID / "derivatives" / dataset_type_
             target_dir.mkdir(exist_ok=True, parents=True)
 
             copy_top_files(src_dir=src_dir, target_dir=target_dir, datatypes=datatypes)
@@ -255,6 +265,50 @@ def construct_cohort(
                     src_dir=src_dir,
                     target_dir=target_dir,
                 )
+
+
+def create_ds_description(output_dir: Path) -> None:
+    """Create a dataset_description.json file."""
+    ds_desc: dict[str, Any] = {
+        "BIDSVersion": "1.8.0",
+        "License": None,
+        "Name": None,
+        "ReferencesAndLinks": [],
+        "Authors": [
+            "Foo",
+            "Bar",
+        ],
+        "DatasetDOI": None,
+        "DatasetType": "derivative",
+        "GeneratedBy": [
+            {
+                "Name": "cohort_creator",
+                "Version": __version__,
+                "CodeURL": "https://github.com/neurodatascience/cohort_creator.git",
+            }
+        ],
+        "HowToAcknowledge": "Please refer to our repository: https://github.com/neurodatascience/cohort_creator.git.",
+    }
+    with open(output_dir / "dataset_description.json", "w") as f:
+        json.dump(ds_desc, f, indent=4)
+
+
+def add_study_tsv(output_dir: Path, datasets: pd.DataFrame) -> None:
+    """Create a study.tsv file."""
+    studies: dict[str, list[Any]] = {"study_ID": []}
+    for dataset_ in datasets["DatasetName"]:
+        studies["study_ID"].append(dataset_)
+    df = pd.DataFrame.from_dict(studies)
+    df.to_csv(output_dir / "studies.tsv", sep="\t", index=False)
+
+    studies_dict: dict[str, dict[str, str]] = {
+        "study_ID": {
+            "LongName": "ID of the Study",
+            "Description": "string representing the name of the study",
+        }
+    }
+    with open(output_dir / "studies.json", "w") as f:
+        json.dump(studies_dict, f, indent=4)
 
 
 def _copy_this_subject(
