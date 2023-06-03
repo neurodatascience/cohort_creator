@@ -15,6 +15,7 @@ dependencies = [
     "pandas",
     "rich",
     "datalad",
+    "pybids",
 ]
 classifiers = [
     "Intended Audience :: Science/Research",
@@ -107,12 +108,13 @@ warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module = [
-    'datalad.*',
-    'rich',
-    'rich.logging',
-    'pandas',
-    'pytest',
-    "cohort_creator._version"
+    "datalad.*",
+    "rich",
+    "rich.logging",
+    "pandas",
+    "pytest",
+    "cohort_creator._version",
+    "bids"
 ]
 ignore_missing_imports = true
 

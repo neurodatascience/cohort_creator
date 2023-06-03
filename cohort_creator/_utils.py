@@ -3,12 +3,16 @@ from __future__ import annotations
 
 import functools
 import itertools
+import json
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
+from bids import BIDSLayout
 
 from .logger import cc_logger
+from cohort_creator._version import __version__
 
 cc_log = cc_logger()
 
@@ -30,10 +34,11 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
         top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
     if "anat" in datatypes:
         top_files.append("*T1w.json")
+
     for top_file_ in top_files:
         for f in src_dir.glob(top_file_):
-            if (target_dir / f).exists():
-                cc_log.info(f"      file '{f}' already present")
+            if (target_dir / f.name).exists():
+                cc_log.debug(f"      file '{(target_dir / f.name)}' already present")
                 continue
             try:
                 shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
@@ -63,10 +68,27 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
     return participants_df["SubjectID"].tolist()
 
 
+def get_pipeline_version(pth: Path) -> None | str:
+    """Get the version of the pipeline that was used to create the dataset."""
+    dataset_description = pth / "dataset_description.json"
+    if not dataset_description.exists():
+        return None
+    with open(dataset_description) as f:
+        data = json.load(f)
+    return data.get("GeneratedBy")[0].get("Version")
+
+
 def _is_dataset_in_openneuro(dataset_name: str) -> bool:
     openneuro = openneuro_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
+
+
+def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
+    openneuro = openneuro_df()
+    mask = openneuro.name == dataset_name
+    url = openneuro[mask][dataset_type].values[0]
+    return False if pd.isna(url) else url
 
 
 def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
@@ -173,3 +195,112 @@ def validate_dataset_types(dataset_types: list[str]) -> None:
                 f"Dataset type '{dataset_type}' is not supported.\n"
                 f"Supported types are '{SUPPORTED_DATASET_TYPES}'"
             )
+
+
+def add_study_tsv(output_dir: Path, datasets: pd.DataFrame) -> None:
+    """Create a study.tsv file."""
+    studies: dict[str, list[Any]] = {
+        "study_ID": [],
+        "mean_age": [],
+        "ratio_female": [],
+        "InstitutionName": [],
+        "InstitutionAddress": [],
+    }
+
+    for dataset_ in datasets["DatasetName"]:
+        studies["study_ID"].append(dataset_)
+
+        participants_tsv = dataset_path(output_dir, f"study-{dataset_}") / "participants.tsv"
+
+        if not participants_tsv.exists():
+            studies["mean_age"].append("n/a")
+            studies["ratio_female"].append("n/a")
+            studies["InstitutionName"].append("n/a")
+            studies["InstitutionAddress"].append("n/a")
+            continue
+
+        partcipants = pd.read_csv(participants_tsv, sep="\t")
+
+        if "age" in partcipants.columns:
+            mean_age = partcipants["age"].mean()
+            studies["mean_age"].append(mean_age)
+        else:
+            studies["mean_age"].append("n/a")
+
+        if "sex" in partcipants.columns:
+            ratio_female = partcipants["sex"].value_counts(normalize=True)["F"]
+            studies["ratio_female"].append(ratio_female)
+        else:
+            studies["ratio_female"].append("n/a")
+
+        institution_name, institution_address = get_institution(output_dir / f"study-{dataset_}")
+        studies["InstitutionName"].append(institution_name)
+        studies["InstitutionAddress"].append(institution_address)
+
+    df = pd.DataFrame.from_dict(studies)
+    df.to_csv(output_dir / "studies.tsv", sep="\t", index=False)
+
+    studies_dict: dict[str, dict[str, str]] = {
+        "study_ID": {
+            "LongName": "ID of the Study",
+            "Description": "string representing the name of the study",
+        },
+        "mean_age": {
+            "LongName": "participants mean age",
+            "Description": "mean of the age of all participants in the study",
+        },
+        "ratio_female": {"Description": "ratio of female participants in the study"},
+        "InstitutionName": {"Description": "Institution(s) where this study was conducted."},
+        "InstitutionAddress": {
+            "Description": "Institution(s) address where this study was conducted."
+        },
+    }
+    with open(output_dir / "studies.json", "w") as f:
+        json.dump(studies_dict, f, indent=4)
+
+
+def get_institution(dataset: Path) -> tuple[list[Any], list[Any]]:
+    layout = BIDSLayout(dataset)
+    files = layout.get(
+        suffix="bold|T[12]{1}w", extension="json", regex_search=True, return_type="filename"
+    )
+
+    institution_name = []
+    institution_address = []
+    for f in files:
+        with open(f) as json_file:
+            data = json.load(json_file)
+            institution_name.append(data.get("InstitutionName"))
+            institution_address.append(data.get("InstitutionAddress"))
+    institution_name = list(set(institution_name))
+    institution_address = list(set(institution_address))
+    return (institution_name, institution_address)
+
+
+def create_ds_description(output_dir: Path) -> None:
+    """Create a dataset_description.json file."""
+    ds_desc: dict[str, Any] = {
+        "BIDSVersion": "1.8.0",
+        "License": None,
+        "Name": None,
+        "ReferencesAndLinks": [],
+        "Authors": [
+            "Foo",
+            "Bar",
+        ],
+        "DatasetDOI": None,
+        "DatasetType": "derivative",
+        "GeneratedBy": [
+            {
+                "Name": "cohort_creator",
+                "Version": __version__,
+                "CodeURL": "https://github.com/neurodatascience/cohort_creator.git",
+            }
+        ],
+        "HowToAcknowledge": (
+            """Please refer to our repository:
+                             "https://github.com/neurodatascience/cohort_creator.git."""
+        ),
+    }
+    with open(output_dir / "dataset_description.json", "w") as f:
+        json.dump(ds_desc, f, indent=4)
