@@ -9,7 +9,9 @@ import pytest
 from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
+from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import get_dataset_url
+from cohort_creator._utils import get_institution
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
@@ -113,3 +115,18 @@ def test_get_sessions():
 def test_validate_dataset_types():
     with pytest.raises(ValueError, match="Dataset type 'foo' is not supported."):
         validate_dataset_types(["foo"])
+
+
+def test_get_institution(bids_examples):
+    institution_name, institution_address = get_institution(bids_examples / "pet005")
+    assert institution_name == ["Rigshospitalet"]
+    assert institution_address == ["Blegdamsvej_9_Copenhagen_District_DK_2100"]
+
+    institution_name, institution_address = get_institution(bids_examples / "ds001")
+    assert institution_name == [None]
+    assert institution_address == [None]
+
+
+def test_create_ds_description(tmp_path):
+    create_ds_description(tmp_path)
+    assert (tmp_path / "dataset_description.json").exists()
