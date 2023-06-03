@@ -1,12 +1,8 @@
 DatasetName	SubjectID	Age	Sex	Diagnosis	SessionID	SessionPath	NumSessions	Modality
 ds000001	sub-03	26	Female	PD	[]	n/a	1	[T1,T2,bold]
-ds000001	sub-12	25	Female	PD	[]	n/a	1	[T1,T2,bold]
-ds000001	sub-13	25	Female	CTL	[]	n/a	1	[T1,T2,bold]
 ds000001	sub-17	25	Female	CTL	[]	n/a	1	[T1,T2,bold]
-ds000002	sub-03	26	Female		[]	n/a	1	[T1,T2,bold]
 ds000002	sub-12	25	Female		[]	n/a	1	[T1,T2,bold]
 ds000002	sub-13	25	Female		[]	n/a	1	[T1,T2,bold]
+ds000200	sub-2001	n/a	n/a		[]	n/a	1	[T1,bold]
 ds001226	sub-CON03	53	Female	CON	[preop]	n/a	1	[T1,dwi,bold]
-ds001226	sub-CON04	53	Female	CON	[preop]	n/a	1	[T1,dwi,bold]
 ds001226	sub-CON07	48	Female	CON	[preop]	n/a	1	[T1,dwi,bold]
-ds001226	sub-CON11	72	Female	CON	[preop]	n/a	1	[T1,dwi,bold]

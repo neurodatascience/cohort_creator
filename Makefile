@@ -31,7 +31,7 @@ demo_anat:
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
-		--verbosity 3
+		--verbosity 2
 	cohort_creator get \
 		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
@@ -39,14 +39,14 @@ demo_anat:
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
 		--jobs 6 \
-		--verbosity 3
+		--verbosity 2
 	cohort_creator copy \
 		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
-		--verbosity 3
+		--verbosity 2
 
 demo_func:
 	cohort_creator install \

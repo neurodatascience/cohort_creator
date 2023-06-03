@@ -9,7 +9,9 @@ import pytest
 from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
+from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
@@ -29,7 +31,16 @@ def bids_examples():
     return path_test_data() / "bids-examples"
 
 
-def test__is_dataset_in_openneuro():
+def test_get_dataset_url():
+    assert get_dataset_url("ds000113", "mriqc") is False
+    assert isinstance(get_dataset_url("ds000001", "mriqc"), str)
+
+
+def test_get_pipeline_version(bids_examples):
+    assert get_pipeline_version(bids_examples / "ds000001-fmriprep") == "20.2.0rc0"
+
+
+def test_is_dataset_in_openneuro():
     assert _is_dataset_in_openneuro("ds000001")
     assert not _is_dataset_in_openneuro("foo")
 
@@ -75,7 +86,7 @@ def test_list_all_files_func(bids_examples):
 def test_get_participant_ids():
     inpute_file = root_dir() / "inputs" / "participants.tsv"
     participants = pd.read_csv(inpute_file, sep="\t")
-    assert get_participant_ids(participants, "ds000002") == ["sub-03", "sub-12", "sub-13"]
+    assert get_participant_ids(participants, "ds000002") == ["sub-12", "sub-13"]
 
 
 def test_check_tsv_content(tmp_path):

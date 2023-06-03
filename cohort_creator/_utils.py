@@ -38,7 +38,7 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
     for top_file_ in top_files:
         for f in src_dir.glob(top_file_):
             if (target_dir / f.name).exists():
-                cc_log.info(f"      file '{(target_dir / f.name)}' already present")
+                cc_log.debug(f"      file '{(target_dir / f.name)}' already present")
                 continue
             try:
                 shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
@@ -68,10 +68,27 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
     return participants_df["SubjectID"].tolist()
 
 
+def get_pipeline_version(pth: Path) -> None | str:
+    """Get the version of the pipeline that was used to create the dataset."""
+    dataset_description = pth / "dataset_description.json"
+    if not dataset_description.exists():
+        return None
+    with open(dataset_description) as f:
+        data = json.load(f)
+    return data.get("GeneratedBy")[0].get("Version")
+
+
 def _is_dataset_in_openneuro(dataset_name: str) -> bool:
     openneuro = openneuro_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
+
+
+def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
+    openneuro = openneuro_df()
+    mask = openneuro.name == dataset_name
+    url = openneuro[mask][dataset_type].values[0]
+    return False if pd.isna(url) else url
 
 
 def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
@@ -280,7 +297,10 @@ def create_ds_description(output_dir: Path) -> None:
                 "CodeURL": "https://github.com/neurodatascience/cohort_creator.git",
             }
         ],
-        "HowToAcknowledge": "Please refer to our repository: https://github.com/neurodatascience/cohort_creator.git.",
+        "HowToAcknowledge": (
+            """Please refer to our repository:
+                             "https://github.com/neurodatascience/cohort_creator.git."""
+        ),
     }
     with open(output_dir / "dataset_description.json", "w") as f:
         json.dump(ds_desc, f, indent=4)

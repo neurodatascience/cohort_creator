@@ -21,12 +21,13 @@ from cohort_creator._utils import copy_top_files
 from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
+from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
-from cohort_creator._utils import openneuro_df
 from cohort_creator.logger import cc_logger
 
 
@@ -63,20 +64,19 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
         cc_log.warning(f"  {dataset_name} not found in openneuro")
         return None
 
-    openneuro = openneuro_df()
-    mask = openneuro.name == dataset_name
-    dataset_df = openneuro[mask]
-
     for dataset_type_ in dataset_types:
-        derivative = None if dataset_type_ == "raw" else dataset_type_
+        if not get_dataset_url(dataset_name, dataset_type_):
+            cc_log.debug(f"      no {dataset_type_} for {dataset_name}")
+            continue
 
+        derivative = None if dataset_type_ == "raw" else dataset_type_
         data_pth = dataset_path(output_path, dataset_name, derivative=derivative)
 
         if data_pth.exists():
-            cc_log.info(f"  {dataset_type_} data already present at {data_pth}")
+            cc_log.debug(f"  {dataset_type_} data already present at {data_pth}")
         else:
             cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
-            if uri := dataset_df[dataset_type_].values[0]:
+            if uri := get_dataset_url(dataset_name, dataset_type_):
                 api.install(path=data_pth, source=uri)
 
 
@@ -129,17 +129,19 @@ def get_data(
         cc_log.info(f"  getting data for: {participants_ids}")
 
         for dataset_type_ in dataset_types:
+            if not get_dataset_url(dataset_, dataset_type_):
+                cc_log.debug(f"      no {dataset_type_} for {dataset_}")
+                continue
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-
             data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
 
             for subject in participants_ids:
                 if not is_subject_in_dataset(subject, data_pth):
-                    cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
+                    cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
                     continue
                 sessions = get_sessions(participants, dataset_, subject)
                 _get_data_this_subject(
@@ -233,16 +235,21 @@ def construct_cohort(
         cc_log.info(f"  creating cohort with: {participants_ids}")
 
         for dataset_type_ in dataset_types:
+            if not get_dataset_url(dataset_, dataset_type_):
+                cc_log.debug(f"      no {dataset_type_} for {dataset_}")
+                continue
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-
             src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
 
             if dataset_type_ == "raw":
                 target_dir = dataset_path(output_dir, study_ID)
             else:
-                target_dir = output_dir / study_ID / "derivatives" / dataset_type_
+                folder_name = dataset_type_
+                if version := get_pipeline_version(src_dir):
+                    folder_name = f"{folder_name}-{version}"
+                target_dir = output_dir / study_ID / "derivatives" / folder_name
             target_dir.mkdir(exist_ok=True, parents=True)
 
             copy_top_files(src_dir=src_dir, target_dir=target_dir, datatypes=datatypes)
@@ -250,7 +257,7 @@ def construct_cohort(
 
             for subject in participants_ids:
                 if not is_subject_in_dataset(subject, src_dir):
-                    cc_log.warning(f"  no participant {subject} in dataset {dataset_}")
+                    cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
                     continue
                 sessions = get_sessions(participants, dataset_, subject)
                 _copy_this_subject(
@@ -293,7 +300,7 @@ def _copy_this_subject(
             sub_dirs = Path(f).parents
             (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
             if (target_dir / f).exists():
-                cc_log.info(f"      file '{f}' already present")
+                cc_log.debug(f"      file '{f}' already present")
                 continue
             try:
                 shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
