@@ -28,6 +28,8 @@ from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
+from cohort_creator.bagelify import bagelify
+from cohort_creator.bagelify import new_bagel
 from cohort_creator.logger import cc_logger
 
 
@@ -225,7 +227,6 @@ def construct_cohort(
 
     for dataset_ in datasets["DatasetName"]:
         cc_log.info(f" {dataset_}")
-        study_ID = f"study-{dataset_}"
 
         participants_ids = get_participant_ids(participants, dataset_)
         if not participants_ids:
@@ -241,22 +242,16 @@ def construct_cohort(
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-            src_dir = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
+            src_pth = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
 
-            if dataset_type_ == "raw":
-                target_dir = dataset_path(output_dir, study_ID)
-            else:
-                folder_name = dataset_type_
-                if version := get_pipeline_version(src_dir):
-                    folder_name = f"{folder_name}-{version}"
-                target_dir = output_dir / study_ID / "derivatives" / folder_name
-            target_dir.mkdir(exist_ok=True, parents=True)
+            target_pth = _return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
+            target_pth.mkdir(exist_ok=True, parents=True)
 
-            copy_top_files(src_dir=src_dir, target_dir=target_dir, datatypes=datatypes)
-            filter_excluded_participants(pth=target_dir, participants=participants_ids)
+            copy_top_files(src_pth=src_pth, target_pth=target_pth, datatypes=datatypes)
+            filter_excluded_participants(pth=target_pth, participants=participants_ids)
 
             for subject in participants_ids:
-                if not is_subject_in_dataset(subject, src_dir):
+                if not is_subject_in_dataset(subject, src_pth):
                     cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
                     continue
                 sessions = get_sessions(participants, dataset_, subject)
@@ -266,11 +261,38 @@ def construct_cohort(
                     datatypes=datatypes,
                     dataset_type=dataset_type_,
                     space=space,
-                    src_dir=src_dir,
-                    target_dir=target_dir,
+                    src_pth=src_pth,
+                    target_pth=target_pth,
                 )
 
     add_study_tsv(output_dir, datasets)
+
+    bagel = new_bagel()
+    supported_dataset_types = ["fmriprep", "mriqc"]
+    for dataset_ in datasets["DatasetName"]:
+        for dataset_type_ in dataset_types:
+            if dataset_type_ in supported_dataset_types:
+                raw_pth = _return_target_pth(output_dir, "raw", dataset_)
+
+                src_pth = dataset_path(sourcedata_dir, dataset_, derivative=dataset_type_)
+                derivative_pth = _return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
+
+                bagel = bagelify(bagel, raw_pth, derivative_pth)
+
+    df = pd.DataFrame.from_dict(bagel)
+    df.to_csv(output_dir / "bagel.csv", index=False)
+
+
+def _return_target_pth(
+    output_dir: Path, dataset_type_: str, dataset_: str, src_pth: Path | None = None
+) -> Path:
+    study_ID = f"study-{dataset_}"
+    if dataset_type_ == "raw":
+        return dataset_path(output_dir, study_ID)
+    folder_name = dataset_type_
+    if version := get_pipeline_version(src_pth):
+        folder_name = f"{folder_name}-{version}"
+    return output_dir / study_ID / "derivatives" / folder_name
 
 
 def _copy_this_subject(
@@ -279,12 +301,12 @@ def _copy_this_subject(
     datatypes: list[str],
     dataset_type: str,
     space: str,
-    src_dir: Path,
-    target_dir: Path,
+    src_pth: Path,
+    target_pth: Path,
 ) -> None:
     for datatype_ in datatypes:
         files = list_all_files(
-            data_pth=src_dir,
+            data_pth=src_pth,
             dataset_type=dataset_type,
             subject=subject,
             sessions=sessions,
@@ -298,12 +320,12 @@ def _copy_this_subject(
         cc_log.info(f"    {subject} - copying files:\n     {files}")
         for f in files:
             sub_dirs = Path(f).parents
-            (target_dir / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-            if (target_dir / f).exists():
+            (target_pth / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
+            if (target_pth / f).exists():
                 cc_log.debug(f"      file '{f}' already present")
                 continue
             try:
-                shutil.copy(src=src_dir / f, dst=target_dir / f, follow_symlinks=True)
+                shutil.copy(src=src_pth / f, dst=target_pth / f, follow_symlinks=True)
                 # TODO deal with permission
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}'")

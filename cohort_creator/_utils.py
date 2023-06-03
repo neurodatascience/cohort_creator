@@ -27,8 +27,8 @@ def filter_excluded_participants(pth: Path, participants: list[str]) -> None:
     participants_df.to_csv(participants_tsv, sep="\t", index=False)
 
 
-def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> None:
-    """Copy top files from BIDS src_dir to BIDS target_dir."""
+def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> None:
+    """Copy top files from BIDS src_pth to BIDS target_pth."""
     top_files = ["dataset_description.json", "participants.*", "README*"]
     if "func" in datatypes:
         top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
@@ -36,12 +36,12 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
         top_files.append("*T1w.json")
 
     for top_file_ in top_files:
-        for f in src_dir.glob(top_file_):
-            if (target_dir / f.name).exists():
-                cc_log.debug(f"      file '{(target_dir / f.name)}' already present")
+        for f in src_pth.glob(top_file_):
+            if (target_pth / f.name).exists():
+                cc_log.debug(f"      file '{(target_pth / f.name)}' already present")
                 continue
             try:
-                shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
+                shutil.copy(src=f, dst=target_pth, follow_symlinks=True)
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}'")
 
@@ -68,14 +68,26 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
     return participants_df["SubjectID"].tolist()
 
 
-def get_pipeline_version(pth: Path) -> None | str:
+def get_pipeline_version(pth: Path | None = None) -> None | str:
     """Get the version of the pipeline that was used to create the dataset."""
+    if pth is None:
+        return None
     dataset_description = pth / "dataset_description.json"
     if not dataset_description.exists():
         return None
     with open(dataset_description) as f:
         data = json.load(f)
     return data.get("GeneratedBy")[0].get("Version")
+
+
+def get_pipeline_name(pth: Path) -> None | str:
+    """Get the name of the pipeline that was used to create the dataset."""
+    dataset_description = pth / "dataset_description.json"
+    if not dataset_description.exists():
+        return None
+    with open(dataset_description) as f:
+        data = json.load(f)
+    return data.get("GeneratedBy")[0].get("Name")
 
 
 def _is_dataset_in_openneuro(dataset_name: str) -> bool:
