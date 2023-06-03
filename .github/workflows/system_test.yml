@@ -83,4 +83,6 @@ jobs:
                     --verbosity 3
 
         -   name: Check outputs
-            run: tree -L 5 outputs
+            run: |
+                tree -L 2 --dirsfirst outputs
+                tree --dirsfirst outputs/study-ds000002
