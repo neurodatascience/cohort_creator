@@ -66,7 +66,7 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
         cc_log.warning(f"  no participants in dataset {dataset_name}")
         return None
     participants_df = participants[mask]
-    return participants_df["SubjectID"].tolist()
+    return sorted(participants_df["SubjectID"].tolist())
 
 
 def get_pipeline_version(pth: Path | None = None) -> None | str:
