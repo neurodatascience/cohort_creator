@@ -114,7 +114,7 @@ module = [
     "pandas",
     "pytest",
     "cohort_creator._version",
-    "bids"
+    "bids.*"
 ]
 ignore_missing_imports = true
 

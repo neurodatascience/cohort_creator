@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 from bids import BIDSLayout
+from bids.layout import BIDSFile
 
 from .logger import cc_logger
 from cohort_creator._version import __version__
@@ -27,8 +28,8 @@ def filter_excluded_participants(pth: Path, participants: list[str]) -> None:
     participants_df.to_csv(participants_tsv, sep="\t", index=False)
 
 
-def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> None:
-    """Copy top files from BIDS src_dir to BIDS target_dir."""
+def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> None:
+    """Copy top files from BIDS src_pth to BIDS target_pth."""
     top_files = ["dataset_description.json", "participants.*", "README*"]
     if "func" in datatypes:
         top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
@@ -36,12 +37,12 @@ def copy_top_files(src_dir: Path, target_dir: Path, datatypes: list[str]) -> Non
         top_files.append("*T1w.json")
 
     for top_file_ in top_files:
-        for f in src_dir.glob(top_file_):
-            if (target_dir / f.name).exists():
-                cc_log.debug(f"      file '{(target_dir / f.name)}' already present")
+        for f in src_pth.glob(top_file_):
+            if (target_pth / f.name).exists():
+                cc_log.debug(f"      file '{(target_pth / f.name)}' already present")
                 continue
             try:
-                shutil.copy(src=f, dst=target_dir, follow_symlinks=True)
+                shutil.copy(src=f, dst=target_pth, follow_symlinks=True)
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}'")
 
@@ -65,17 +66,29 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
         cc_log.warning(f"  no participants in dataset {dataset_name}")
         return None
     participants_df = participants[mask]
-    return participants_df["SubjectID"].tolist()
+    return sorted(participants_df["SubjectID"].tolist())
 
 
-def get_pipeline_version(pth: Path) -> None | str:
+def get_pipeline_version(pth: Path | None = None) -> None | str:
     """Get the version of the pipeline that was used to create the dataset."""
+    if pth is None:
+        return None
     dataset_description = pth / "dataset_description.json"
     if not dataset_description.exists():
         return None
     with open(dataset_description) as f:
         data = json.load(f)
     return data.get("GeneratedBy")[0].get("Version")
+
+
+def get_pipeline_name(pth: Path) -> None | str:
+    """Get the name of the pipeline that was used to create the dataset."""
+    dataset_description = pth / "dataset_description.json"
+    if not dataset_description.exists():
+        return None
+    with open(dataset_description) as f:
+        data = json.load(f)
+    return data.get("GeneratedBy")[0].get("Name")
 
 
 def _is_dataset_in_openneuro(dataset_name: str) -> bool:
@@ -304,3 +317,67 @@ def create_ds_description(output_dir: Path) -> None:
     }
     with open(output_dir / "dataset_description.json", "w") as f:
         json.dump(ds_desc, f, indent=4)
+
+
+def return_target_pth(
+    output_dir: Path, dataset_type_: str, dataset_: str, src_pth: Path | None = None
+) -> Path:
+    study_ID = f"study-{dataset_}"
+    folder_name = study_ID
+    if dataset_type_ == "raw":
+        return dataset_path(output_dir, study_ID)
+    folder_name = dataset_type_
+    if version := get_pipeline_version(src_pth):
+        folder_name = f"{dataset_type_}-{version}"
+    return output_dir / study_ID / "derivatives" / folder_name
+
+
+def set_name(derivative_path: Path) -> str:
+    if derivative_path.exists():
+        name = get_pipeline_name(derivative_path) or "UNKNOWN"
+    else:
+        name = derivative_path.name.lower().split("-")[0]
+
+    if name == "fmriprep":
+        name = "fMRIPrep"
+    elif name == "mriqc":
+        name = "MRIQC"
+
+    return name
+
+
+def set_version(derivative_path: Path) -> str:
+    if derivative_path.exists():
+        return get_pipeline_version(derivative_path) or "UNKNOWN"
+    elif derivative_path.name.lower().split("-")[0] == "fmriprep":
+        return "21.0.1"
+    elif derivative_path.name.lower().split("-")[0] == "mriqc":
+        return "0.16.1"
+    else:
+        return "UNKNOWN"
+
+
+def get_anat_files(
+    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    return get_files(layout=layout, sub=sub, suffix="^T[12]{1}w$", ses=ses, extension=extension)
+
+
+def get_func_files(
+    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    return get_files(layout=layout, sub=sub, suffix="^bold$", ses=ses, extension=extension)
+
+
+def get_files(
+    layout: BIDSLayout, sub: str, suffix: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    if ses is None:
+        return layout.get(subject=sub, suffix=suffix, extension=extension, regex_search=True)
+    return layout.get(
+        subject=f"^{sub}$",
+        session=f"^{ses}$",
+        suffix=suffix,
+        extension=extension,
+        regex_search=True,
+    )
