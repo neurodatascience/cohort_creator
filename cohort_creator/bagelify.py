@@ -15,7 +15,19 @@ from cohort_creator._utils import set_version
 def bagelify(
     bagel: dict[str, list[str | None]], raw_path: Path, derivative_path: Path
 ) -> dict[str, list[str | None]]:
-    """Create bagel dict to get an idea what participants have been processed by what pipeline."""
+    """Create bagel dict to get an idea what participants have been processed by what pipeline.
+
+    Parameters
+    ----------
+    bagel :
+        _description_
+
+    raw_path :
+        _description_
+
+    derivative_path :
+        _description_
+    """
     raw_layout = BIDSLayout(raw_path, validate=False, derivatives=False)
 
     if derivative_path.exists():
@@ -59,6 +71,23 @@ def session_status(
     - FAIL: number of files in derivative folder == 0
     - INCOMPLETE: number of files in derivative folder < number of files in raw folder
     - UNAVAILABLE: no derivative folder
+
+    Parameters
+    ----------
+    layout :
+
+    raw_layout :
+
+    sub :
+        Subject label. Example: `"01"`.
+
+    ses :
+        Session label. Example: `"preop"`.
+
+    Returns
+    -------
+    str :
+        Status of the sessions
     """
     # TODO
     # - check if a specific file has all its expected derivatives
