@@ -7,6 +7,8 @@ import pandas as pd
 import pytest
 from bids import BIDSLayout
 
+from .conftest import path_test_data
+from .conftest import root_dir
 from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
@@ -24,19 +26,6 @@ from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import set_name
 from cohort_creator._utils import set_version
 from cohort_creator._utils import validate_dataset_types
-
-
-def root_dir():
-    return Path(__file__).parent.parent
-
-
-def path_test_data():
-    return Path(__file__).parent / "data"
-
-
-@pytest.fixture
-def bids_examples():
-    return path_test_data() / "bids-examples"
 
 
 def test_get_dataset_url():

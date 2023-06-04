@@ -28,8 +28,8 @@ from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import return_target_pth
+from cohort_creator.bagelify import _new_bagel
 from cohort_creator.bagelify import bagelify
-from cohort_creator.bagelify import new_bagel
 from cohort_creator.logger import cc_logger
 
 
@@ -267,7 +267,7 @@ def construct_cohort(
 
     add_study_tsv(output_dir, datasets)
 
-    bagel = new_bagel()
+    bagel = _new_bagel()
     supported_dataset_types = ["fmriprep", "mriqc"]
     for dataset_ in datasets["DatasetName"]:
         for dataset_type_ in dataset_types:

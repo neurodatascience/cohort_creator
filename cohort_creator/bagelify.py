@@ -15,6 +15,7 @@ from cohort_creator._utils import set_version
 def bagelify(
     bagel: dict[str, list[str | None]], raw_path: Path, derivative_path: Path
 ) -> dict[str, list[str | None]]:
+    """Create bagel dict to get an idea what participants have been processed by what pipeline."""
     raw_layout = BIDSLayout(raw_path, validate=False, derivatives=False)
 
     if derivative_path.exists():
@@ -29,7 +30,7 @@ def bagelify(
     for sub in subjects:
         if sessions := raw_layout.get_sessions(subject=sub):
             for ses in sessions:
-                new_record = process_session(sub, ses=ses)
+                new_record = _process_session(sub, ses=ses)
                 new_record["pipeline_version"] = version
                 new_record["pipeline_name"] = name
                 new_record["pipeline_complete"] = session_status(layout, raw_layout, sub, ses)
@@ -37,7 +38,7 @@ def bagelify(
                     bagel[key].append(new_record.get(key))
 
         else:
-            new_record = process_session(sub)
+            new_record = _process_session(sub)
             new_record["pipeline_version"] = version
             new_record["pipeline_name"] = name
             new_record["pipeline_complete"] = session_status(layout, raw_layout, sub)
@@ -50,33 +51,37 @@ def bagelify(
 def session_status(
     layout: BIDSLayout | None, raw_layout: BIDSLayout, sub: str, ses: str | None = None
 ) -> str:
+    """Return status of session depending on the number of files in the derivative folder.
+
+    Really rudiementary:
+
+    - SUCCESS: number of files in derivative folder >= number of files in raw folder
+    - FAIL: number of files in derivative folder == 0
+    - INCOMPLETE: number of files in derivative folder < number of files in raw folder
+    - UNAVAILABLE: no derivative folder
+    """
+    # TODO
+    # - check if a specific file has all its expected derivatives
+    #   (including for different spaces)
     if layout is None:
         return "UNAVAILABLE"
     files = get_anat_files(layout, sub, ses)
     files.extend(get_func_files(layout, sub, ses))
 
-    raw_files = get_anat_files(raw_layout, sub, ses, extension="nii(.gz)?")
-    raw_files.extend(get_func_files(raw_layout, sub, ses, extension="nii(.gz)?"))
-    if len(files) > len(raw_files):
-        raise ValueError(
-            "Cannot have more processed files than raw files "
-            f"for sub-{sub} ses-{ses}."
-            f"\nraw files: {raw_files}"
-            f"\nprocessed files: {files}"
-        )
     if len(files) == 0:
         return "FAIL"
-    elif len(files) == len(raw_files):
-        return "SUCCESS"
-    return "INCOMPLETE"
+
+    raw_files = get_anat_files(raw_layout, sub, ses, extension="nii(.gz)?")
+    raw_files.extend(get_func_files(raw_layout, sub, ses, extension="nii(.gz)?"))
+    return "SUCCESS" if len(files) >= len(raw_files) else "INCOMPLETE"
 
 
-def process_session(sub: str, ses: str | None = None) -> dict[str, str]:
-    new_record = record(sub=sub, ses=ses)
+def _process_session(sub: str, ses: str | None = None) -> dict[str, str]:
+    new_record = _record(sub=sub, ses=ses)
     return new_record
 
 
-def new_bagel() -> dict[str, list[str | None]]:
+def _new_bagel() -> dict[str, list[str | None]]:
     return {
         "bids_id": [],
         "participant_id": [],
@@ -89,7 +94,7 @@ def new_bagel() -> dict[str, list[str | None]]:
     }
 
 
-def record(sub: str, ses: str | None) -> dict[str, str]:
+def _record(sub: str, ses: str | None) -> dict[str, str]:
     tmp = ses if ses is not None else "1"
     out = {
         "bids_id": f"sub-{sub}",
