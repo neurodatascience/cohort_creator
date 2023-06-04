@@ -35,6 +35,7 @@ def bagelify(
     else:
         layout = None
 
+    dataset_id = Path(raw_layout.root).name.replace("study-", "")
     name = set_name(derivative_path)
     version = set_version(derivative_path)
 
@@ -43,24 +44,28 @@ def bagelify(
         if sessions := raw_layout.get_sessions(subject=sub):
             for ses in sessions:
                 new_record = _process_session(sub, ses=ses)
+                new_record["pipeline_complete"] = record_status(layout, raw_layout, sub, ses)
                 new_record["pipeline_version"] = version
                 new_record["pipeline_name"] = name
-                new_record["pipeline_complete"] = session_status(layout, raw_layout, sub, ses)
+                new_record["dataset_id"] = dataset_id
+
                 for key in bagel:
                     bagel[key].append(new_record.get(key))
 
         else:
             new_record = _process_session(sub)
+            new_record["pipeline_complete"] = record_status(layout, raw_layout, sub)
             new_record["pipeline_version"] = version
             new_record["pipeline_name"] = name
-            new_record["pipeline_complete"] = session_status(layout, raw_layout, sub)
+            new_record["dataset_id"] = dataset_id
+
             for key in bagel:
                 bagel[key].append(new_record.get(key))
 
     return bagel
 
 
-def session_status(
+def record_status(
     layout: BIDSLayout | None, raw_layout: BIDSLayout, sub: str, ses: str | None = None
 ) -> str:
     """Return status of session depending on the number of files in the derivative folder.
@@ -112,6 +117,7 @@ def _process_session(sub: str, ses: str | None = None) -> dict[str, str]:
 
 def _new_bagel() -> dict[str, list[str | None]]:
     return {
+        "dataset_id": [],
         "bids_id": [],
         "participant_id": [],
         "session": [],
@@ -126,6 +132,7 @@ def _new_bagel() -> dict[str, list[str | None]]:
 def _record(sub: str, ses: str | None) -> dict[str, str]:
     tmp = ses if ses is not None else "1"
     out = {
+        "dataset_id": "",
         "bids_id": f"sub-{sub}",
         "participant_id": f"sub-{sub}",
         "session": tmp,

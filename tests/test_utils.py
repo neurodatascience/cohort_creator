@@ -155,12 +155,12 @@ def test_create_ds_description(tmp_path):
     "dataset_type_, dataset_, src_pth, expected",
     [
         ("raw", "foo", None, ["study-foo"]),
-        ("fmriprep", "foo", None, ["study-foo", "derivatives", "study-foo"]),
+        ("fmriprep", "foo", None, ["study-foo", "derivatives", "fmriprep"]),
         (
             "fmriprep",
             "foo",
             path_test_data() / "bids-examples" / "ds000001-fmriprep",
-            ["study-foo", "derivatives", "study-foo-20.2.0rc0"],
+            ["study-foo", "derivatives", "fmriprep-20.2.0rc0"],
         ),
     ],
 )

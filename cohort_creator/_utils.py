@@ -326,8 +326,9 @@ def return_target_pth(
     folder_name = study_ID
     if dataset_type_ == "raw":
         return dataset_path(output_dir, study_ID)
+    folder_name = dataset_type_
     if version := get_pipeline_version(src_pth):
-        folder_name = f"{study_ID}-{version}"
+        folder_name = f"{dataset_type_}-{version}"
     return output_dir / study_ID / "derivatives" / folder_name
 
 
