@@ -23,11 +23,11 @@ from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_participant_ids
-from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
 from cohort_creator._utils import no_files_found_msg
+from cohort_creator._utils import return_target_pth
 from cohort_creator.bagelify import bagelify
 from cohort_creator.bagelify import new_bagel
 from cohort_creator.logger import cc_logger
@@ -244,7 +244,7 @@ def construct_cohort(
             derivative = None if dataset_type_ == "raw" else dataset_type_
             src_pth = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
 
-            target_pth = _return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
+            target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
 
             copy_top_files(src_pth=src_pth, target_pth=target_pth, datatypes=datatypes)
@@ -272,27 +272,23 @@ def construct_cohort(
     for dataset_ in datasets["DatasetName"]:
         for dataset_type_ in dataset_types:
             if dataset_type_ in supported_dataset_types:
-                raw_pth = _return_target_pth(output_dir, "raw", dataset_)
+                raw_pth = return_target_pth(output_dir, "raw", dataset_)
 
                 src_pth = dataset_path(sourcedata_dir, dataset_, derivative=dataset_type_)
-                derivative_pth = _return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
+                derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
 
                 bagel = bagelify(bagel, raw_pth, derivative_pth)
 
     df = pd.DataFrame.from_dict(bagel)
     df.to_csv(output_dir / "bagel.csv", index=False)
 
-
-def _return_target_pth(
-    output_dir: Path, dataset_type_: str, dataset_: str, src_pth: Path | None = None
-) -> Path:
-    study_ID = f"study-{dataset_}"
-    if dataset_type_ == "raw":
-        return dataset_path(output_dir, study_ID)
-    folder_name = dataset_type_
-    if version := get_pipeline_version(src_pth):
-        folder_name = f"{folder_name}-{version}"
-    return output_dir / study_ID / "derivatives" / folder_name
+    cc_log.info(f"Cohort created at {output_dir}")
+    cc_log.info(
+        f"""Check what subjects have derivatives ready
+by uploading {output_dir / "bagel.csv"} to
+https://dash.neurobagel.org/
+"""
+    )
 
 
 def _copy_this_subject(

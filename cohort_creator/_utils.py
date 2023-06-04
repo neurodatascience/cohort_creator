@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 from bids import BIDSLayout
+from bids.layout import BIDSFile
 
 from .logger import cc_logger
 from cohort_creator._version import __version__
@@ -316,3 +317,66 @@ def create_ds_description(output_dir: Path) -> None:
     }
     with open(output_dir / "dataset_description.json", "w") as f:
         json.dump(ds_desc, f, indent=4)
+
+
+def return_target_pth(
+    output_dir: Path, dataset_type_: str, dataset_: str, src_pth: Path | None = None
+) -> Path:
+    study_ID = f"study-{dataset_}"
+    folder_name = study_ID
+    if dataset_type_ == "raw":
+        return dataset_path(output_dir, study_ID)
+    if version := get_pipeline_version(src_pth):
+        folder_name = f"{study_ID}-{version}"
+    return output_dir / study_ID / "derivatives" / folder_name
+
+
+def set_name(derivative_path: Path) -> str:
+    if derivative_path.exists():
+        name = get_pipeline_name(derivative_path) or "UNKNOWN"
+    else:
+        name = derivative_path.name.lower().split("-")[0]
+
+    if name == "fmriprep":
+        name = "fMRIPrep"
+    elif name == "mriqc":
+        name = "MRIQC"
+
+    return name
+
+
+def set_version(derivative_path: Path) -> str:
+    if derivative_path.exists():
+        return get_pipeline_version(derivative_path) or "UNKNOWN"
+    elif derivative_path.name.lower().split("-")[0] == "fmriprep":
+        return "21.0.1"
+    elif derivative_path.name.lower().split("-")[0] == "mriqc":
+        return "0.16.1"
+    else:
+        return "UNKNOWN"
+
+
+def get_anat_files(
+    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    return get_files(layout=layout, sub=sub, suffix="^T[12]{1}w$", ses=ses, extension=extension)
+
+
+def get_func_files(
+    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    return get_files(layout=layout, sub=sub, suffix="^bold$", ses=ses, extension=extension)
+
+
+def get_files(
+    layout: BIDSLayout, sub: str, suffix: str, ses: str | None = None, extension: str = "json"
+) -> list[BIDSFile]:
+    if ses is None:
+        return layout.get(subject=sub, suffix=suffix, extension=extension, regex_search=True)
+    return layout.get(
+        subject=f"^{sub}$",
+        session=f"^{ses}$",
+        suffix=suffix,
+        extension=extension,
+        regex_search=True,
+    )

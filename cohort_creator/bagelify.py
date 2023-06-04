@@ -5,34 +5,11 @@ from datetime import datetime
 from pathlib import Path
 
 from bids import BIDSLayout
-from bids.layout import BIDSFile
 
-from cohort_creator._utils import get_pipeline_name
-from cohort_creator._utils import get_pipeline_version
-
-
-def set_name(derivative_path: Path) -> str:
-    if derivative_path.exists():
-        name = get_pipeline_name(derivative_path) or "UNKNOWN"
-    else:
-        name = derivative_path.name.lower().split("-")[0]
-
-    if name == "fmriprep":
-        name == "fMRIPrep"
-    elif name == "mriqc":
-        name == "MRIQC"
-
-    return name
-
-
-def set_version(derivative_path: Path) -> str:
-    if derivative_path.exists():
-        version = get_pipeline_version(derivative_path) or "UNKNOWN"
-    elif derivative_path.name.lower().split("-")[0] == "fmriprep":
-        version = "21.0.1"
-    elif derivative_path.name.lower().split("-")[0] == "mriqc":
-        version = "0.16.1"
-    return version
+from cohort_creator._utils import get_anat_files
+from cohort_creator._utils import get_func_files
+from cohort_creator._utils import set_name
+from cohort_creator._utils import set_version
 
 
 def bagelify(
@@ -110,32 +87,6 @@ def new_bagel() -> dict[str, list[str | None]]:
         "pipeline_starttime": [],
         "pipeline_complete": [],
     }
-
-
-def get_anat_files(
-    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
-) -> list[BIDSFile]:
-    return get_files(layout=layout, sub=sub, suffix="^T[12]{1}w$", ses=ses, extension=extension)
-
-
-def get_func_files(
-    layout: BIDSLayout, sub: str, ses: str | None = None, extension: str = "json"
-) -> list[BIDSFile]:
-    return get_files(layout=layout, sub=sub, suffix="^bold$", ses=ses, extension=extension)
-
-
-def get_files(
-    layout: BIDSLayout, sub: str, suffix: str, ses: str | None = None, extension: str = "json"
-) -> list[BIDSFile]:
-    if ses is None:
-        return layout.get(subject=sub, suffix=suffix, extension=extension, regex_search=True)
-    return layout.get(
-        subject=f"^{sub}$",
-        session=f"^{ses}$",
-        suffix=suffix,
-        extension=extension,
-        regex_search=True,
-    )
 
 
 def record(sub: str, ses: str | None) -> dict[str, str]:
