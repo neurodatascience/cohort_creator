@@ -387,7 +387,7 @@ def _recreate_mriqc_group_reports(
                 cc_log.error(f"  failed to pull docker image: {username}/mriqc:{version}")
                 continue
 
-            cmd = f"docker run -it --rm \
+            cmd = f"docker run -t --rm \
                     -v {target_pth}:/bids_dir \
                     -v {mriqc}:/output_dir \
                         {username}/mriqc:{version} /bids_dir /output_dir group"
