@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import itertools
 import shutil
+import subprocess
 from pathlib import Path
 
 import pandas as pd
@@ -23,6 +24,7 @@ from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
@@ -272,6 +274,10 @@ def construct_cohort(
         dataset_types=dataset_types,
     )
 
+    _recreate_mriqc_group_reports(
+        output_dir=output_dir, datasets=datasets, dataset_types=dataset_types
+    )
+
 
 def _copy_this_subject(
     subject: str,
@@ -338,3 +344,53 @@ by uploading {output_dir / "bagel.csv"} to
 https://dash.neurobagel.org/
 """
     )
+
+
+def _recreate_mriqc_group_reports(
+    output_dir: Path, datasets: pd.DataFrame, dataset_types: list[str]
+) -> None:
+    """Recreate MRIQC group reports."""
+    log_folder = output_dir / "logs"
+    docker_log = log_folder / "docker.log"
+    docker_log.parent.mkdir(exist_ok=True, parents=True)
+    docker_log.touch(exist_ok=True)
+    with open(docker_log, "w") as f:
+        f.write("docker logs\n\n")
+
+    cc_log.info("Recreating MRIQC group reports")
+    if "mriqc" not in dataset_types:
+        return None
+
+    for dataset_ in datasets["DatasetName"]:
+        cc_log.info(f" {dataset_}")
+
+        target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)
+        mriqc_dirs = (target_pth / "derivatives").glob("mriqc-*")
+
+        if not mriqc_dirs:
+            continue
+
+        for mriqc in mriqc_dirs:
+            version = get_pipeline_version(mriqc)
+            if not version:
+                cc_log.debug(f" could not determine version of:\n  {mriqc}")
+                continue
+            cc_log.info(f"   mriqc-{version}")
+
+            username = "poldracklab" if version.split(".")[0] == "0" else "nipreps"
+
+            cmd = f"docker pull {username}/mriqc:{version}"
+            cc_log.debug(f" {cmd}")
+            with open(docker_log, "a") as output:
+                result = subprocess.call(cmd, shell=True, stdout=output, stderr=output)
+            if result != 0:
+                cc_log.error(f"  failed to pull docker image: {username}/mriqc:{version}")
+                continue
+
+            cmd = f"docker run -it --rm -v {target_pth}:/bids_dir -v {mriqc}:/output_dir {username}/mriqc:{version} /bids_dir /output_dir group"
+            cc_log.debug(f" {cmd}")
+            with open(docker_log, "a") as output:
+                result = subprocess.call(cmd, shell=True, stdout=output, stderr=output)
+            if result != 0:
+                cc_log.error(f"  failed to run docker image: {username}/mriqc:{version}")
+                continue

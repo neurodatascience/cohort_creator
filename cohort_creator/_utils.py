@@ -70,7 +70,7 @@ def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[s
 
 
 def get_pipeline_version(pth: Path | None = None) -> None | str:
-    """Get the version of the pipeline that was used to create the dataset."""
+    """Try to get pipeline version from the dataset description."""
     if pth is None:
         return None
     dataset_description = pth / "dataset_description.json"
@@ -82,7 +82,7 @@ def get_pipeline_version(pth: Path | None = None) -> None | str:
 
 
 def get_pipeline_name(pth: Path) -> None | str:
-    """Get the name of the pipeline that was used to create the dataset."""
+    """Try to get the name of the pipeline from the dataset description."""
     dataset_description = pth / "dataset_description.json"
     if not dataset_description.exists():
         return None
@@ -177,17 +177,17 @@ def create_glob_pattern(dataset_type: str, suffix: str, ext: str, space: str | N
     )
 
 
-def dataset_path(root: Path, dataset_: str, derivative: str | None = None) -> Path:
+def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Path:
     if derivative is None:
-        return root / dataset_
-    name = f"{dataset_}-{derivative}"
-    return (root / dataset_).with_name(name)
+        return root / dataset
+    name = f"{dataset}-{derivative}"
+    return (root / dataset).with_name(name)
 
 
 def get_sessions(
-    participants: pd.DataFrame, dataset_: str, participant: str
+    participants: pd.DataFrame, dataset: str, participant: str
 ) -> list[str] | list[None]:
-    mask = (participants["DatasetName"] == dataset_) & (participants["SubjectID"] == participant)
+    mask = (participants["DatasetName"] == dataset) & (participants["SubjectID"] == participant)
     sessions = participants[mask].SessionID.values
     return listify(sessions[0])
 
@@ -321,15 +321,15 @@ def create_ds_description(output_dir: Path) -> None:
 
 
 def return_target_pth(
-    output_dir: Path, dataset_type_: str, dataset_: str, src_pth: Path | None = None
+    output_dir: Path, dataset_type: str, dataset: str, src_pth: Path | None = None
 ) -> Path:
-    study_ID = f"study-{dataset_}"
+    study_ID = f"study-{dataset}"
     folder_name = study_ID
-    if dataset_type_ == "raw":
+    if dataset_type == "raw":
         return dataset_path(output_dir, study_ID)
-    folder_name = dataset_type_
+    folder_name = dataset_type
     if version := get_pipeline_version(src_pth):
-        folder_name = f"{dataset_type_}-{version}"
+        folder_name = f"{dataset_type}-{version}"
     return output_dir / study_ID / "derivatives" / folder_name
 
 
