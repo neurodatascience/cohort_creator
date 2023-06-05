@@ -1,6 +1,7 @@
 """Command line interface for cohort_creator."""
 from __future__ import annotations
 
+import logging
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -28,6 +29,9 @@ def set_verbosity(verbosity: int | list[int]) -> None:
         cc_log.setLevel("INFO")
     elif verbosity == 3:
         cc_log.setLevel("DEBUG")
+
+    logging.getLogger("datalad").setLevel(logging.WARNING)
+    logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
 def cli(argv: Sequence[str] = sys.argv) -> None:

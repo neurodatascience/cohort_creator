@@ -5,8 +5,9 @@ Then copy the data to a new directory structure to create a "cohort".
 """
 from __future__ import annotations
 
-import logging
+import itertools
 import shutil
+import subprocess
 from pathlib import Path
 
 import pandas as pd
@@ -23,6 +24,7 @@ from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_participant_ids
+from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files
@@ -34,8 +36,6 @@ from cohort_creator.logger import cc_logger
 
 
 cc_log = cc_logger()
-
-logging.getLogger("datalad").setLevel(logging.WARNING)
 
 
 def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[str]) -> None:
@@ -180,7 +180,7 @@ def _get_data_this_subject(
         if not files:
             cc_log.warning(no_files_found_msg(subject, datatype_))
             continue
-        cc_log.info(f"    {subject} - getting files:\n     {files}")
+        cc_log.debug(f"    {subject} - getting files:\n     {files}")
         try:
             dl_dataset.get(path=files, jobs=jobs)
         except IncompleteResultsError:
@@ -267,27 +267,15 @@ def construct_cohort(
 
     add_study_tsv(output_dir, datasets)
 
-    bagel = _new_bagel()
-    supported_dataset_types = ["fmriprep", "mriqc"]
-    for dataset_ in datasets["DatasetName"]:
-        for dataset_type_ in dataset_types:
-            if dataset_type_ in supported_dataset_types:
-                raw_pth = return_target_pth(output_dir, "raw", dataset_)
+    _generate_bagel_for_cohort(
+        output_dir=output_dir,
+        sourcedata_dir=sourcedata_dir,
+        datasets=datasets,
+        dataset_types=dataset_types,
+    )
 
-                src_pth = dataset_path(sourcedata_dir, dataset_, derivative=dataset_type_)
-                derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
-
-                bagel = bagelify(bagel, raw_pth, derivative_pth)
-
-    df = pd.DataFrame.from_dict(bagel)
-    df.to_csv(output_dir / "bagel.csv", index=False)
-
-    cc_log.info(f"Cohort created at {output_dir}")
-    cc_log.info(
-        f"""Check what subjects have derivatives ready
-by uploading {output_dir / "bagel.csv"} to
-https://dash.neurobagel.org/
-"""
+    _recreate_mriqc_group_reports(
+        output_dir=output_dir, datasets=datasets, dataset_types=dataset_types
     )
 
 
@@ -313,7 +301,7 @@ def _copy_this_subject(
             cc_log.warning(no_files_found_msg(subject, datatype_))
             continue
 
-        cc_log.info(f"    {subject} - copying files:\n     {files}")
+        cc_log.debug(f"    {subject} - copying files:\n     {files}")
         for f in files:
             sub_dirs = Path(f).parents
             (target_pth / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
@@ -325,3 +313,87 @@ def _copy_this_subject(
                 # TODO deal with permission
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}'")
+
+
+def _generate_bagel_for_cohort(
+    output_dir: Path, sourcedata_dir: Path, datasets: pd.DataFrame, dataset_types: list[str]
+) -> None:
+    """Track what subjects have been processed by what pipeline."""
+    cc_log.info(" creating bagel.csv file")
+    bagel = _new_bagel()
+    supported_dataset_types = ["fmriprep", "mriqc"]
+    for dataset_type_, dataset_ in itertools.product(dataset_types, datasets["DatasetName"]):
+        if dataset_type_ not in supported_dataset_types:
+            continue
+        cc_log.info(f"  {dataset_} - {dataset_type_}")
+
+        raw_pth = return_target_pth(output_dir, "raw", dataset_)
+
+        src_pth = dataset_path(sourcedata_dir, dataset_, derivative=dataset_type_)
+        derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
+
+        bagel = bagelify(bagel, raw_pth, derivative_pth)
+
+    df = pd.DataFrame.from_dict(bagel)
+    df.to_csv(output_dir / "bagel.csv", index=False)
+
+    cc_log.info(f"Cohort created at {output_dir}")
+    cc_log.info(
+        f"""Check what subjects have derivatives ready
+by uploading {output_dir / "bagel.csv"} to
+https://dash.neurobagel.org/
+"""
+    )
+
+
+def _recreate_mriqc_group_reports(
+    output_dir: Path, datasets: pd.DataFrame, dataset_types: list[str]
+) -> None:
+    """Recreate MRIQC group reports."""
+    log_folder = output_dir / "logs"
+    docker_log = log_folder / "docker.log"
+    docker_log.parent.mkdir(exist_ok=True, parents=True)
+    docker_log.touch(exist_ok=True)
+    with open(docker_log, "w") as f:
+        f.write("docker logs\n\n")
+
+    cc_log.info("Recreating MRIQC group reports")
+    if "mriqc" not in dataset_types:
+        return None
+
+    for dataset_ in datasets["DatasetName"]:
+        cc_log.info(f" {dataset_}")
+
+        target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)
+        mriqc_dirs = (target_pth / "derivatives").glob("mriqc-*")
+
+        if not mriqc_dirs:
+            continue
+
+        for mriqc in mriqc_dirs:
+            version = get_pipeline_version(mriqc)
+            if not version:
+                cc_log.debug(f" could not determine version of:\n  {mriqc}")
+                continue
+            cc_log.info(f"   mriqc-{version}")
+
+            username = "poldracklab" if version.split(".")[0] == "0" else "nipreps"
+
+            cmd = f"docker pull {username}/mriqc:{version}"
+            cc_log.debug(f" {cmd}")
+            with open(docker_log, "a") as output:
+                result = subprocess.call(cmd, shell=True, stdout=output, stderr=output)
+            if result != 0:
+                cc_log.error(f"  failed to pull docker image: {username}/mriqc:{version}")
+                continue
+
+            cmd = f"docker run -it --rm \
+                    -v {target_pth}:/bids_dir \
+                    -v {mriqc}:/output_dir \
+                        {username}/mriqc:{version} /bids_dir /output_dir group"
+            cc_log.debug(f" {cmd}")
+            with open(docker_log, "a") as output:
+                result = subprocess.call(cmd, shell=True, stdout=output, stderr=output)
+            if result != 0:
+                cc_log.error(f"  failed to run docker image: {username}/mriqc:{version}")
+                continue

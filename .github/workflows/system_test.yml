@@ -84,5 +84,6 @@ jobs:
 
         -   name: Check outputs
             run: |
+                cat outputs/logs/docker.log
                 tree -L 2 --dirsfirst outputs
                 tree --dirsfirst outputs/study-ds000002

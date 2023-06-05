@@ -152,7 +152,7 @@ def test_create_ds_description(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "dataset_type_, dataset_, src_pth, expected",
+    "dataset_type, dataset, src_pth, expected",
     [
         ("raw", "foo", None, ["study-foo"]),
         ("fmriprep", "foo", None, ["study-foo", "derivatives", "fmriprep"]),
@@ -164,10 +164,10 @@ def test_create_ds_description(tmp_path):
         ),
     ],
 )
-def test_return_target_pth(dataset_type_, dataset_, src_pth, expected):
+def test_return_target_pth(dataset_type, dataset, src_pth, expected):
     output_dir = Path().cwd() / "outputs"
     value = return_target_pth(
-        output_dir=output_dir, dataset_type_=dataset_type_, dataset_=dataset_, src_pth=src_pth
+        output_dir=output_dir, dataset_type=dataset_type, dataset=dataset, src_pth=src_pth
     )
     assert value.relative_to(output_dir) == Path(*expected)
 
