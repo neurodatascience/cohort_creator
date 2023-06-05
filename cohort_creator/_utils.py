@@ -212,6 +212,7 @@ def validate_dataset_types(dataset_types: list[str]) -> None:
 
 def add_study_tsv(output_dir: Path, datasets: pd.DataFrame) -> None:
     """Create a study.tsv file."""
+    cc_log.info(" creating study.tsv file")
     studies: dict[str, list[Any]] = {
         "study_ID": [],
         "mean_age": [],

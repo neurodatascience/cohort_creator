@@ -1,9 +1,21 @@
 {
-    "fmap": {"datatype": "fmap"},
-    "bold": {"datatype": "func", "suffix": "bold"},
-    "sbref": {"datatype": "func", "suffix": "sbref"},
-    "flair": {"datatype": "anat", "suffix": "FLAIR"},
-    "t2w": {"datatype": "anat", "suffix": "T2w"},
-    "t1w": {"datatype": "anat", "suffix": "T1w"},
-    "roi": {"datatype": "anat", "suffix": "roi"}
+    "raw": {
+        "bold": {"datatype": "func", "suffix": "bold", "ext": "nii[.gz]?"},
+        "events": {"datatype": "func", "suffix": "events", "ext": "tsv"},
+        "t1w": {"datatype": "anat", "suffix": "T1w", "ext": "nii[.gz]?"},
+        "t2w": {"datatype": "anat", "suffix": "T2w", "ext": "nii[.gz]?"}
+    },
+    "mriqc":
+    {
+        "bold": {"datatype": "func", "suffix": "bold"},
+        "t1w": {"datatype": "anat", "suffix": "T1w"},
+        "t2w": {"datatype": "anat", "suffix": "T2w"}
+    },
+    "frmiprep":
+    {
+        "bold": {"datatype": "func", "suffix": "bold", "ext": "nii[.gz]?"},
+        "confounds": {"datatype": "func", "desc": "confounds", "suffix": "timeseries", "ext": "tsv"},
+        "t1w": {"datatype": "anat", "suffix": "T1w", "ext": "nii[.gz]?"},
+        "t2w": {"datatype": "anat", "suffix": "T2w", "ext": "nii[.gz]?"}
+    }
 }
