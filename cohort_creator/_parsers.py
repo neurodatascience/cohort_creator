@@ -34,14 +34,6 @@ def base_parser() -> MuhParser:
 
 def add_common_arguments(parser: MuhParser) -> MuhParser:
     parser.add_argument(
-        "-d",
-        "--datasets_listing",
-        help="""
-        Path to TSV file containing the list of datasets to install.
-        """,
-        nargs=1,
-    )
-    parser.add_argument(
         "-p",
         "--participants_listing",
         help="""
@@ -83,14 +75,6 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         type=int,
         nargs=1,
     )
-    # parser.add_argument(
-    #     "--dry_run",
-    #     help="""
-    #     Foo Bar
-    #     """,
-    #     action="store_true",
-    #     default=False,
-    # )
     return parser
 
 
@@ -140,7 +124,6 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator install \\
-                --datasets_listing inputs/datasets.tsv \\
                 --participants_listing inputs/participants.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
@@ -159,7 +142,6 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator get \\
-                --datasets_listing inputs/datasets.tsv \\
                 --participants_listing inputs/participants.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
@@ -191,7 +173,6 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator copy \\
-                --datasets_listing inputs/datasets.tsv \\
                 --participants_listing inputs/participants.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\

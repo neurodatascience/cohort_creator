@@ -10,8 +10,6 @@ def test_parser_for_get_data():
     args = parser.parse_args(
         [
             "install",
-            "-d",
-            str(Path()),
             "-p",
             str(Path()),
             "-o",

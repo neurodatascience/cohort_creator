@@ -83,7 +83,6 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
 
 
 def get_data(
-    datasets: pd.DataFrame,
     sourcedata: Path,
     participants: pd.DataFrame,
     dataset_types: list[str],
@@ -96,8 +95,6 @@ def get_data(
 
     Parameters
     ----------
-    datasets : pd.DataFrame
-
     sourcedata : Path
 
     participants : pd.DataFrame
@@ -120,7 +117,9 @@ def get_data(
     if isinstance(datatypes, str):
         datatypes = [datatypes]
 
-    for dataset_ in datasets["DatasetName"]:
+    datasets = sorted(participants["DatasetName"].unique().tolist())
+
+    for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
 
         participants_ids = get_participant_ids(participants, dataset_)
@@ -188,7 +187,6 @@ def _get_data_this_subject(
 
 
 def construct_cohort(
-    datasets: pd.DataFrame,
     output_dir: Path,
     sourcedata_dir: Path,
     participants: pd.DataFrame,
@@ -200,8 +198,6 @@ def construct_cohort(
 
     Parameters
     ----------
-    datasets : pd.DataFrame
-
     output_dir : Path
 
     sourcedata_dir : Path
@@ -225,7 +221,9 @@ def construct_cohort(
     with open(output_dir / "README.md", "w") as f:
         f.write("# README\n\n")
 
-    for dataset_ in datasets["DatasetName"]:
+    datasets = sorted(participants["DatasetName"].unique().tolist())
+
+    for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
 
         participants_ids = get_participant_ids(participants, dataset_)
@@ -316,13 +314,13 @@ def _copy_this_subject(
 
 
 def _generate_bagel_for_cohort(
-    output_dir: Path, sourcedata_dir: Path, datasets: pd.DataFrame, dataset_types: list[str]
+    output_dir: Path, sourcedata_dir: Path, datasets: list[str], dataset_types: list[str]
 ) -> None:
     """Track what subjects have been processed by what pipeline."""
     cc_log.info(" creating bagel.csv file")
     bagel = _new_bagel()
     supported_dataset_types = ["fmriprep", "mriqc"]
-    for dataset_type_, dataset_ in itertools.product(dataset_types, datasets["DatasetName"]):
+    for dataset_type_, dataset_ in itertools.product(dataset_types, datasets):
         if dataset_type_ not in supported_dataset_types:
             continue
         cc_log.info(f"  {dataset_} - {dataset_type_}")
@@ -347,7 +345,7 @@ https://dash.neurobagel.org/
 
 
 def _recreate_mriqc_group_reports(
-    output_dir: Path, datasets: pd.DataFrame, dataset_types: list[str]
+    output_dir: Path, datasets: list[str], dataset_types: list[str]
 ) -> None:
     """Recreate MRIQC group reports."""
     log_folder = output_dir / "logs"
@@ -361,7 +359,7 @@ def _recreate_mriqc_group_reports(
     if "mriqc" not in dataset_types:
         return None
 
-    for dataset_ in datasets["DatasetName"]:
+    for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
 
         target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)
@@ -387,7 +385,7 @@ def _recreate_mriqc_group_reports(
                 cc_log.error(f"  failed to pull docker image: {username}/mriqc:{version}")
                 continue
 
-            cmd = f"docker run -it --rm \
+            cmd = f"docker run -t --rm \
                     -v {target_pth}:/bids_dir \
                     -v {mriqc}:/output_dir \
                         {username}/mriqc:{version} /bids_dir /output_dir group"

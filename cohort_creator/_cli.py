@@ -40,7 +40,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     args, unknowns = parser.parse_known_args(argv[1:])
 
-    datasets_listing = Path(args.datasets_listing[0]).resolve()
     participants_listing = Path(args.participants_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
 
@@ -53,7 +52,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     participants = check_tsv_content(participants_listing)
     check_participant_listing(participants)
 
-    datasets = check_tsv_content(datasets_listing)  # not needed for now
     datasets_to_install = list(participants["DatasetName"].unique())
 
     sourcedata_dir = output_dir / "sourcedata"
@@ -75,7 +73,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         if isinstance(jobs, list):
             jobs = jobs[0]
         get_data(
-            datasets=datasets,
             sourcedata=sourcedata_dir,
             participants=participants,
             dataset_types=dataset_types,
@@ -87,7 +84,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     if args.command == "copy":
         construct_cohort(
-            datasets=datasets,
             output_dir=output_dir,
             sourcedata_dir=sourcedata_dir,
             participants=participants,

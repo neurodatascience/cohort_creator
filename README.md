@@ -13,11 +13,10 @@
 Install a set of datalad datasets from openneuro and get the data for a set of participants.
 Then copy the data to a new directory structure to create a "cohort".
 
-Takes 2 files as input that should list:
-- source datasets
+Takes 1 file as input that should list:
 - subject in each dataset to be included in the cohort
 
-For examples of 2 inputs TSV files see this [page](https://github.com/neurobagel/documentation/wiki/Query-Tool#example-data)
+For examples of of inputs TSV files see this [page](https://github.com/neurobagel/documentation/wiki/Query-Tool#example-data)
 
 ## Requirements
 
@@ -54,6 +53,8 @@ pip install .
 
 ## Limitations
 
+Cohorts can only be created by aggregating data from openneuro and openneuro derivatives.
+
 ### Latest datasets
 
 Currently this should allow you to access:
@@ -74,7 +75,7 @@ Number of datasets: 863 with 37441 subjects including:
 
 It may be that very recent datasets are not available yet.
 
-### Datatypes, suffixes, Freesurfer
+### Datatypes, suffixes
 
 Only `anat` | `T1w` and `func` | `bold` data is supported at the moment.
 
@@ -100,21 +101,18 @@ run the following command from within the cohort_creator folder:
 
 ```bash
 cohort_creator install \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \
   --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator get \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \
   --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator copy \
-  --datasets_listing inputs/datasets_with_mriqc.tsv \
   --participants_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
