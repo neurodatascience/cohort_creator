@@ -27,13 +27,11 @@ clean:
 
 demo_anat:
 	cohort_creator install \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--verbosity 2
 	cohort_creator get \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -41,7 +39,6 @@ demo_anat:
 		--jobs 6 \
 		--verbosity 2
 	cohort_creator copy \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -50,13 +47,11 @@ demo_anat:
 
 demo_func:
 	cohort_creator install \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--verbosity 3
 	cohort_creator get \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -64,7 +59,6 @@ demo_func:
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -73,13 +67,11 @@ demo_func:
 
 demo_all:
 	cohort_creator install \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--verbosity 3
 	cohort_creator get \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -88,7 +80,6 @@ demo_all:
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
-		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \

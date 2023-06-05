@@ -25,6 +25,7 @@ author = "Rémi Gau"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.coverage",
     "sphinx_copybutton",
     "myst_parser",
     "sphinxarg.ext",
@@ -37,3 +38,7 @@ templates_path = ["_templates"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
+
+
+# Configuration of sphinx.ext.coverage
+coverage_show_missing_items = True

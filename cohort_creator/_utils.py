@@ -210,7 +210,7 @@ def validate_dataset_types(dataset_types: list[str]) -> None:
             )
 
 
-def add_study_tsv(output_dir: Path, datasets: pd.DataFrame) -> None:
+def add_study_tsv(output_dir: Path, datasets: list[str]) -> None:
     """Create a study.tsv file."""
     cc_log.info(" creating study.tsv file")
     studies: dict[str, list[Any]] = {
@@ -221,7 +221,7 @@ def add_study_tsv(output_dir: Path, datasets: pd.DataFrame) -> None:
         "InstitutionAddress": [],
     }
 
-    for dataset_ in datasets["DatasetName"]:
+    for dataset_ in datasets:
         studies["study_ID"].append(dataset_)
 
         participants_tsv = dataset_path(output_dir, f"study-{dataset_}") / "participants.tsv"

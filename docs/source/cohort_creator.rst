@@ -4,6 +4,14 @@ cohort\_creator package
 Submodules
 ----------
 
+cohort\_creator.bagelify module
+-------------------------------
+
+.. automodule:: cohort_creator.bagelify
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cohort\_creator.cohort\_creator module
 --------------------------------------
 
