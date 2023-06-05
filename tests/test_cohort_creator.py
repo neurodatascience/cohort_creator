@@ -26,7 +26,6 @@ def test_install_datasets(tmp_path, caplog):
 
 
 def test_construct_cohort(tmp_path):
-    datasets = pd.DataFrame({"DatasetName": ["ds000001"]})
     participants = pd.DataFrame(
         {"DatasetName": ["ds000001"], "SubjectID": ["sub-01"], "SessionID": [""]}
     )
@@ -38,7 +37,6 @@ def test_construct_cohort(tmp_path):
         datasets=["ds000001", "foo"], sourcedata=sourcedata, dataset_types=dataset_types
     )
     get_data(
-        datasets=datasets,
         sourcedata=sourcedata,
         participants=participants,
         dataset_types=dataset_types,
@@ -47,7 +45,6 @@ def test_construct_cohort(tmp_path):
         jobs=2,
     )
     get_data(
-        datasets=datasets,
         sourcedata=sourcedata,
         participants=participants,
         dataset_types=dataset_types,
@@ -56,7 +53,6 @@ def test_construct_cohort(tmp_path):
         jobs=2,
     )
     construct_cohort(
-        datasets=datasets,
         output_dir=output_dir,
         sourcedata_dir=sourcedata,
         participants=participants,
@@ -65,7 +61,6 @@ def test_construct_cohort(tmp_path):
         space="not_used_for_raw",
     )
     construct_cohort(
-        datasets=datasets,
         output_dir=output_dir,
         sourcedata_dir=sourcedata,
         participants=participants,
