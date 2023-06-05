@@ -387,7 +387,10 @@ def _recreate_mriqc_group_reports(
                 cc_log.error(f"  failed to pull docker image: {username}/mriqc:{version}")
                 continue
 
-            cmd = f"docker run -it --rm -v {target_pth}:/bids_dir -v {mriqc}:/output_dir {username}/mriqc:{version} /bids_dir /output_dir group"
+            cmd = f"docker run -it --rm \
+                    -v {target_pth}:/bids_dir \
+                    -v {mriqc}:/output_dir \
+                        {username}/mriqc:{version} /bids_dir /output_dir group"
             cc_log.debug(f" {cmd}")
             with open(docker_log, "a") as output:
                 result = subprocess.call(cmd, shell=True, stdout=output, stderr=output)
