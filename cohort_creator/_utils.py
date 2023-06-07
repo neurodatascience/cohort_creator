@@ -107,20 +107,6 @@ def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
     return (dataset_pth / subject).exists()
 
 
-def get_extensions(dataset_type: str, suffix: str) -> list[str]:
-    if dataset_type == "mriqc":
-        return ["json"]
-    return ["tsv", "json"] if suffix == "events" else ["nii.gz", "nii", "json"]
-
-
-def get_suffixes(datatype: str) -> list[str]:
-    if datatype == "func":
-        return ["events", "bold"]
-    elif datatype == "anat":
-        return ["T1w"]
-    return ["*"]
-
-
 def no_files_found_msg(
     subject: str,
     datatype: str,
