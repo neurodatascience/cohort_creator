@@ -27,7 +27,7 @@ from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
-from cohort_creator._utils import list_all_files
+from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import return_target_pth
 from cohort_creator.bagelify import _new_bagel
@@ -168,7 +168,7 @@ def _get_data_this_subject(
     jobs: int,
 ) -> None:
     for datatype_ in datatypes:
-        files = list_all_files(
+        files = list_all_files_with_filter(
             data_pth=data_pth,
             dataset_type=dataset_type,
             subject=subject,
@@ -287,7 +287,7 @@ def _copy_this_subject(
     target_pth: Path,
 ) -> None:
     for datatype_ in datatypes:
-        files = list_all_files(
+        files = list_all_files_with_filter(
             data_pth=src_pth,
             dataset_type=dataset_type,
             subject=subject,

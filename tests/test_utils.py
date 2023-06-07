@@ -14,14 +14,16 @@ from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
 from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import get_anat_files
+from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_dataset_url
+from cohort_creator._utils import get_filters
 from cohort_creator._utils import get_func_files
 from cohort_creator._utils import get_institution
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
-from cohort_creator._utils import list_all_files
+from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import set_name
 from cohort_creator._utils import set_version
@@ -69,39 +71,6 @@ def test_is_dataset_in_openneuro():
 def test_is_subject_in_dataset(bids_examples):
     assert ~is_subject_in_dataset(subject="foo", dataset_pth=bids_examples / "ds001")
     assert is_subject_in_dataset(subject="sub-01", dataset_pth=bids_examples / "ds001")
-
-
-def test_list_all_files_raw(bids_examples):
-    files = list_all_files(
-        data_pth=bids_examples / "ds001",
-        dataset_type="raw",
-        subject="sub-01",
-        sessions=[None],
-        datatype="anat",
-        space="notused",
-    )
-    assert len(files) == 1
-    assert files == ["sub-01/anat/sub-01_T1w.nii.gz"]
-
-
-def test_list_all_files_func(bids_examples):
-    files = list_all_files(
-        data_pth=bids_examples / "ds001",
-        dataset_type="raw",
-        subject="sub-01",
-        sessions=[None],
-        datatype="func",
-        space="notused",
-    )
-    assert len(files) == 6
-    assert sorted(files) == [
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-01_bold.nii.gz",
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-01_events.tsv",
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-02_bold.nii.gz",
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-02_events.tsv",
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-03_bold.nii.gz",
-        "sub-01/func/sub-01_task-balloonanalogrisktask_run-03_events.tsv",
-    ]
 
 
 def test_get_participant_ids():
@@ -198,3 +167,100 @@ def test_get_func_files(bids_examples):
 
     files = get_func_files(layout, sub="01")
     assert len(files) == 0
+
+
+def test_get_bids_filter(tmp_path):
+    bids_filter = get_bids_filter()
+    assert all(key in ["raw", "mriqc", "fmriprep"] for key in bids_filter.keys())
+
+    bids_filter = get_bids_filter(Path().cwd() / "foo")
+    assert all(key in ["raw", "mriqc", "fmriprep"] for key in bids_filter.keys())
+
+    tmp_filter = tmp_path / "filter.json"
+    with open(tmp_filter, "w") as f:
+        f.write('{"foo": ["bar"]}')
+    bids_filter = get_bids_filter(tmp_filter)
+    assert bids_filter == {"foo": ["bar"]}
+
+
+def test_get_filters():
+    filters = get_filters(dataset_type="raw", datatype="anat")
+    assert sorted(filters.keys()) == ["t1w", "t2w"]
+
+    filters = get_filters(dataset_type="raw", datatype="func")
+    assert sorted(filters.keys()) == ["bold", "events"]
+
+
+def test_list_all_files_with_filter_raw(bids_examples):
+    files = list_all_files_with_filter(
+        data_pth=bids_examples / "ds001",
+        dataset_type="raw",
+        subject="sub-01",
+        sessions=[None],
+        datatype="anat",
+    )
+    assert len(files) == 1
+    assert files == ["sub-01/anat/sub-01_T1w.nii.gz"]
+
+
+def test_list_all_files_with_filter_func(bids_examples):
+    files = list_all_files_with_filter(
+        data_pth=bids_examples / "ds001",
+        dataset_type="raw",
+        subject="sub-01",
+        sessions=[None],
+        datatype="func",
+    )
+    assert len(files) == 6
+    assert sorted(files) == [
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-01_bold.nii.gz",
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-01_events.tsv",
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-02_bold.nii.gz",
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-02_events.tsv",
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-03_bold.nii.gz",
+        "sub-01/func/sub-01_task-balloonanalogrisktask_run-03_events.tsv",
+    ]
+
+
+def test_list_all_files_with_filter_anat_fmriprep(bids_examples):
+    files = list_all_files_with_filter(
+        data_pth=bids_examples / "ds000001-fmriprep",
+        dataset_type="fmriprep",
+        subject="sub-10",
+        sessions=[None],
+        datatype="anat",
+        space=None,
+    )
+    assert len(files) == 4
+    assert files == [
+        "sub-10/anat/sub-10_desc-preproc_T1w.json",
+        "sub-10/anat/sub-10_desc-preproc_T1w.nii.gz",
+        "sub-10/anat/sub-10_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.json",
+        "sub-10/anat/sub-10_space-MNI152NLin2009cAsym_res-2_desc-preproc_T1w.nii.gz",
+    ]
+
+
+def test_list_all_files_with_filter_func_fmriprep(bids_examples):
+    files = list_all_files_with_filter(
+        data_pth=bids_examples / "ds000001-fmriprep",
+        dataset_type="fmriprep",
+        subject="sub-10",
+        sessions=[None],
+        datatype="func",
+        space=None,
+    )
+    assert len(files) == 12
+    assert files == [
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-1_desc-confounds_timeseries.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-1_desc-confounds_timeseries.tsv",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-1_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-1_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-2_desc-confounds_timeseries.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-2_desc-confounds_timeseries.tsv",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-2_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-2_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_desc-confounds_timeseries.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_desc-confounds_timeseries.tsv",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.json",
+        "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz",
+    ]

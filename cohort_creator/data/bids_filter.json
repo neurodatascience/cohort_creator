@@ -1,21 +1,74 @@
 {
     "raw": {
-        "bold": {"datatype": "func", "suffix": "bold", "ext": "nii[.gz]?"},
-        "events": {"datatype": "func", "suffix": "events", "ext": "tsv"},
-        "t1w": {"datatype": "anat", "suffix": "T1w", "ext": "nii[.gz]?"},
-        "t2w": {"datatype": "anat", "suffix": "T2w", "ext": "nii[.gz]?"}
+        "bold": {
+            "datatype": "func",
+            "task": "*",
+            "suffix": "bold",
+            "ext": "nii*"
+        },
+        "events": {
+            "datatype": "func",
+            "task": "*",
+            "suffix": "events",
+            "ext": "tsv"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "suffix": "T1w",
+            "ext": "nii*"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "suffix": "T2w",
+            "ext": "nii*"
+        }
     },
-    "mriqc":
-    {
-        "bold": {"datatype": "func", "suffix": "bold"},
-        "t1w": {"datatype": "anat", "suffix": "T1w"},
-        "t2w": {"datatype": "anat", "suffix": "T2w"}
+    "mriqc": {
+        "bold": {
+            "datatype": "func",
+            "suffix": "bold",
+            "ext": "json"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "suffix": "T1w",
+            "ext": "json"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "suffix": "T2w",
+            "ext": "json"
+        }
     },
-    "frmiprep":
-    {
-        "bold": {"datatype": "func", "suffix": "bold", "ext": "nii[.gz]?"},
-        "confounds": {"datatype": "func", "desc": "confounds", "suffix": "timeseries", "ext": "tsv"},
-        "t1w": {"datatype": "anat", "suffix": "T1w", "ext": "nii[.gz]?"},
-        "t2w": {"datatype": "anat", "suffix": "T2w", "ext": "nii[.gz]?"}
+    "fmriprep": {
+        "bold": {
+            "datatype": "func",
+            "task": "*",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "bold",
+            "ext": "nii*"
+        },
+        "confounds": {
+            "datatype": "func",
+            "task": "*",
+            "desc": "confounds",
+            "suffix": "timeseries",
+            "ext": "tsv"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "T1w",
+            "ext": "nii*"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "T2w",
+            "ext": "nii*"
+        }
     }
 }
