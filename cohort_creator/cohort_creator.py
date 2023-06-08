@@ -23,6 +23,7 @@ from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
+from cohort_creator._utils import get_filters
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
@@ -89,6 +90,7 @@ def get_data(
     datatypes: list[str],
     space: str,
     jobs: int,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
     """Get the data for specified participants / datatypes / space \
     from preinstalled datalad datasets / dataset_types.
@@ -154,6 +156,7 @@ def get_data(
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
                     jobs=jobs,
+                    bids_filter=bids_filter,
                 )
 
 
@@ -166,18 +169,23 @@ def _get_data_this_subject(
     data_pth: Path,
     dl_dataset: api.Dataset,
     jobs: int,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
     for datatype_ in datatypes:
+        filters = get_filters(
+            dataset_type=dataset_type, datatype=datatype_, bids_filter=bids_filter
+        )
         files = list_all_files_with_filter(
             data_pth=data_pth,
             dataset_type=dataset_type,
+            filters=filters,
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_))
+            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
             continue
         cc_log.debug(f"    {subject} - getting files:\n     {files}")
         try:
@@ -193,6 +201,7 @@ def construct_cohort(
     dataset_types: list[str],
     datatypes: list[str],
     space: str,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
     """Copy the data from sourcedata_dir to output_dir, to create a cohort.
 
@@ -261,6 +270,7 @@ def construct_cohort(
                     space=space,
                     src_pth=src_pth,
                     target_pth=target_pth,
+                    bids_filter=bids_filter,
                 )
 
     add_study_tsv(output_dir, datasets)
@@ -285,18 +295,23 @@ def _copy_this_subject(
     space: str,
     src_pth: Path,
     target_pth: Path,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
     for datatype_ in datatypes:
+        filters = get_filters(
+            dataset_type=dataset_type, datatype=datatype_, bids_filter=bids_filter
+        )
         files = list_all_files_with_filter(
             data_pth=src_pth,
             dataset_type=dataset_type,
+            filters=filters,
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_))
+            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
             continue
 
         cc_log.debug(f"    {subject} - copying files:\n     {files}")

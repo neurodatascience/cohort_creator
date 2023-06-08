@@ -37,12 +37,14 @@ demo_anat:
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
 		--jobs 6 \
+		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 2
 	cohort_creator copy \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
+		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 2
 
 demo_func:
@@ -57,12 +59,14 @@ demo_func:
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
 		--jobs 6 \
+		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 	cohort_creator copy \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
+		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 
 demo_all:

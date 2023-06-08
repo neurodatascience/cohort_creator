@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import functools
+import itertools
 import json
 import shutil
 from pathlib import Path
@@ -110,10 +111,12 @@ def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
 def no_files_found_msg(
     subject: str,
     datatype: str,
+    filters: dict[str, dict[str, str]],
 ) -> str:
     return f"""    no files found for:
      - subject: {subject}
-     - datatype: {datatype}"""
+     - datatype: {datatype}
+     - filters: {filters}"""
 
 
 def openneuro_listing_tsv() -> Path:
@@ -334,22 +337,51 @@ def get_files(
     )
 
 
-def get_bids_filter(bids_filter_file: Path | None = None) -> dict[str, dict[str, dict[str, str]]]:
-    default_bids_filter_file = Path(__file__).parent / "data" / "bids_filter.json"
+def default_bids_filter_file() -> Path:
+    return Path(__file__).parent / "data" / "bids_filter.json"
 
+
+def get_bids_filter(bids_filter_file: Path | None = None) -> dict[str, dict[str, dict[str, str]]]:
     if bids_filter_file is None:
-        bids_filter_file = default_bids_filter_file
+        bids_filter_file = default_bids_filter_file()
 
     if not bids_filter_file.exists():
-        cc_log.warning(f"Could not find bids filter file at '{bids_filter_file}'")
-        bids_filter_file = default_bids_filter_file
+        raise FileNotFoundError(f"Could not find bids filter file at '{bids_filter_file}'")
 
     with open(bids_filter_file) as f:
-        return json.load(f)
+        filters = json.load(f)
+
+    validate_bids_filter(filters=filters, bids_filter_file=bids_filter_file)
+
+    return filters
 
 
-def get_filters(dataset_type: str, datatype: str) -> dict[str, dict[str, str]]:
-    bids_filter = get_bids_filter()
+def validate_bids_filter(
+    filters: dict[str, dict[str, dict[str, str]]], bids_filter_file: Path
+) -> None:
+    REQUIRED_KEYS = {"datatype", "suffix", "ext"}
+    for dataset_type, required_key in itertools.product(filters, REQUIRED_KEYS):
+        if any(not isinstance(filters[dataset_type][x], dict) for x in filters[dataset_type]):
+            raise TypeError(
+                f"All values in '{dataset_type}' "
+                f"in bids filter file at '{bids_filter_file}' "
+                "must be JSON objects."
+            )
+        for suffix_group in filters[dataset_type]:
+            if required_key not in filters[dataset_type][suffix_group]:
+                raise ValueError(
+                    f"Key '{required_key}' not found in '{dataset_type}[{suffix_group}]' "
+                    f"in bids filter file at '{bids_filter_file}'"
+                )
+
+
+def get_filters(
+    dataset_type: str,
+    datatype: str,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
+) -> dict[str, dict[str, str]]:
+    if bids_filter is None:
+        bids_filter = get_bids_filter()
     return {
         x: bids_filter[dataset_type][x]
         for x in bids_filter[dataset_type]
@@ -383,14 +415,13 @@ def create_glob_pattern_from_filter(dataset_type: str, filter: dict[str, str]) -
 def list_all_files_with_filter(
     data_pth: Path,
     dataset_type: str,
+    filters: dict[str, dict[str, str]],
     subject: str,
     sessions: list[str] | list[None],
     datatype: str,
     space: str | None = None,
 ) -> list[str]:
     """List all data files of a datatype for all sessions of a subject in a dataset."""
-    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
-
     files: list[str] = []
 
     for session_ in sessions:
@@ -415,15 +446,16 @@ def list_all_files_with_filter(
             glob_pattern = create_glob_pattern_from_filter(
                 dataset_type=dataset_type, filter=filter_
             )
-            tmp = datatype_pth.glob(glob_pattern)
-            files.extend([str(f.relative_to(data_pth)) for f in tmp])
+            files.extend([str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)])
             if filter_.get("ext") != "json":
-                filter_["ext"] = "json"
+                tmp = filter_.copy()
+                tmp["ext"] = "json"
                 glob_pattern = create_glob_pattern_from_filter(
-                    dataset_type=dataset_type, filter=filter_
+                    dataset_type=dataset_type, filter=tmp
                 )
-                tmp = datatype_pth.glob(glob_pattern)
-                files.extend([str(f.relative_to(data_pth)) for f in tmp])
+                files.extend(
+                    [str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)]
+                )
 
     return sorted(files)
 

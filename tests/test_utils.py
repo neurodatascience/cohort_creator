@@ -1,6 +1,7 @@
 """Utilities."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -173,14 +174,31 @@ def test_get_bids_filter(tmp_path):
     bids_filter = get_bids_filter()
     assert all(key in ["raw", "mriqc", "fmriprep"] for key in bids_filter.keys())
 
-    bids_filter = get_bids_filter(Path().cwd() / "foo")
-    assert all(key in ["raw", "mriqc", "fmriprep"] for key in bids_filter.keys())
+    tmp_filter = tmp_path / "filter.json"
+    content = {"raw": {"eeg": {"datatype": "eeg", "suffix": "eeg", "ext": "set"}}}
+    with open(tmp_filter, "w") as f:
+        json.dump(content, f)
+    bids_filter = get_bids_filter(tmp_filter)
+    assert bids_filter == content
+
+
+def test_get_bids_filter_errors(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        get_bids_filter(Path().cwd() / "foo")
 
     tmp_filter = tmp_path / "filter.json"
+    content = {"foo": {"bar": "baz"}}
     with open(tmp_filter, "w") as f:
-        f.write('{"foo": ["bar"]}')
-    bids_filter = get_bids_filter(tmp_filter)
-    assert bids_filter == {"foo": ["bar"]}
+        json.dump(content, f)
+    with pytest.raises(TypeError, match="must be JSON object"):
+        get_bids_filter(tmp_filter)
+
+    tmp_filter = tmp_path / "filter.json"
+    content = {"foo": {"bar": {"baz": "qux"}}}
+    with open(tmp_filter, "w") as f:
+        json.dump(content, f)
+    with pytest.raises(ValueError, match="not found in"):
+        get_bids_filter(tmp_filter)
 
 
 def test_get_filters():
@@ -192,24 +210,32 @@ def test_get_filters():
 
 
 def test_list_all_files_with_filter_raw(bids_examples):
+    dataset_type = "raw"
+    datatype = "anat"
+    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
     files = list_all_files_with_filter(
         data_pth=bids_examples / "ds001",
-        dataset_type="raw",
+        dataset_type=dataset_type,
+        filters=filters,
         subject="sub-01",
         sessions=[None],
-        datatype="anat",
+        datatype=datatype,
     )
     assert len(files) == 1
     assert files == ["sub-01/anat/sub-01_T1w.nii.gz"]
 
 
 def test_list_all_files_with_filter_func(bids_examples):
+    dataset_type = "raw"
+    datatype = "func"
+    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
     files = list_all_files_with_filter(
         data_pth=bids_examples / "ds001",
-        dataset_type="raw",
+        dataset_type=dataset_type,
+        filters=filters,
         subject="sub-01",
         sessions=[None],
-        datatype="func",
+        datatype=datatype,
     )
     assert len(files) == 6
     assert sorted(files) == [
@@ -223,12 +249,16 @@ def test_list_all_files_with_filter_func(bids_examples):
 
 
 def test_list_all_files_with_filter_anat_fmriprep(bids_examples):
+    dataset_type = "fmriprep"
+    datatype = "anat"
+    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
     files = list_all_files_with_filter(
         data_pth=bids_examples / "ds000001-fmriprep",
-        dataset_type="fmriprep",
+        dataset_type=dataset_type,
+        filters=filters,
         subject="sub-10",
         sessions=[None],
-        datatype="anat",
+        datatype=datatype,
         space=None,
     )
     assert len(files) == 4
@@ -241,12 +271,16 @@ def test_list_all_files_with_filter_anat_fmriprep(bids_examples):
 
 
 def test_list_all_files_with_filter_func_fmriprep(bids_examples):
+    dataset_type = "fmriprep"
+    datatype = "func"
+    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
     files = list_all_files_with_filter(
         data_pth=bids_examples / "ds000001-fmriprep",
-        dataset_type="fmriprep",
+        dataset_type=dataset_type,
+        filters=filters,
         subject="sub-10",
         sessions=[None],
-        datatype="func",
+        datatype=datatype,
         space=None,
     )
     assert len(files) == 12
