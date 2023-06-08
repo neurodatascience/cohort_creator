@@ -108,27 +108,15 @@ def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
     return (dataset_pth / subject).exists()
 
 
-def get_extensions(dataset_type: str, suffix: str) -> list[str]:
-    if dataset_type == "mriqc":
-        return ["json"]
-    return ["tsv", "json"] if suffix == "events" else ["nii.gz", "nii", "json"]
-
-
-def get_suffixes(datatype: str) -> list[str]:
-    if datatype == "func":
-        return ["events", "bold"]
-    elif datatype == "anat":
-        return ["T1w"]
-    return ["*"]
-
-
 def no_files_found_msg(
     subject: str,
     datatype: str,
+    filters: dict[str, dict[str, str]],
 ) -> str:
     return f"""    no files found for:
      - subject: {subject}
-     - datatype: {datatype}"""
+     - datatype: {datatype}
+     - filters: {filters}"""
 
 
 def openneuro_listing_tsv() -> Path:
@@ -140,41 +128,6 @@ def openneuro_listing_tsv() -> Path:
 @functools.lru_cache(maxsize=1)
 def openneuro_df() -> pd.DataFrame:
     return pd.read_csv(openneuro_listing_tsv(), sep="\t")
-
-
-def list_all_files(
-    data_pth: Path,
-    dataset_type: str,
-    subject: str,
-    sessions: list[str] | list[None],
-    datatype: str,
-    space: str,
-) -> list[str]:
-    """List all data files of a datatype for all sessions of a subject in a dataset."""
-    files: list[str] = []
-    for session_, suffix in itertools.product(sessions, get_suffixes(datatype)):
-        if not session_:
-            datatype_pth = data_pth / subject / datatype
-        else:
-            datatype_pth = data_pth / subject / f"ses-{session_}" / datatype
-        if not datatype_pth.exists():
-            cc_log.warning(f"Path '{datatype_pth}' does not exist")
-            continue
-
-        for ext in get_extensions(dataset_type, suffix):
-            glob_pattern = create_glob_pattern(dataset_type, suffix=suffix, ext=ext, space=space)
-            tmp = datatype_pth.glob(glob_pattern)
-            files.extend([str(f.relative_to(data_pth)) for f in tmp])
-
-    return files
-
-
-def create_glob_pattern(dataset_type: str, suffix: str, ext: str, space: str | None = None) -> str:
-    return (
-        f"*_{suffix}.{ext}"
-        if dataset_type in {"raw", "mriqc"}
-        else f"*{space}*preproc*_{suffix}.{ext}"
-    )
 
 
 def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Path:
@@ -382,3 +335,146 @@ def get_files(
         extension=extension,
         regex_search=True,
     )
+
+
+def default_bids_filter_file() -> Path:
+    return Path(__file__).parent / "data" / "bids_filter.json"
+
+
+def get_bids_filter(bids_filter_file: Path | None = None) -> dict[str, dict[str, dict[str, str]]]:
+    if bids_filter_file is None:
+        bids_filter_file = default_bids_filter_file()
+
+    if not bids_filter_file.exists():
+        raise FileNotFoundError(f"Could not find bids filter file at '{bids_filter_file}'")
+
+    with open(bids_filter_file) as f:
+        filters = json.load(f)
+
+    validate_bids_filter(filters=filters, bids_filter_file=bids_filter_file)
+
+    return filters
+
+
+def validate_bids_filter(
+    filters: dict[str, dict[str, dict[str, str]]], bids_filter_file: Path
+) -> None:
+    REQUIRED_KEYS = {"datatype", "suffix", "ext"}
+    for dataset_type, required_key in itertools.product(filters, REQUIRED_KEYS):
+        if any(not isinstance(filters[dataset_type][x], dict) for x in filters[dataset_type]):
+            raise TypeError(
+                f"All values in '{dataset_type}' "
+                f"in bids filter file at '{bids_filter_file}' "
+                "must be JSON objects."
+            )
+        for suffix_group in filters[dataset_type]:
+            if required_key not in filters[dataset_type][suffix_group]:
+                raise ValueError(
+                    f"Key '{required_key}' not found in '{dataset_type}[{suffix_group}]' "
+                    f"in bids filter file at '{bids_filter_file}'"
+                )
+
+
+def get_filters(
+    dataset_type: str,
+    datatype: str,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
+) -> dict[str, dict[str, str]]:
+    if bids_filter is None:
+        bids_filter = get_bids_filter()
+    return {
+        x: bids_filter[dataset_type][x]
+        for x in bids_filter[dataset_type]
+        if bids_filter[dataset_type][x]["datatype"] == datatype
+    }
+
+
+def create_glob_pattern_from_filter(dataset_type: str, filter: dict[str, str]) -> str:
+    # - task
+    # - acquisition
+    # - ceagent
+    # - reconstruction
+    # - direction
+    # - run
+    # - echo
+    # - part
+    # - space
+    # - resolution
+    # - density
+    # - label
+    # - description
+    pattern = f"*{filter['ses']}*{filter['task']}*{filter['run']}"
+    if dataset_type not in {"raw", "mriqc"}:
+        pattern = f"*{pattern}*{filter['space']}*{filter['desc']}"
+    pattern = f"{pattern}*_{filter['suffix']}.{filter['ext']}"
+    while "**" in pattern:
+        pattern = pattern.replace("**", "*")
+    return pattern
+
+
+def list_all_files_with_filter(
+    data_pth: Path,
+    dataset_type: str,
+    filters: dict[str, dict[str, str]],
+    subject: str,
+    sessions: list[str] | list[None],
+    datatype: str,
+    space: str | None = None,
+) -> list[str]:
+    """List all data files of a datatype for all sessions of a subject in a dataset."""
+    files: list[str] = []
+
+    for session_ in sessions:
+        # TODO
+        # take care of data averaged across sessions for fmriprep anat
+        if not session_:
+            datatype_pth = data_pth / subject / datatype
+        else:
+            datatype_pth = data_pth / subject / f"ses-{session_}" / datatype
+        if not datatype_pth.exists():
+            cc_log.warning(f"Path '{datatype_pth}' does not exist")
+            continue
+
+        for key in filters.keys():
+            filter_ = augment_filter(
+                dataset_type=dataset_type,
+                filters=filters,
+                key=key,
+                session=session_,
+                space=space,
+            )
+            glob_pattern = create_glob_pattern_from_filter(
+                dataset_type=dataset_type, filter=filter_
+            )
+            files.extend([str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)])
+            if filter_.get("ext") != "json":
+                tmp = filter_.copy()
+                tmp["ext"] = "json"
+                glob_pattern = create_glob_pattern_from_filter(
+                    dataset_type=dataset_type, filter=tmp
+                )
+                files.extend(
+                    [str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)]
+                )
+
+    return sorted(files)
+
+
+def augment_filter(
+    dataset_type: str,
+    filters: dict[str, dict[str, str]],
+    key: str,
+    session: str | None = None,
+    space: str | None = None,
+) -> dict[str, str]:
+    filter_ = filters[key]
+    filter_["ses"] = session or "*"
+    if "task" not in filter_:
+        filter_["task"] = "*"
+    if "run" not in filter_:
+        filter_["run"] = "*"
+    if dataset_type not in {"raw", "mriqc"}:
+        filter_["space"] = "*" if key not in {"confounds"} and space else space or "*"
+        if "desc" not in filter_:
+            filter_["desc"] = "*"
+    return filter_

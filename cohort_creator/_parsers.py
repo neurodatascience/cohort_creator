@@ -104,6 +104,14 @@ def add_specialized_args(parser: MuhParser) -> MuhParser:
         type=str,
         nargs=1,
     )
+    parser.add_argument(
+        "--bids_filter_file",
+        help="""
+        Path to a JSON file describing custom BIDS input filters. For further details, please check out the FAQ.
+        """,
+        required=False,
+        nargs=1,
+    )
     return parser
 
 

@@ -9,6 +9,7 @@ from typing import Sequence
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
+from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import validate_dataset_types
 from cohort_creator.cohort_creator import construct_cohort
 from cohort_creator.cohort_creator import get_data
@@ -68,6 +69,15 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     datatypes = args.datatypes
     space = args.space
 
+    if args.bids_filter_file is None:
+        bids_filter = None
+    else:
+        bids_filter_file = Path(args.bids_filter_file[0]).resolve()
+        if bids_filter_file.exists():
+            bids_filter = get_bids_filter(bids_filter_file=bids_filter_file)
+        else:
+            bids_filter = None
+
     if args.command == "get":
         jobs = args.jobs
         if isinstance(jobs, list):
@@ -79,6 +89,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             datatypes=datatypes,
             space=space,
             jobs=jobs,
+            bids_filter=bids_filter,
         )
         return None
 
@@ -90,5 +101,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             dataset_types=dataset_types,
             datatypes=datatypes,
             space=space,
+            bids_filter=bids_filter,
         )
         return None
