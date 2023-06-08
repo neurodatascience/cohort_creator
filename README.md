@@ -86,9 +86,13 @@ Number of datasets: 863 with 37441 subjects including:
 
 It may be that very recent datasets are not available yet.
 
-### Datatypes, suffixes
+### Dataset types
 
-Only `anat` | `T1w` and `func` | `bold` data is supported at the moment.
+Only possible to get data from:
+
+- raw
+- mriqc
+- fmriprep
 
 Not yet possible to get freesurfer data via the cohort creator, though the data
 is available in the sourcedata folder of the fmriprep datasets.
