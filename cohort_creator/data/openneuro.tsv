@@ -829,6 +829,7 @@ ds004473	8	True	True	['participant_id', 'age', 'sex', 'hand']	False	['anat', 'be
 ds004477	9	True	True	['participant_id', 'age', 'sex', 'hand', 'weight', 'height']	False	['eeg']	['PES']	https://github.com/OpenNeuroDatasets/ds004477	n/a	n/a	n/a
 ds004478	6	True	False	['participant_id', 'age', 'sex', 'handedness']	False	['anat', 'func']	['checker']	https://github.com/OpenNeuroDatasets/ds004478	n/a	n/a	n/a
 ds004482	23	True	False	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	['abseq', 'loca']	https://github.com/OpenNeuroDatasets/ds004482	n/a	n/a	n/a
+ds004483	19	True	True	['participant_id', 'age', 'sex', 'hand']	False	['meg']	['abseq']	https://github.com/OpenNeuroDatasets/ds004483	n/a	n/a	n/a
 ds004484	20	True	False	['participant_id', 'age', 'sex', 'handedness']	False	['anat', 'func']	['checker']	https://github.com/OpenNeuroDatasets/ds004484	n/a	n/a	n/a
 ds004488	30	True	True	['participant_id', 'age', 'sex']	False	['anat', 'fmap', 'func']	['action']	https://github.com/OpenNeuroDatasets/ds004488	https://github.com/OpenNeuroDatasets/ds004488/tree/main/derivatives/fmriprep	n/a	n/a
 ds004489	15	True	False	['participant_id', 'age', 'gender', 'handedness', 'handednessScore', 'twre_index', 'twre_pde_ss', 'twre_swe_ss']	False	['anat', 'fmap', 'func']	['FOV', 'Retinotopy', 'catLoc']	https://github.com/OpenNeuroDatasets/ds004489	n/a	n/a	n/a
@@ -879,3 +880,4 @@ ds004609	42	True	True	['participant_id', 'sex', 'age', 'medication use', 'medica
 ds004620	8	True	True	['participant_id', 'exam_date', 'group', 'field_strength']	False	['anat']	n/a	https://github.com/OpenNeuroDatasets/ds004620	n/a	n/a	n/a
 ds004624	1	True	True	['participant_id', 'sex']	False	['anat', 'ieeg']	[]	https://github.com/OpenNeuroDatasets/ds004624	n/a	n/a	n/a
 ds004627	43	True	True	['participant_id', 'datasharing', 'sex', 'subject']	False	['anat', 'fmap', 'func']	['rest']	https://github.com/OpenNeuroDatasets/ds004627	n/a	n/a	n/a
+ds004631	38	True	False	['participant_id', 'age', 'sex']	False	['anat', 'func']	['listen']	https://github.com/OpenNeuroDatasets/ds004631	n/a	n/a	n/a
