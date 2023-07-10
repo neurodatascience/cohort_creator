@@ -27,7 +27,7 @@ repos:
         args: [--py37-plus, --add-import, from __future__ import annotations]
 
 -   repo: https://github.com/ikamensh/flynt/
-    rev: '1.0.0'
+    rev: 1.0.0
     hooks:
     -   id: flynt
 
