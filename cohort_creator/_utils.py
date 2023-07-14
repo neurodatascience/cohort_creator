@@ -179,7 +179,7 @@ def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Pat
 def get_sessions(
     participants: pd.DataFrame, dataset: str, participant: str
 ) -> list[str] | list[None]:
-    mask = (participants["DatasetName"] == dataset) & (participants["SubjectID"] == participant)
+    mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
     sessions = participants[mask].SessionID.values
     return listify(sessions[0])
 
@@ -474,7 +474,7 @@ def list_all_files_with_filter(
             cc_log.warning(f"Path '{datatype_pth}' does not exist")
             continue
 
-        for key in filters.keys():
+        for key in filters:
             filter_ = augment_filter(
                 dataset_type=dataset_type,
                 filters=filters,

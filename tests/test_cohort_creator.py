@@ -27,7 +27,7 @@ def test_install_datasets(tmp_path, caplog):
 
 def test_construct_cohort(tmp_path):
     participants = pd.DataFrame(
-        {"DatasetName": ["ds000001"], "SubjectID": ["sub-01"], "SessionID": [""]}
+        {"DatasetID": ["ds000001"], "SubjectID": ["sub-01"], "SessionID": [""]}
     )
     output_dir = tmp_path / "outputs"
     sourcedata = output_dir / "sourcedata"

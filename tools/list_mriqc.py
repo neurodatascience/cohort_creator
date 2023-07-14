@@ -19,14 +19,14 @@ from utils import URL_OPENNEURO
 
 def init_dataset() -> dict[str, list[str]]:
     return {
-        "DatasetName": [],
+        "DatasetID": [],
         "PortalURI": [],  # link to raw dataset
     }
 
 
 def new_dataset(name: str) -> dict[str, str | list[str]]:
     return {
-        "DatasetName": name,
+        "DatasetID": name,
         "PortalURI": f"{URL_OPENNEURO}{name}",
     }
 
