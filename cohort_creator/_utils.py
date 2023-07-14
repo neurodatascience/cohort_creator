@@ -50,7 +50,9 @@ def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> Non
 def check_tsv_content(tsv_file: Path) -> pd.DataFrame:
     df = pd.read_csv(tsv_file, sep="\t")
     if "DatasetName" not in df.columns:
-        raise ValueError(f"Column 'DatasetName' not found in {tsv_file}")
+        raise ValueError(
+            f"Column 'DatasetName' not found in {tsv_file}." f"Columns found: {df.columns}"
+        )
     return df
 
 
