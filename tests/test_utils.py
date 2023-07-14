@@ -20,11 +20,14 @@ from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_filters
 from cohort_creator._utils import get_func_files
 from cohort_creator._utils import get_institution
+from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
+from cohort_creator._utils import load_dataset_listing
+from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import set_name
 from cohort_creator._utils import set_version
@@ -74,28 +77,22 @@ def test_is_subject_in_dataset(bids_examples):
     assert is_subject_in_dataset(subject="sub-01", dataset_pth=bids_examples / "ds001")
 
 
-def test_get_participant_ids():
-    inpute_file = root_dir() / "inputs" / "participants.tsv"
-    participants = pd.read_csv(inpute_file, sep="\t")
-    assert get_participant_ids(participants, "ds000002") == ["sub-12", "sub-13"]
-
-
 def test_check_tsv_content(tmp_path):
     df = pd.DataFrame({"foo": ["ds000001"]})
     df.to_csv(tmp_path / "tmp.tsv", sep="\t", index=False)
-    with pytest.raises(ValueError, match="Column 'DatasetName' not found in"):
+    with pytest.raises(ValueError, match="Column 'DatasetID' not found in"):
         check_tsv_content(tmp_path / "tmp.tsv")
 
 
 def test_check_participant_listing():
     df = pd.DataFrame({"foo": ["ds000001"]})
-    with pytest.raises(ValueError, match="Column 'SessionID' not found in"):
+    with pytest.raises(ValueError, match="Column 'SubjectID' not found in"):
         check_participant_listing(df)
 
 
 def test_get_sessions():
-    inpute_file = root_dir() / "inputs" / "participants.tsv"
-    participants = pd.read_csv(inpute_file, sep="\t")
+    input_file = root_dir() / "inputs" / "participants.tsv"
+    participants = pd.read_csv(input_file, sep="\t")
 
     assert get_sessions(participants, "ds000002", "sub-13") == [None]
     assert get_sessions(participants, "ds001226", "sub-CON03") == ["preop"]
@@ -298,3 +295,49 @@ def test_list_all_files_with_filter_func_fmriprep(bids_examples):
         "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.json",
         "sub-10/func/sub-10_task-balloonanalogrisktask_run-3_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz",
     ]
+
+
+def test_get_list_datasets_to_install():
+    participants_listing_file = root_dir() / "inputs" / "participant-results.tsv"
+    participant_listing = load_participant_listing(participants_listing_file)
+    datasets_listing_file = root_dir() / "inputs" / "dataset-results.tsv"
+    dataset_listing = load_dataset_listing(datasets_listing_file)
+
+    datasets_to_install = get_list_datasets_to_install(dataset_listing, participant_listing)
+
+    expected = [
+        "ds001454",
+        "ds001408",
+        "ds001868",
+        "ds003416",
+        "ds003425",
+        "ds000244",
+        "ds003192",
+        "ds002419",
+        "ds000220",
+        "ds002799",
+        "ds001705",
+        "ds002685",
+        "ds003453",
+        "ds003465",
+        "ds000006",
+        "ds003452",
+    ]
+    assert len(datasets_to_install) == len(expected)
+    assert all(x in expected for x in datasets_to_install)
+
+
+def test_get_participant_ids():
+    participants_listing_file = root_dir() / "inputs" / "participant-results.tsv"
+    participants = load_participant_listing(participants_listing_file)
+    datasets_listing_file = root_dir() / "inputs" / "dataset-results.tsv"
+    datasets = load_dataset_listing(datasets_listing_file)
+
+    participant_ids = get_participant_ids(
+        datasets=datasets, participants=participants, dataset_name="ds000244"
+    )
+
+    expected = ["sub-08", "sub-11"]
+
+    assert len(participant_ids) == len(expected)
+    assert all(x in expected for x in participant_ids)

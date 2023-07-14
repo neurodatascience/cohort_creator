@@ -24,6 +24,7 @@ from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_filters
+from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
@@ -85,6 +86,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
 
 def get_data(
     sourcedata: Path,
+    datasets: pd.DataFrame,
     participants: pd.DataFrame,
     dataset_types: list[str],
     datatypes: list[str],
@@ -98,6 +100,8 @@ def get_data(
     Parameters
     ----------
     sourcedata : Path
+
+    datasets : pd.DataFrame
 
     participants : pd.DataFrame
 
@@ -119,12 +123,16 @@ def get_data(
     if isinstance(datatypes, str):
         datatypes = [datatypes]
 
-    datasets = sorted(participants["DatasetName"].unique().tolist())
+    datasets = get_list_datasets_to_install(
+        dataset_listing=datasets, participant_listing=participants
+    )
 
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(participants, dataset_)
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_
+        )
         if not participants_ids:
             cc_log.warning(f"  no participants in dataset {dataset_}")
             continue
@@ -197,6 +205,7 @@ def _get_data_this_subject(
 def construct_cohort(
     output_dir: Path,
     sourcedata_dir: Path,
+    datasets: pd.DataFrame,
     participants: pd.DataFrame,
     dataset_types: list[str],
     datatypes: list[str],
@@ -210,6 +219,8 @@ def construct_cohort(
     output_dir : Path
 
     sourcedata_dir : Path
+
+    datasets : pd.DataFrame
 
     participants : pd.DataFrame
 
@@ -230,12 +241,16 @@ def construct_cohort(
     with open(output_dir / "README.md", "w") as f:
         f.write("# README\n\n")
 
-    datasets = sorted(participants["DatasetName"].unique().tolist())
+    datasets = get_list_datasets_to_install(
+        dataset_listing=datasets, participant_listing=participants
+    )
 
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(participants, dataset_)
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_
+        )
         if not participants_ids:
             cc_log.warning(f"  no participants in dataset {dataset_}")
             continue

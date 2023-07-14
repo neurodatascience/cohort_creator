@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Sequence
 
 from cohort_creator._parsers import global_parser
-from cohort_creator._utils import check_participant_listing
-from cohort_creator._utils import check_tsv_content
 from cohort_creator._utils import get_bids_filter
+from cohort_creator._utils import get_list_datasets_to_install
+from cohort_creator._utils import load_dataset_listing
+from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import validate_dataset_types
 from cohort_creator.cohort_creator import construct_cohort
 from cohort_creator.cohort_creator import get_data
@@ -41,7 +42,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     args, unknowns = parser.parse_known_args(argv[1:])
 
-    participants_listing = Path(args.participants_listing[0]).resolve()
+    participant_listing = Path(args.participant_listing[0]).resolve()
+    dataset_listing = Path(args.dataset_listing[0]).resolve()
     output_dir = Path(args.output_dir[0]).resolve()
 
     dataset_types = args.dataset_types
@@ -50,15 +52,17 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     verbosity = args.verbosity
     set_verbosity(verbosity)
 
-    participants = check_tsv_content(participants_listing)
-    check_participant_listing(participants)
+    participant_listing = load_participant_listing(participant_listing=participant_listing)
 
-    datasets_to_install = list(participants["DatasetName"].unique())
+    dataset_listing = load_dataset_listing(dataset_listing=dataset_listing)
 
     sourcedata_dir = output_dir / "sourcedata"
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
     if args.command == "install":
+        datasets_to_install = get_list_datasets_to_install(
+            dataset_listing=dataset_listing, participant_listing=participant_listing
+        )
         install_datasets(
             datasets=datasets_to_install,
             sourcedata=sourcedata_dir,
@@ -84,7 +88,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             jobs = jobs[0]
         get_data(
             sourcedata=sourcedata_dir,
-            participants=participants,
+            datasets=dataset_listing,
+            participants=participant_listing,
             dataset_types=dataset_types,
             datatypes=datatypes,
             space=space,
@@ -97,7 +102,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         construct_cohort(
             output_dir=output_dir,
             sourcedata_dir=sourcedata_dir,
-            participants=participants,
+            datasets=dataset_listing,
+            participants=participant_listing,
             dataset_types=dataset_types,
             datatypes=datatypes,
             space=space,
