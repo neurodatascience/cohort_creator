@@ -55,6 +55,7 @@ jobs:
         -   name: install datasets
             run: |
                 cohort_creator install \
+                    -d inputs/datasets.tsv \
                     -p inputs/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
@@ -62,6 +63,7 @@ jobs:
         -   name: get data
             run: |
                 cohort_creator get \
+                    -d inputs/datasets.tsv \
                     -p inputs/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
@@ -72,6 +74,7 @@ jobs:
         -   name: copy data
             run: |
                 cohort_creator copy \
+                    -d inputs/datasets.tsv \
                     -p inputs/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
