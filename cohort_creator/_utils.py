@@ -105,7 +105,8 @@ def get_participant_ids(
 
 def return_dataset_id(datasets: pd.DataFrame, dataset_name: str) -> str:
     dataset_uri = return_dataset_uri(dataset_name)
-    return datasets[datasets["PortalURI"] == dataset_uri]["DatasetID"].values[0]
+    mask = datasets["PortalURI"] == dataset_uri
+    return datasets[mask]["DatasetID"].values[0]
 
 
 def get_pipeline_version(pth: Path | None = None) -> None | str:
@@ -526,11 +527,9 @@ def get_list_datasets_to_install(
     datasets_nodes = return_datasets_nodes(participant_listing)
     list_datasets = []
     for dataset in datasets_nodes:
-        print(dataset)
         dataset_uri = dataset_listing[dataset_listing["DatasetID"] == dataset]["PortalURI"].values[
             0
         ]
-        print(dataset_uri)
         list_datasets.append(Path(dataset_uri).stem)
     return sorted(list_datasets)
 

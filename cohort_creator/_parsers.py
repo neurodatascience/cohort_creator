@@ -42,7 +42,7 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         nargs=1,
     )
     parser.add_argument(
-        "-s",
+        "-d",
         "--dataset_listing",
         help="""
         Path to TSV file containing the list of datasets to get.

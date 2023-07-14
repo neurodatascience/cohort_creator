@@ -29,6 +29,12 @@ def test_construct_cohort(tmp_path):
     participants = pd.DataFrame(
         {"DatasetID": ["ds000001"], "SubjectID": ["sub-01"], "SessionID": [""]}
     )
+    datasets = pd.DataFrame(
+        {
+            "DatasetID": ["ds000001"],
+            "PortalURI": ["https://github.com/OpenNeuroDatasets-JSONLD/ds000001.git"],
+        }
+    )
     output_dir = tmp_path / "outputs"
     sourcedata = output_dir / "sourcedata"
     dataset_types = ["raw"]
@@ -38,6 +44,7 @@ def test_construct_cohort(tmp_path):
     )
     get_data(
         sourcedata=sourcedata,
+        datasets=datasets,
         participants=participants,
         dataset_types=dataset_types,
         datatypes=datatypes,
@@ -46,6 +53,7 @@ def test_construct_cohort(tmp_path):
     )
     get_data(
         sourcedata=sourcedata,
+        datasets=datasets,
         participants=participants,
         dataset_types=dataset_types,
         datatypes=datatypes,
@@ -55,6 +63,7 @@ def test_construct_cohort(tmp_path):
     construct_cohort(
         output_dir=output_dir,
         sourcedata_dir=sourcedata,
+        datasets=datasets,
         participants=participants,
         dataset_types=dataset_types,
         datatypes=datatypes,
@@ -63,6 +72,7 @@ def test_construct_cohort(tmp_path):
     construct_cohort(
         output_dir=output_dir,
         sourcedata_dir=sourcedata,
+        datasets=datasets,
         participants=participants,
         dataset_types=dataset_types,
         datatypes=datatypes,
