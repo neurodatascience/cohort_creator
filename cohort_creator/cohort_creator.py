@@ -24,6 +24,7 @@ from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_filters
+from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
@@ -85,6 +86,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
 
 def get_data(
     sourcedata: Path,
+    datasets: pd.DataFrame,
     participants: pd.DataFrame,
     dataset_types: list[str],
     datatypes: list[str],
@@ -98,6 +100,8 @@ def get_data(
     Parameters
     ----------
     sourcedata : Path
+
+    datasets : pd.DataFrame
 
     participants : pd.DataFrame
 
@@ -119,12 +123,16 @@ def get_data(
     if isinstance(datatypes, str):
         datatypes = [datatypes]
 
-    datasets = sorted(participants["DatasetName"].unique().tolist())
+    dataset_names = get_list_datasets_to_install(
+        dataset_listing=datasets, participant_listing=participants
+    )
 
-    for dataset_ in datasets:
+    for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(participants, dataset_)
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_
+        )
         if not participants_ids:
             cc_log.warning(f"  no participants in dataset {dataset_}")
             continue
@@ -197,6 +205,7 @@ def _get_data_this_subject(
 def construct_cohort(
     output_dir: Path,
     sourcedata_dir: Path,
+    datasets: pd.DataFrame,
     participants: pd.DataFrame,
     dataset_types: list[str],
     datatypes: list[str],
@@ -210,6 +219,8 @@ def construct_cohort(
     output_dir : Path
 
     sourcedata_dir : Path
+
+    datasets : pd.DataFrame
 
     participants : pd.DataFrame
 
@@ -230,12 +241,16 @@ def construct_cohort(
     with open(output_dir / "README.md", "w") as f:
         f.write("# README\n\n")
 
-    datasets = sorted(participants["DatasetName"].unique().tolist())
+    dataset_names = get_list_datasets_to_install(
+        dataset_listing=datasets, participant_listing=participants
+    )
 
-    for dataset_ in datasets:
+    for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(participants, dataset_)
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_
+        )
         if not participants_ids:
             cc_log.warning(f"  no participants in dataset {dataset_}")
             continue
@@ -273,17 +288,17 @@ def construct_cohort(
                     bids_filter=bids_filter,
                 )
 
-    add_study_tsv(output_dir, datasets)
+    add_study_tsv(output_dir, dataset_names)
 
     _generate_bagel_for_cohort(
         output_dir=output_dir,
         sourcedata_dir=sourcedata_dir,
-        datasets=datasets,
+        dataset_names=dataset_names,
         dataset_types=dataset_types,
     )
 
     _recreate_mriqc_group_reports(
-        output_dir=output_dir, datasets=datasets, dataset_types=dataset_types
+        output_dir=output_dir, dataset_names=dataset_names, dataset_types=dataset_types
     )
 
 
@@ -329,13 +344,13 @@ def _copy_this_subject(
 
 
 def _generate_bagel_for_cohort(
-    output_dir: Path, sourcedata_dir: Path, datasets: list[str], dataset_types: list[str]
+    output_dir: Path, sourcedata_dir: Path, dataset_names: list[str], dataset_types: list[str]
 ) -> None:
     """Track what subjects have been processed by what pipeline."""
     cc_log.info(" creating bagel.csv file")
     bagel = _new_bagel()
     supported_dataset_types = ["fmriprep", "mriqc"]
-    for dataset_type_, dataset_ in itertools.product(dataset_types, datasets):
+    for dataset_type_, dataset_ in itertools.product(dataset_types, dataset_names):
         if dataset_type_ not in supported_dataset_types:
             continue
         cc_log.info(f"  {dataset_} - {dataset_type_}")
@@ -360,7 +375,7 @@ https://dash.neurobagel.org/
 
 
 def _recreate_mriqc_group_reports(
-    output_dir: Path, datasets: list[str], dataset_types: list[str]
+    output_dir: Path, dataset_names: list[str], dataset_types: list[str]
 ) -> None:
     """Recreate MRIQC group reports."""
     log_folder = output_dir / "logs"
@@ -374,7 +389,7 @@ def _recreate_mriqc_group_reports(
     if "mriqc" not in dataset_types:
         return None
 
-    for dataset_ in datasets:
+    for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
         target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)

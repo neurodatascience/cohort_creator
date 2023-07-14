@@ -25,13 +25,17 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 clean:
 	sudo rm -rf outputs
 
-demo_anat:
+demo_install:
 	cohort_creator install \
+		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
-		--verbosity 2
+		--verbosity 3
+
+demo_anat_get: demo_install
 	cohort_creator get \
+		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -39,7 +43,10 @@ demo_anat:
 		--jobs 6 \
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 2
+
+demo_anat: demo_anat_get
 	cohort_creator copy \
+		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -47,34 +54,26 @@ demo_anat:
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 2
 
-demo_func:
-	cohort_creator install \
-		-p inputs/participants.tsv \
-		-o outputs \
-		--dataset_types raw mriqc fmriprep \
-		--verbosity 3
+demo_func: demo_install
 	cohort_creator get \
+		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
-		--datatype anat \
+		--datatype func \
 		--jobs 6 \
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 	cohort_creator copy \
+		-d inputs/datasets.tsv \
 		-p inputs/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
-		--datatype anat \
+		--datatype func \
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 
-demo_all:
-	cohort_creator install \
-		-p inputs/participants.tsv \
-		-o outputs \
-		--dataset_types raw mriqc fmriprep \
-		--verbosity 3
+demo_all: demo_install
 	cohort_creator get \
 		-p inputs/participants.tsv \
 		-o outputs \

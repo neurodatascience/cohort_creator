@@ -18,6 +18,27 @@ from cohort_creator._version import __version__
 cc_log = cc_logger()
 
 
+def check_tsv_for_empty_header(tsv_file: Path) -> pd.DataFrame:
+    """Check if tsv first line is empty and reload if so."""
+    dataset_listing_df = pd.read_csv(tsv_file, sep="\t")
+    if dataset_listing_df.columns[0] == "Unnamed: 0":
+        dataset_listing_df = pd.read_csv(tsv_file, sep="\t", index_col=0)
+    return dataset_listing_df
+
+
+def load_dataset_listing(dataset_listing: Path | str) -> pd.DataFrame:
+    """Load dataset listing from TSV file."""
+    dataset_listing_df = check_tsv_content(dataset_listing)
+    return dataset_listing_df
+
+
+def load_participant_listing(participant_listing: Path | str) -> pd.DataFrame:
+    """Load participant listing from TSV file."""
+    participant_listing_df = check_tsv_content(participant_listing)
+    check_participant_listing(participant_listing_df)
+    return participant_listing_df
+
+
 def filter_excluded_participants(pth: Path, participants: list[str]) -> None:
     """Remove subjects from participants.tsv that were not included in the cohort."""
     participants_tsv = pth / "participants.tsv"
@@ -47,26 +68,45 @@ def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> Non
                 cc_log.error(f"      Could not find file '{f}'")
 
 
-def check_tsv_content(tsv_file: Path) -> pd.DataFrame:
-    df = pd.read_csv(tsv_file, sep="\t")
-    if "DatasetName" not in df.columns:
-        raise ValueError(f"Column 'DatasetName' not found in {tsv_file}")
+def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:
+    tsv_file = Path(tsv_file).resolve()
+    if not tsv_file.exists():
+        raise FileNotFoundError(f"Could not find dataset listing at '{tsv_file}'")
+    df = check_tsv_for_empty_header(tsv_file)
+    if "      DatasetID" in df.columns:
+        cc_log.debug(f"Renaming column: '      DatasetID' -> 'DatasetID' in:\n{tsv_file}")
+        df.rename(columns={"      DatasetID": "DatasetID"}, inplace=True)
+    if "DatasetID" not in df.columns:
+        raise ValueError(
+            f"Column 'DatasetID' not found in {tsv_file}. Columns found: {df.columns}"
+        )
     return df
 
 
-def check_participant_listing(participants_listing: pd.DataFrame) -> None:
-    for col in ["SessionID", "SubjectID"]:
-        if "SubjectID" not in participants_listing.columns:
-            raise ValueError(f"Column '{col}' not found in participants listing data.")
+def check_participant_listing(participant_listing: pd.DataFrame) -> None:
+    for col in ["SubjectID", "SessionPath"]:
+        if col not in participant_listing.columns:
+            raise ValueError(
+                f"Column '{col}' not found in participants listing data.\n"
+                f"Columns found: {participant_listing.columns}."
+            )
 
 
-def get_participant_ids(participants: pd.DataFrame, dataset_name: str) -> list[str] | None:
-    mask = participants["DatasetName"] == dataset_name
+def get_participant_ids(
+    datasets: pd.DataFrame, participants: pd.DataFrame, dataset_name: str
+) -> list[str] | None:
+    datasets_id = return_dataset_id(datasets, dataset_name)
+    mask = participants["DatasetID"] == datasets_id
     if mask.sum() == 0:
-        cc_log.warning(f"  no participants in dataset {dataset_name}")
         return None
     participants_df = participants[mask]
-    return sorted(participants_df["SubjectID"].tolist())
+    return sorted(list(participants_df["SubjectID"].unique()))
+
+
+def return_dataset_id(datasets: pd.DataFrame, dataset_name: str) -> str:
+    dataset_uri = return_dataset_uri(dataset_name)
+    mask = datasets["PortalURI"] == dataset_uri
+    return datasets[mask]["DatasetID"].values[0]
 
 
 def get_pipeline_version(pth: Path | None = None) -> None | str:
@@ -140,7 +180,7 @@ def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Pat
 def get_sessions(
     participants: pd.DataFrame, dataset: str, participant: str
 ) -> list[str] | list[None]:
-    mask = (participants["DatasetName"] == dataset) & (participants["SubjectID"] == participant)
+    mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
     sessions = participants[mask].SessionID.values
     return listify(sessions[0])
 
@@ -435,7 +475,7 @@ def list_all_files_with_filter(
             cc_log.warning(f"Path '{datatype_pth}' does not exist")
             continue
 
-        for key in filters.keys():
+        for key in filters:
             filter_ = augment_filter(
                 dataset_type=dataset_type,
                 filters=filters,
@@ -478,3 +518,25 @@ def augment_filter(
         if "desc" not in filter_:
             filter_["desc"] = "*"
     return filter_
+
+
+def get_list_datasets_to_install(
+    dataset_listing: pd.DataFrame,
+    participant_listing: pd.DataFrame,
+) -> list[str]:
+    datasets_nodes = return_datasets_nodes(participant_listing)
+    list_datasets = []
+    for dataset in datasets_nodes:
+        dataset_uri = dataset_listing[dataset_listing["DatasetID"] == dataset]["PortalURI"].values[
+            0
+        ]
+        list_datasets.append(Path(dataset_uri).stem)
+    return sorted(list_datasets)
+
+
+def return_datasets_nodes(participant_listing: pd.DataFrame) -> list[str]:
+    return list(participant_listing["DatasetID"].unique())
+
+
+def return_dataset_uri(dataset_name: str) -> str:
+    return f"https://github.com/OpenNeuroDatasets-JSONLD/{dataset_name}.git"

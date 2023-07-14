@@ -116,19 +116,19 @@ run the following command from within the cohort_creator folder:
 
 ```bash
 cohort_creator install \
-  --participants_listing inputs/participants_with_mriqc.tsv \
+  --participant_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator get \
-  --participants_listing inputs/participants_with_mriqc.tsv \
+  --participant_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
 
 cohort_creator copy \
-  --participants_listing inputs/participants_with_mriqc.tsv \
+  --participant_listing inputs/participants_with_mriqc.tsv \
   --output_dir outputs \
   --dataset_types raw mriqc \
   --verbosity 3
