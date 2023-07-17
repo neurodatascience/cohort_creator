@@ -1,8 +1,7 @@
 # Output
 
 The output layout tries to follow the layout recommended in the
-BIDS extension proposal 35:
-https://docs.google.com/document/d/1tFRNumQyIgjXBNC3brFDLO9FaikjL84noxK6Om-Ctik/edit
+[BIDS extension proposal 35](https://docs.google.com/document/d/1tFRNumQyIgjXBNC3brFDLO9FaikjL84noxK6Om-Ctik).
 
 The output folder contains a `sourcedata` folder where all the datalad datasets are installed.
 

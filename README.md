@@ -16,8 +16,9 @@ Install a set of datalad datasets from openneuro and get the data for a set of
 participants. Then copy the data to a new directory structure to create a
 "cohort".
 
-Takes 1 file as input that should list:
+Takes 2 files as input that should list:
 
+- datasets to be included in the cohort
 - subject in each dataset to be included in the cohort
 
 For examples of of inputs TSV files see this
@@ -29,10 +30,9 @@ For examples of of inputs TSV files see this
 
 It is recommended to use this package on a linux / Mac OS.
 
-If you are on Windows, try using WSL (Windows Subsystem for Linux) to run this
-package: windows does not handle symbolic links well, and this package relies on
-symlinks. If you decided to go ahead anyway make sure you have got a LOT of disk
-space available.
+If you are on Windows, try using WSL (Windows Subsystem for Linux) to run this package:
+windows does not handle symbolic links well, and this package relies on symlinks.
+If you decided to go ahead anyway make sure you have got a LOT of disk space available.
 
 More information
 [here](https://handbook.datalad.org/en/latest/intro/windows.html#ohnowindows)
@@ -42,10 +42,12 @@ More information
 Make sure you have the following installed:
 
 - datalad and its dependencies:
+
   - if you are have anaconda / conda, it should be 'just' a matter of running
-    ```
+    ```bash
     conda install -c conda-forge datalad
     ```
+
   - But check the
     [installation instructions](https://handbook.datalad.org/en/latest/intro/installation.html#install)
     for more details.
@@ -62,12 +64,11 @@ pip install .
 
 ## Limitations
 
-Cohorts can only be created by aggregating data from openneuro and openneuro
-derivatives.
+Cohorts can only be created by aggregating data from openneuro and openneuro derivatives.
 
 ### Latest datasets
 
-Currently this should allow you to access:
+Currently this should allow you to access more or less the following:
 
 Number of datasets: 863 with 37441 subjects including:
 

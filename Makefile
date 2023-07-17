@@ -27,16 +27,16 @@ clean:
 
 demo_install:
 	cohort_creator install \
-		-d inputs/datasets.tsv \
-		-p inputs/participants.tsv \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--verbosity 3
 
 demo_anat_get: demo_install
 	cohort_creator get \
-		-d inputs/datasets.tsv \
-		-p inputs/participants.tsv \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
@@ -46,8 +46,8 @@ demo_anat_get: demo_install
 
 demo_anat: demo_anat_get
 	cohort_creator copy \
-		-d inputs/datasets.tsv \
-		-p inputs/participants.tsv \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
@@ -56,8 +56,8 @@ demo_anat: demo_anat_get
 
 demo_func: demo_install
 	cohort_creator get \
-		-d inputs/datasets.tsv \
-		-p inputs/participants.tsv \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype func \
@@ -65,8 +65,8 @@ demo_func: demo_install
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 	cohort_creator copy \
-		-d inputs/datasets.tsv \
-		-p inputs/participants.tsv \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype func \
@@ -75,7 +75,7 @@ demo_func: demo_install
 
 demo_all: demo_install
 	cohort_creator get \
-		-p inputs/participants.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
@@ -83,7 +83,7 @@ demo_all: demo_install
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
-		-p inputs/participants.tsv \
+		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
