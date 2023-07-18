@@ -12,9 +12,7 @@ on:
         branches: ['*']
 
 jobs:
-
     system_test:
-
         strategy:
             fail-fast: false
             matrix:
@@ -55,16 +53,16 @@ jobs:
         -   name: install datasets
             run: |
                 cohort_creator install \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
                     --verbosity 3
         -   name: get data
             run: |
                 cohort_creator get \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
                     --datatype anat func \
@@ -74,8 +72,8 @@ jobs:
         -   name: copy data
             run: |
                 cohort_creator copy \
-                    -d inputs/datasets.tsv \
-                    -p inputs/participants.tsv \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
                     -o outputs \
                     --dataset_types raw mriqc fmriprep \
                     --datatype anat func \

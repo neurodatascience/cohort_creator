@@ -91,8 +91,8 @@ def test_check_participant_listing():
 
 
 def test_get_sessions():
-    input_file = root_dir() / "inputs" / "participants.tsv"
-    participants = pd.read_csv(input_file, sep="\t")
+    input_file = root_dir() / "tests" / "data" / "participants.tsv"
+    participants = load_participant_listing(input_file)
 
     assert get_sessions(participants, "ds000002", "sub-13") == [None]
     assert get_sessions(participants, "ds001226", "sub-CON03") == ["preop"]

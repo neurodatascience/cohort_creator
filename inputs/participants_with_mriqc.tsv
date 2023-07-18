@@ -1,4 +1,4 @@
-DatasetID	SubjectID	SessionID
+DatasetID	SubjectID	SessionID	SessionPath
 ds000001	sub-05	[]
 ds000001	sub-09	[]
 ds000001	sub-08	[]

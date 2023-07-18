@@ -1,6 +1,7 @@
 outputs
 tmp
 cohort_creator/_version.py
+docs/source/data/*-results.csv
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
