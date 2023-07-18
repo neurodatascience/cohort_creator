@@ -123,7 +123,7 @@ Docker_run_version:
 	docker run -t --rm cohort_creator --version
 	docker run -t --rm cohort_creator
 
-Docker_demo: Docker_build
+Docker_demo:
 	docker run -t --rm \
 		-v $$PWD/tests/data:/data \
 		-v $$PWD/outputs:/outputs \

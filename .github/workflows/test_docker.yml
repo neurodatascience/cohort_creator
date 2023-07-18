@@ -26,6 +26,8 @@ jobs:
                 sudo apt-get install -y tree
         -   name: Clone repo
             uses: actions/checkout@v3
+        -   name: build image
+            run: make Docker_build
         -   name: print version
             run: make Docker_run_version
         -   name: run demo
