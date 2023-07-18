@@ -54,6 +54,14 @@ demo_anat: demo_anat_get
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 2
 
+demo_all:
+	cohort_creator all \
+		-d tests/data/datasets.tsv \
+		-p tests/data/participants.tsv \
+		-o outputs \
+		--dataset_types raw mriqc fmriprep \
+		--datatype anat
+
 demo_func: demo_install
 	cohort_creator get \
 		-d tests/data/datasets.tsv \
@@ -73,7 +81,7 @@ demo_func: demo_install
 		--bids_filter_file cohort_creator/data/bids_filter.json \
 		--verbosity 3
 
-demo_all: demo_install
+demo_func_and_anat: demo_install
 	cohort_creator get \
 		-p tests/data/participants.tsv \
 		-o outputs \
@@ -127,21 +135,7 @@ Docker_demo:
 	docker run -t --rm \
 		-v $$PWD/tests/data:/data \
 		-v $$PWD/outputs:/outputs \
-			cohort_creator install \
-				-d /data/datasets.tsv \
-				-p /data/participants.tsv \
-				-o /outputs
-	docker run -t --rm \
-		-v $$PWD/tests/data:/data \
-		-v $$PWD/outputs:/outputs \
-			cohort_creator get \
-				-d /data/datasets.tsv \
-				-p /data/participants.tsv \
-				-o /outputs
-	docker run -t --rm \
-		-v $$PWD/tests/data:/data \
-		-v $$PWD/outputs:/outputs \
-			cohort_creator copy \
+			cohort_creator all \
 				-d /data/datasets.tsv \
 				-p /data/participants.tsv \
 				-o /outputs

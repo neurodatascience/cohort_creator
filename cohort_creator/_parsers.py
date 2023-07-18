@@ -134,6 +134,7 @@ def global_parser() -> MuhParser:
         help="Choose a subcommand",
         required=True,
     )
+
     install_parser = subparsers.add_parser(
         "install",
         help="""
@@ -185,6 +186,7 @@ def global_parser() -> MuhParser:
         type=int,
         nargs=1,
     )
+
     copy_parser = subparsers.add_parser(
         "copy",
         help="""
@@ -206,4 +208,36 @@ def global_parser() -> MuhParser:
     )
     copy_parser = add_common_arguments(copy_parser)
     copy_parser = add_specialized_args(copy_parser)
+
+    all_parser = subparsers.add_parser(
+        "all",
+        help="""
+        Install, get, and copy cohort of subjects.
+
+        Example:
+
+        .. code-block:: bash
+
+            cohort_creator all \\
+                --dataset_listing inputs/dataset-results.tsv \\
+                --participant_listing inputs/participant-results.tsv \\
+                --output_dir outputs \\
+                --dataset_types raw mriqc fmriprep \\
+                --datatype anat func \\
+                --space T1w MNI152NLin2009cAsym \\
+                --verbosity 3
+        """,
+    )
+    all_parser = add_common_arguments(all_parser)
+    all_parser = add_specialized_args(all_parser)
+    all_parser.add_argument(
+        "--jobs",
+        help="""
+        Number of jobs: passed to datalad to speed up getting files.
+        """,
+        required=False,
+        default=6,
+        type=int,
+        nargs=1,
+    )
     return parser

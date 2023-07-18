@@ -59,7 +59,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     sourcedata_dir = output_dir / "sourcedata"
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
-    if args.command == "install":
+    if args.command in ["install", "all"]:
         datasets_to_install = get_list_datasets_to_install(
             dataset_listing=dataset_listing, participant_listing=participant_listing
         )
@@ -68,6 +68,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             sourcedata=sourcedata_dir,
             dataset_types=dataset_types,
         )
+    if args.command == "install":
         return None
 
     datatypes = args.datatypes
@@ -82,7 +83,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         else:
             bids_filter = None
 
-    if args.command == "get":
+    if args.command in ["get", "all"]:
         jobs = args.jobs
         if isinstance(jobs, list):
             jobs = jobs[0]
@@ -96,9 +97,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             jobs=jobs,
             bids_filter=bids_filter,
         )
+    if args.command == "get":
         return None
 
-    if args.command == "copy":
+    if args.command in ["copy", "all"]:
         construct_cohort(
             output_dir=output_dir,
             sourcedata_dir=sourcedata_dir,

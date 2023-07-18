@@ -24,6 +24,7 @@ and this project adheres to
 
 ### Added
 
+- Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau
 - Add a dockerfile for the package. #64 @Remi-Gau
 - Call MRIQC docker to regenerate group level plots after copying mriqc data. #32 @Remi-Gau
 - Create a bagel.csv file for a new cohort to list what pipeline
