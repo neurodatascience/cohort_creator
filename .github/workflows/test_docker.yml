@@ -32,3 +32,7 @@ jobs:
             run: make Docker_run_version
         -   name: run demo
             run: make Docker_demo
+        -   name: Check outputs
+            run: |
+                tree -L 2 --dirsfirst outputs
+                tree --dirsfirst outputs/study-ds000002
