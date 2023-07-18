@@ -8,6 +8,9 @@ import rich
 
 from ._version import __version__
 
+DOC_URL = "https://cohort-creator.readthedocs.io/en/latest/"
+FAQ_URL = f"{DOC_URL}faq.html"
+
 
 class MuhParser(argparse.ArgumentParser):
     def _print_message(self, message: str, file: IO[str] | None = None) -> None:
@@ -18,9 +21,9 @@ def base_parser() -> MuhParser:
     parser = MuhParser(
         prog="cohort_creator",
         description="Creates a cohort by grabbing specific subjects from opennneuro datasets.",
-        epilog="""
+        epilog=f"""
         For a more readable version of this help section,
-        see the online doc https://cohort-creator.readthedocs.io/en/latest/
+        see the `online doc <{DOC_URL}>`_.
         """,
     )
     parser.add_argument(
@@ -34,18 +37,18 @@ def base_parser() -> MuhParser:
 
 def add_common_arguments(parser: MuhParser) -> MuhParser:
     parser.add_argument(
-        "-p",
-        "--participant_listing",
-        help="""
-        Path to TSV file containing the list of participants to get.
-        """,
-        nargs=1,
-    )
-    parser.add_argument(
         "-d",
         "--dataset_listing",
         help="""
         Path to TSV file containing the list of datasets to get.
+        """,
+        nargs=1,
+    )
+    parser.add_argument(
+        "-p",
+        "--participant_listing",
+        help="""
+        Path to TSV file containing the list of participants to get.
         """,
         nargs=1,
     )
@@ -114,8 +117,9 @@ def add_specialized_args(parser: MuhParser) -> MuhParser:
     )
     parser.add_argument(
         "--bids_filter_file",
-        help="""
-        Path to a JSON file describing custom BIDS input filters. For further details, please check out the FAQ.
+        help=f"""
+        Path to a JSON file describing custom BIDS input filters.
+        For further details, please check out the `FAQ <{FAQ_URL}>`_.
         """,
         required=False,
         nargs=1,
@@ -140,8 +144,8 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator install \\
-                --participant_listing inputs/participant-results.tsv \\
                 --dataset_listing inputs/dataset-results.tsv \\
+                --participant_listing inputs/participant-results.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
                 --verbosity 3
@@ -159,8 +163,8 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator get \\
-                --participant_listing inputs/participant-results.tsv \\
                 --dataset_listing inputs/dataset-results.tsv \\
+                --participant_listing inputs/participant-results.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
                 --datatype anat func \\
@@ -191,8 +195,8 @@ def global_parser() -> MuhParser:
         .. code-block:: bash
 
             cohort_creator copy \\
-                --participant_listing inputs/participant-results.tsv \\
                 --dataset_listing inputs/dataset-results.tsv \\
+                --participant_listing inputs/participant-results.tsv \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
                 --datatype anat func \\

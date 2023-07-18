@@ -30,6 +30,6 @@ Those entries support typical glob pattern (like `*` or `?`...).
 
 The default filter file is located at `cohort_creator/data/bids_filter.json`.
 
-```{literalinclude} bids_filter.json
+```{literalinclude} data/bids_filter.json
    :language: json
 ```

@@ -11,6 +11,12 @@ BUILDDIR      = _build
 clean:
 	rm -rf $(BUILDDIR)/*
 
+convert_to_csv:
+	python convert_to_csv.py
+
+html: convert_to_csv clean
+	$(SPHINXBUILD) -b html $(SOURCEDIR) $(BUILDDIR)/html
+
 # Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
