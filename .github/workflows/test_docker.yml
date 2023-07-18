@@ -27,6 +27,6 @@ jobs:
         -   name: Clone repo
             uses: actions/checkout@v3
         -   name: print version
-            run: Docker_run_version
+            run: make Docker_run_version
         -   name: run demo
             run: make Docker_demo
