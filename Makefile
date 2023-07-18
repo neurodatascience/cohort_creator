@@ -120,25 +120,25 @@ Docker_build:
 	docker build -t cohort_creator .
 
 Docker_run_version:
-	docker run -it --rm cohort_creator --version
-	docker run -it --rm cohort_creator
+	docker run -t --rm cohort_creator --version
+	docker run -t --rm cohort_creator
 
 Docker_demo: Docker_build
-	docker run -it --rm \
+	docker run -t --rm \
 		-v $$PWD/tests/data:/data \
 		-v $$PWD/outputs:/outputs \
 			cohort_creator install \
 				-d /data/datasets.tsv \
 				-p /data/participants.tsv \
 				-o /outputs
-	docker run -it --rm \
+	docker run -t --rm \
 		-v $$PWD/tests/data:/data \
 		-v $$PWD/outputs:/outputs \
 			cohort_creator get \
 				-d /data/datasets.tsv \
 				-p /data/participants.tsv \
 				-o /outputs
-	docker run -it --rm \
+	docker run -t --rm \
 		-v $$PWD/tests/data:/data \
 		-v $$PWD/outputs:/outputs \
 			cohort_creator copy \

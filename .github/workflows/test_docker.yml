@@ -1,0 +1,32 @@
+---
+name: test docker
+# test that the docker image can build and that the demo runs
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: ['*']
+
+defaults:
+    run:
+        shell: bash -l {0}
+
+jobs:
+    test_dataset_without_session:
+        runs-on: ubuntu-latest
+        steps:
+        -   name: Install dependencies
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y tree
+        -   name: Clone repo
+            uses: actions/checkout@v3
+        -   name: print version
+            run: Docker_run_version
+        -   name: run demo
+            run: make Docker_demo
