@@ -1,0 +1,45 @@
+# ignoring this might speed up build
+# by preventing passing extra content to the docker daemon
+
+.github
+
+.vscode
+
+outputs
+**/docs
+**/tests
+**/bids-examples
+
+# General
+.DS_Store
+
+*.xml
+*.log
+*.zip
+*.html
+*.docx
+*.ps
+
+
+###############################################################################
+# python
+**/*egg-info
+**/__pycache__
+**/build
+**/_build
+.coverage
+.mypy_cache
+.pytest_cache
+
+# jupyter notebooks
+.ipynb_checkpoints
+
+## virtual env
+env
+venv
+
+###############################################################################
+# node stuff
+node_modules
+package*
+yarn.lock

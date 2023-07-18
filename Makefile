@@ -103,3 +103,21 @@ docs: ## generate Sphinx HTML documentation, including API docs
 
 servedocs: docs ## compile the docs watching for changes
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+
+## DOCKER
+.PHONY: Dockerfile_wip
+Dockerfile_wip:
+	docker run --rm repronim/neurodocker:0.9.1 generate docker \
+		--pkg-manager apt \
+		--base-image bids/base_validator:1.11.0 \
+		--install python3 python3-pip git-annex  \
+		--run "pip install datalad==0.19.2" \
+		--run "git config --global --add user.name 'Ford Escort' && git config --global --add user.email 42@H2G2.com"
+		--run "mkdir /cohort_creator" \
+		--copy "." "/cohort_creator" > Dockerfile_wip
+
+Docker_build:
+	docker build -t cohort_creator .
+
+Docker_run:
+	docker run -it --rm cohort_creator
