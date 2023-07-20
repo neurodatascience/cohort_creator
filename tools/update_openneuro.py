@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pandas as pd
 from utils import config
+from utils import init_dataset
 from utils import list_datasets_in_dir
 from utils import OPENNEURO
 
@@ -19,13 +20,22 @@ from cohort_creator._utils import openneuro_df
 
 DEBUG = False
 
+# if True, will overwrite the tsv file with the current openneuro datasets
+RESET = False
+
 
 def main() -> None:
     datasets = openneuro_df()
     datasets.replace({pd.NA: "n/a"}, inplace=True)
     datasets = datasets.to_dict(orient="list")
 
-    new_openneuro_datasets = pd.read_csv(Path(__file__).parent / f"{OPENNEURO}.tsv", sep="\t")
+    if RESET:
+        datasets = init_dataset()
+        input_dir = Path(config()["local_paths"]["datalad"][OPENNEURO])
+        datasets = list_datasets_in_dir(datasets, input_dir, debug=DEBUG)
+
+    input_file = Path(__file__).parent / f"{OPENNEURO}.tsv"
+    new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
     if len(new_openneuro_datasets) > 0:
         if os.getenv("CI"):
             input_dir = Path(__file__).parent / "tmp"

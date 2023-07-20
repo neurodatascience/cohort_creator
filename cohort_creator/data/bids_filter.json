@@ -21,6 +21,11 @@
             "datatype": "anat",
             "suffix": "T2w",
             "ext": "nii*"
+        },
+        "fmap": {
+            "datatype": "fmap",
+            "suffix": "*",
+            "ext": "nii*"
         }
     },
     "mriqc": {
