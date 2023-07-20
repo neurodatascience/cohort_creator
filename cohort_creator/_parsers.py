@@ -99,6 +99,7 @@ def add_specialized_args(parser: MuhParser) -> MuhParser:
         choices=[
             "anat",
             "func",
+            "fmap",
         ],
         required=False,
         default=["anat"],

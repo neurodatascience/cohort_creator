@@ -47,6 +47,7 @@ def init_dataset() -> dict[str, list[Any]]:
         "participant_columns": [],
         "has_phenotype_dir": [],
         "modalities": [],
+        "sessions": [],  # list of sessions if exist
         "tasks": [],
         "raw": [],  # link to raw dataset
         "fmriprep": [],  # link to fmriprep dataset if exists
@@ -118,26 +119,22 @@ def is_known_bids_modality(modality: str) -> bool:
     return modality in KNOWN_MODALITIES
 
 
-def list_modalities(bids_pth: Path) -> list[str]:
-    sub_dirs = [v.name for v in bids_pth.glob("sub-*/*") if v.is_dir()]
-    for v in bids_pth.glob("sub-*/ses-*/*"):
-        if v.is_dir():
-            sub_dirs.append(v.name)
+def list_modalities(bids_pth: Path, sessions: list[str]) -> list[str]:
+    pattern = "sub-*/ses-*/*" if sessions else "sub-*/*"
+    sub_dirs = [v.name for v in bids_pth.glob(pattern) if v.is_dir()]
     modalities = [v for v in set(sub_dirs) if is_known_bids_modality(v)]
     return list(set(modalities))
 
 
-def list_data_files(bids_pth: Path) -> list[str]:
+def list_data_files(bids_pth: Path, sessions: list[str]) -> list[str]:
     """Return the list of files in BIDS raw."""
-    files = [v.name for v in bids_pth.glob("sub-*/*/*") if v.is_file() and "task-" in v.name]
-    for v in bids_pth.glob("sub-*/ses-*/*/*"):
-        if v.is_file() and "task-" in v.name:
-            files.append(v.name)
+    pattern = "sub-*/ses-*/*/*" if sessions else "sub-*/*/*"
+    files = [v.name for v in bids_pth.glob(pattern) if "task-" in v.name]
     return files
 
 
-def list_tasks(bids_pth: Path) -> list[str]:
-    files = list_data_files(bids_pth)
+def list_tasks(bids_pth: Path, sessions: list[str]) -> list[str]:
+    files = list_data_files(bids_pth, sessions)
     tasks = [f.split("task-")[1].split("_")[0] for f in files]
     tasks = list(set(tasks))
     return tasks
@@ -210,13 +207,16 @@ def list_datasets_in_dir(
         if dataset["nb_subjects"] == 0:
             continue
 
-        modalities = list_modalities(dataset_pth)
+        sessions = list_sessions(dataset_pth)
+        dataset["sessions"] = sessions
+
+        modalities = list_modalities(dataset_pth, sessions=sessions)
         if any(
             mod in modalities
             for mod in ["func", "eeg", "ieeg", "meg", "beh", "perf", "pet", "motion"]
         ):
-            tasks = list_tasks(dataset_pth)
-            check_task(tasks, modalities, dataset_pth)
+            tasks = list_tasks(dataset_pth, sessions=sessions)
+            check_task(tasks, modalities, sessions, dataset_pth)
             dataset["tasks"] = sorted(tasks)
         dataset["modalities"] = sorted(modalities)
 
@@ -237,7 +237,14 @@ def list_datasets_in_dir(
     return datasets
 
 
-def check_task(tasks: list[str], modalities: list[str], dataset_pth: Path) -> None:
+def list_sessions(dataset_pth: Path) -> list[str]:
+    sessions = [v.name.replace("ses-", "") for v in dataset_pth.glob("sub-*/ses-*") if v.is_dir()]
+    return sorted(list(set(sessions)))
+
+
+def check_task(
+    tasks: list[str], modalities: list[str], sessions: list[str], dataset_pth: Path
+) -> None:
     """Check if tasks are present in dataset with modalities that can have tasks."""
     if (
         any(mod in modalities for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
@@ -246,7 +253,7 @@ def check_task(tasks: list[str], modalities: list[str], dataset_pth: Path) -> No
         warn(
             f"no tasks found in {dataset_pth} "
             f"with modalities {modalities} "
-            f"and files {list_data_files(dataset_pth)}"
+            f"and files {list_data_files(dataset_pth, sessions)}"
         )
 
 
