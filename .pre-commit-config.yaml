@@ -27,12 +27,12 @@ repos:
         args: [--py37-plus, --add-import, from __future__ import annotations]
 
 -   repo: https://github.com/ikamensh/flynt/
-    rev: 1.0.0
+    rev: 1.0.1
     hooks:
     -   id: flynt
 
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.9.0
+    rev: v3.10.1
     hooks:
     -   id: pyupgrade
         args: [--py38-plus]
@@ -58,7 +58,7 @@ repos:
         args: [--config-file=pyproject.toml]
 
 -   repo: https://github.com/pyCQA/flake8
-    rev: 6.0.0
+    rev: 6.1.0
     hooks:
     -   id: flake8
         args: [--verbose, --config, .flake8]
