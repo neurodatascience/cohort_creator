@@ -827,6 +827,7 @@ ds004466	127	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 
 ds004470	32	True	True	['participant_id', 'age', 'sex', 'handedness']	False	['anat']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004470	n/a	n/a	n/a
 ds004471	40	True	True	['participant_id', 'age', 'sex', 'disease_duration']	False	['anat']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004471	n/a	n/a	n/a
 ds004473	8	True	True	['participant_id', 'age', 'sex', 'hand']	False	['anat', 'beh', 'ieeg']	[]	['SlowFast']	https://github.com/OpenNeuroDatasets/ds004473	n/a	https://github.com/OpenNeuroDatasets/ds004473/tree/main/derivatives/freesurfer-7.3.2	n/a
+ds004475	30	True	True	['participant_id', 'Gender', 'Age', 'Group', 'Sex']	False	['eeg']	[]	['task']	https://github.com/OpenNeuroDatasets/ds004475	n/a	n/a	n/a
 ds004477	9	True	True	['participant_id', 'age', 'sex', 'hand', 'weight', 'height']	False	['eeg']	[]	['PES']	https://github.com/OpenNeuroDatasets/ds004477	n/a	n/a	n/a
 ds004478	6	True	False	['participant_id', 'age', 'sex', 'handedness']	False	['anat', 'func']	[]	['checker']	https://github.com/OpenNeuroDatasets/ds004478	n/a	n/a	n/a
 ds004482	23	True	False	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['abseq', 'loca']	https://github.com/OpenNeuroDatasets/ds004482	n/a	n/a	n/a
@@ -886,6 +887,9 @@ ds004631	38	True	False	['participant_id', 'age', 'sex']	False	['anat', 'func']	[
 ds004632	11	True	True	['participant_id', 'species', 'strain_ilar', 'strain_rrid', 'age', 'sex', 'weight']	False	['anat', 'dwi']	['W1', 'W5', 'W9']	n/a	https://github.com/OpenNeuroDatasets/ds004632	n/a	n/a	n/a
 ds004635	55	True	True	['participant_id', 'Gender', 'Age']	False	['eeg']	[]	['resting']	https://github.com/OpenNeuroDatasets/ds004635	n/a	n/a	n/a
 ds004640	3	False	False	n/a	False	['anat', 'dwi']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004640	n/a	n/a	n/a
+ds004642	10	True	True	['participant_id', 'age', 'sex', 'pathology']	False	['ieeg']	['01']	['lozHFO']	https://github.com/OpenNeuroDatasets/ds004642	n/a	n/a	n/a
 ds004644	24	True	False	['participant_id', 'genotype', 'sex']	False	['anat']	['exvivo', 'invivo']	n/a	https://github.com/OpenNeuroDatasets/ds004644	n/a	n/a	n/a
 ds004645	15	True	True	['participant_id', 'sex', 'age']	False	['anat', 'func']	[]	['breathhold', 'checker', 'rest']	https://github.com/OpenNeuroDatasets/ds004645	n/a	n/a	n/a
 ds004647	44	True	True	['participant_id', 'age', 'sex']	False	['anat', 'func']	['1']	['gng', 'wmgng']	https://github.com/OpenNeuroDatasets/ds004647	n/a	n/a	n/a
+ds004648	88	True	True	['participant_id', 'Age', 'Parasite', 'LoE', 'SES', 'PA', 'BMI', 'WHR', 'SDNN_all', 'RMSSD', 'ln_LF_all', 'ln_HF_all', 'SQ_all', 'SQ', 'LF', 'HF', 'Zung_S', 'STAI_R', 'STAI_S', 'Kcal', 'Prot', 'TF', 'SatFat', 'MUF', 'Poly_InsFat', 'Chol', 'Carb', 'Fiber', 'Chao1', 'Shannon', 'InvSimpson', 'FR_rumi_unc', 'FR_rumi_fam']	False	['anat', 'func']	[]	['rest']	https://github.com/OpenNeuroDatasets/ds004648	n/a	n/a	n/a
+ds004650	1	True	True	['participant_id', 'weight']	False	['anat']	['01', '02', '03']	n/a	https://github.com/OpenNeuroDatasets/ds004650	n/a	n/a	n/a
