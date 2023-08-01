@@ -786,6 +786,7 @@ ds004330	30	True	True	['participant_id', 'age', 'sex', 'hand', 'weight', 'height
 ds004331	30	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	[]	['localizer', 'main']	https://github.com/OpenNeuroDatasets/ds004331	n/a	n/a	n/a
 ds004332	22	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004332	n/a	n/a	n/a
 ds004339	2	True	True	['participant_id', 'G']	False	['anat']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004339	n/a	n/a	n/a
+ds004341	28	True	False	['participant_id', 'handedness', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['semenc']	https://github.com/OpenNeuroDatasets/ds004341	n/a	n/a	n/a
 ds004346	1	True	True	['participant_id', 'age', 'sex', 'hand', 'weight', 'height']	False	['anat', 'meg']	['01']	['SpAtt']	https://github.com/OpenNeuroDatasets/ds004346	n/a	n/a	n/a
 ds004347	24	True	True	['participant_id', 'species', 'age', 'sex', 'handedness']	False	['eeg']	[]	['jacobsen']	https://github.com/OpenNeuroDatasets/ds004347	n/a	n/a	n/a
 ds004348	9	True	True	['participant_id', 'gender']	False	['eeg']	['001']	['sleep', 'wake']	https://github.com/OpenNeuroDatasets/ds004348	n/a	n/a	n/a
