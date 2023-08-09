@@ -1,6 +1,7 @@
 """Command line interface for cohort_creator."""
 from __future__ import annotations
 
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -42,8 +43,13 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     args, unknowns = parser.parse_known_args(argv[1:])
 
-    participant_listing = Path(args.participant_listing[0]).resolve()
+    if args.participant_listing is not None:
+        participant_listing = Path(args.participant_listing[0]).resolve()
+    else:
+        participant_listing = None
+
     dataset_listing = Path(args.dataset_listing[0]).resolve()
+
     output_dir = Path(args.output_dir[0]).resolve()
 
     dataset_types = args.dataset_types
@@ -52,7 +58,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     verbosity = args.verbosity
     set_verbosity(verbosity)
 
-    participant_listing = load_participant_listing(participant_listing=participant_listing)
+    if participant_listing is not None:
+        participant_listing = load_participant_listing(participant_listing=participant_listing)
 
     dataset_listing = load_dataset_listing(dataset_listing=dataset_listing)
 
@@ -74,14 +81,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     datatypes = args.datatypes
     space = args.space
 
-    if args.bids_filter_file is None:
-        bids_filter = None
-    else:
-        bids_filter_file = Path(args.bids_filter_file[0]).resolve()
-        if bids_filter_file.exists():
-            bids_filter = get_bids_filter(bids_filter_file=bids_filter_file)
-        else:
-            bids_filter = None
+    bids_filter = _return_bids_filter(args=args)
 
     if args.command in ["get", "all"]:
         jobs = args.jobs
@@ -112,3 +112,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             bids_filter=bids_filter,
         )
         return None
+
+
+def _return_bids_filter(args: argparse.Namespace) -> dict[str, dict[str, dict[str, str]]] | None:
+    if args.bids_filter_file is None:
+        return None
+    bids_filter_file = Path(args.bids_filter_file[0]).resolve()
+    return (
+        get_bids_filter(bids_filter_file=bids_filter_file) if bids_filter_file.exists() else None
+    )

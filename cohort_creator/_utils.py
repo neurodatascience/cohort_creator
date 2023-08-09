@@ -39,8 +39,10 @@ def load_participant_listing(participant_listing: Path | str) -> pd.DataFrame:
     return participant_listing_df
 
 
-def filter_excluded_participants(pth: Path, participants: list[str]) -> None:
+def filter_excluded_participants(pth: Path, participants: list[str] | None) -> None:
     """Remove subjects from participants.tsv that were not included in the cohort."""
+    if participants is None:
+        return
     participants_tsv = pth / "participants.tsv"
     if not (participants_tsv).exists():
         return
@@ -183,6 +185,18 @@ def get_sessions(
     mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
     sessions = participants[mask].SessionID.values
     return listify(sessions[0])
+
+
+def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None]:
+    sessions = [
+        x.name.split("-")[1]
+        for x in participant_pth.iterdir()
+        if x.is_dir() and x.name.startswith("ses-")
+    ]
+    if sessions:
+        return sessions
+    else:
+        return [None]
 
 
 def listify(some_str: str) -> list[str] | list[None]:
@@ -522,8 +536,11 @@ def augment_filter(
 
 def get_list_datasets_to_install(
     dataset_listing: pd.DataFrame,
-    participant_listing: pd.DataFrame,
+    participant_listing: pd.DataFrame | None = None,
 ) -> list[str]:
+    if participant_listing is None:
+        return sorted(list(dataset_listing["DatasetID"]))
+
     datasets_nodes = return_datasets_nodes(participant_listing)
     list_datasets = []
     for dataset in datasets_nodes:
@@ -540,3 +557,7 @@ def return_datasets_nodes(participant_listing: pd.DataFrame) -> list[str]:
 
 def return_dataset_uri(dataset_name: str) -> str:
     return f"https://github.com/OpenNeuroDatasets-JSONLD/{dataset_name}.git"
+
+
+def list_participants_in_dataset(data_pth: Path) -> list[str]:
+    return [x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")]

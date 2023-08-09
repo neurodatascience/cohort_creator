@@ -25,6 +25,23 @@ BROWSER := python -c "$$BROWSER_PYSCRIPT"
 clean:
 	sudo rm -rf outputs
 
+demo_no_participant:
+	cohort_creator install \
+		-d tests/data/datasets.tsv \
+		-o outputs \
+		--datatype anat \
+		--verbosity 1
+	cohort_creator get \
+		-d tests/data/datasets.tsv \
+		-o outputs \
+		--datatype anat \
+		--jobs 6 \
+		--verbosity 1
+	cohort_creator copy \
+		-d tests/data/datasets.tsv \
+		-o outputs \
+		--verbosity 2
+
 demo_install:
 	cohort_creator install \
 		-d tests/data/datasets.tsv \

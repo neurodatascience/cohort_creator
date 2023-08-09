@@ -26,6 +26,7 @@ from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
+from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import load_dataset_listing
 from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import return_target_pth
@@ -327,6 +328,19 @@ def test_get_list_datasets_to_install():
     assert all(x in expected for x in datasets_to_install)
 
 
+def test_get_list_datasets_to_install_with_no_participants_tsv():
+    dataset_listing = pd.DataFrame({"DatasetID": ["foo", "bar"]})
+
+    datasets_to_install = get_list_datasets_to_install(dataset_listing)
+
+    expected = [
+        "foo",
+        "bar",
+    ]
+    assert len(datasets_to_install) == len(expected)
+    assert all(x in expected for x in datasets_to_install)
+
+
 def test_get_participant_ids():
     participants_listing_file = root_dir() / "inputs" / "participant-results.tsv"
     participants = load_participant_listing(participants_listing_file)
@@ -341,3 +355,9 @@ def test_get_participant_ids():
 
     assert len(participant_ids) == len(expected)
     assert all(x in expected for x in participant_ids)
+
+
+def test_list_participants_in_dataset(bids_examples):
+    participants_ids = list_participants_in_dataset(bids_examples / "ieeg_visual")
+
+    assert all(x in ["sub-01", "sub-02"] for x in participants_ids)
