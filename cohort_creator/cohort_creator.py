@@ -30,6 +30,8 @@ from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
+from cohort_creator._utils import list_participants_in_dataset
+from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import return_target_pth
 from cohort_creator.bagelify import _new_bagel
@@ -130,14 +132,21 @@ def get_data(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(
-            datasets=datasets, participants=participants, dataset_name=dataset_
-        )
-        if not participants_ids:
-            cc_log.warning(f"  no participants in dataset {dataset_}")
-            continue
+        # if no participants_ids then we grab all the participants
+        # from the raw dataset
+        if participants is not None:
+            participants_ids = get_participant_ids(
+                datasets=datasets, participants=participants, dataset_name=dataset_
+            )
+            if not participants_ids:
+                cc_log.warning(f"  no participants in dataset {dataset_}")
+                continue
+            cc_log.info(f"  getting data for: {participants_ids}")
 
-        cc_log.info(f"  getting data for: {participants_ids}")
+        else:
+            data_pth = dataset_path(sourcedata, dataset_)
+            participants_ids = list_participants_in_dataset(data_pth)
+            cc_log.info(f"  getting data for all participants in dataset {dataset_}")
 
         for dataset_type_ in dataset_types:
             if not get_dataset_url(dataset_, dataset_type_):
@@ -154,7 +163,12 @@ def get_data(
                 if not is_subject_in_dataset(subject, data_pth):
                     cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
                     continue
-                sessions = get_sessions(participants, dataset_, subject)
+
+                if participants is not None:
+                    sessions = get_sessions(participants, dataset_, subject)
+                else:
+                    sessions = list_sessions_in_participant(data_pth / subject)
+
                 _get_data_this_subject(
                     subject=subject,
                     sessions=sessions,
@@ -248,14 +262,20 @@ def construct_cohort(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        participants_ids = get_participant_ids(
-            datasets=datasets, participants=participants, dataset_name=dataset_
-        )
-        if not participants_ids:
-            cc_log.warning(f"  no participants in dataset {dataset_}")
-            continue
-
-        cc_log.info(f"  creating cohort with: {participants_ids}")
+        # if no participants_ids then we grab all the participants
+        # from the raw dataset
+        if participants is not None:
+            participants_ids = get_participant_ids(
+                datasets=datasets, participants=participants, dataset_name=dataset_
+            )
+            if not participants_ids:
+                cc_log.warning(f"  no participants in dataset {dataset_}")
+                continue
+            cc_log.info(f"  creating cohort with: {participants_ids}")
+        else:
+            data_pth = dataset_path(sourcedata_dir, dataset_)
+            participants_ids = list_participants_in_dataset(data_pth)
+            cc_log.info(f"  creating cohort with all participants in dataset {dataset_}")
 
         for dataset_type_ in dataset_types:
             if not get_dataset_url(dataset_, dataset_type_):
@@ -276,7 +296,12 @@ def construct_cohort(
                 if not is_subject_in_dataset(subject, src_pth):
                     cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
                     continue
-                sessions = get_sessions(participants, dataset_, subject)
+
+                if participants is not None:
+                    sessions = get_sessions(participants, dataset_, subject)
+                else:
+                    sessions = list_sessions_in_participant(data_pth / subject)
+
                 _copy_this_subject(
                     subject=subject,
                     sessions=sessions,

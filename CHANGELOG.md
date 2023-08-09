@@ -34,6 +34,8 @@ and this project adheres to
 - Implement the usage of a "bids filter file" to define "suffix groups"
   with their own datatype, BIDS entities and suffix and extensions
   to flexibly allow to copy data from any datatype for each dataset type. #35 @Remi-Gau
+- Allow to run without using any participant file.
+  In this case all participants of each datasets are downloaded. #75 @Remi-Gau
 
 ### Removed
 

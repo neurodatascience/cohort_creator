@@ -42,6 +42,7 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         help="""
         Path to TSV file containing the list of datasets to get.
         """,
+        required=True,
         nargs=1,
     )
     parser.add_argument(
@@ -49,7 +50,10 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         "--participant_listing",
         help="""
         Path to TSV file containing the list of participants to get.
+        Optional. If not provided, all participants will be downloaded.
         """,
+        default=None,
+        required=False,
         nargs=1,
     )
     parser.add_argument(
