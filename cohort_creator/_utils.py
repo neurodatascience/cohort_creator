@@ -188,12 +188,11 @@ def get_sessions(
 
 
 def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None]:
-    sessions = [
+    if sessions := [
         x.name.split("-")[1]
         for x in participant_pth.iterdir()
         if x.is_dir() and x.name.startswith("ses-")
-    ]
-    if sessions:
+    ]:
         return sessions
     else:
         return [None]
