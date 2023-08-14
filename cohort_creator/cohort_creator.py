@@ -240,6 +240,7 @@ def construct_cohort(
     datatypes: list[str],
     space: str,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
+    skip_group_mriqc: bool = False,
 ) -> None:
     """Copy the data from sourcedata_dir to output_dir, to create a cohort.
 
@@ -337,9 +338,10 @@ def construct_cohort(
         dataset_types=dataset_types,
     )
 
-    _recreate_mriqc_group_reports(
-        output_dir=output_dir, dataset_names=dataset_names, dataset_types=dataset_types
-    )
+    if not skip_group_mriqc:
+        _recreate_mriqc_group_reports(
+            output_dir=output_dir, dataset_names=dataset_names, dataset_types=dataset_types
+        )
 
 
 def _copy_this_subject(

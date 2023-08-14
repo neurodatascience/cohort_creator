@@ -213,6 +213,11 @@ def global_parser() -> MuhParser:
     )
     copy_parser = add_common_arguments(copy_parser)
     copy_parser = add_specialized_args(copy_parser)
+    copy_parser.add_argument(
+        "--skip_group_mriqc",
+        action="store_true",
+        help="Skips rerunning mriqc on the subset of participants.",
+    )
 
     all_parser = subparsers.add_parser(
         "all",
@@ -244,5 +249,10 @@ def global_parser() -> MuhParser:
         default=6,
         type=int,
         nargs=1,
+    )
+    all_parser.add_argument(
+        "--skip_group_mriqc",
+        action="store_true",
+        help="Skips rerunning mriqc on the subset of participants.",
     )
     return parser
