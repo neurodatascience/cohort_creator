@@ -33,7 +33,7 @@ def test_install_datasets_create_participant_listing(tmp_path):
         dataset_types=["raw"],
         generate_participant_listing=True,
     )
-    (tmp_path / "sourcedata" / "code" / "participants.tsv").exists()
+    (tmp_path / "code" / "participants.tsv").exists()
 
 
 def test_construct_cohort(tmp_path):

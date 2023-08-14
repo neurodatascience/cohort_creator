@@ -22,6 +22,14 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
+## MAINTENANCE
+
+lint:
+	black .
+	mypy cohort_creator
+	flake8 cohort_creator
+
+## DEMOS
 clean:
 	sudo rm -rf outputs
 

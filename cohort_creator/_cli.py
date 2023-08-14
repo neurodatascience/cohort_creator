@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+import pandas as pd
+
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_list_datasets_to_install
@@ -37,44 +39,37 @@ def set_verbosity(verbosity: int | list[int]) -> None:
     logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
+def _get_participant_listing_from_args(args: argparse.Namespace) -> pd.DataFrame | None:
+    if args.participant_listing is None:
+        return None
+    participant_listing = Path(args.participant_listing[0]).resolve()
+    return load_participant_listing(participant_listing=participant_listing)
+
+
 def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
     parser = global_parser()
 
-    args, unknowns = parser.parse_known_args(argv[1:])
-
-    if args.participant_listing is not None:
-        participant_listing = Path(args.participant_listing[0]).resolve()
-    else:
-        participant_listing = None
-
-    dataset_listing = Path(args.dataset_listing[0]).resolve()
+    args, _ = parser.parse_known_args(argv[1:])
 
     output_dir = Path(args.output_dir[0]).resolve()
-
-    dataset_types = args.dataset_types
-    validate_dataset_types(dataset_types)
 
     verbosity = args.verbosity
     set_verbosity(verbosity)
 
-    if participant_listing is not None:
-        participant_listing = load_participant_listing(participant_listing=participant_listing)
+    dataset_types = args.dataset_types
+    validate_dataset_types(dataset_types)
 
+    participant_listing = _get_participant_listing_from_args(args)
+
+    dataset_listing = Path(args.dataset_listing[0]).resolve()
     dataset_listing = load_dataset_listing(dataset_listing=dataset_listing)
 
     sourcedata_dir = output_dir / "sourcedata"
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
     if args.command in ["install", "all"]:
-        datasets_to_install = get_list_datasets_to_install(
-            dataset_listing=dataset_listing, participant_listing=participant_listing
-        )
-        install_datasets(
-            datasets=datasets_to_install,
-            sourcedata=sourcedata_dir,
-            dataset_types=dataset_types,
-        )
+        execute_install(dataset_listing, args, sourcedata_dir)
     if args.command == "install":
         return None
 
@@ -101,10 +96,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         return None
 
     if args.command in ["copy", "all"]:
-        if args.skip_group_mriqc:
-            skip_group_mriqc = True
-        else:
-            skip_group_mriqc = False
+        skip_group_mriqc = bool(args.skip_group_mriqc)
         construct_cohort(
             output_dir=output_dir,
             sourcedata_dir=sourcedata_dir,
@@ -117,6 +109,25 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             skip_group_mriqc=skip_group_mriqc,
         )
         return None
+
+
+def execute_install(
+    dataset_listing: pd.DataFrame, args: argparse.Namespace, sourcedata_dir: Path
+) -> None:
+    participant_listing = _get_participant_listing_from_args(args)
+    datasets_to_install = get_list_datasets_to_install(
+        dataset_listing=dataset_listing, participant_listing=participant_listing
+    )
+    if args.generate_participant_listing:
+        generate_participant_listing = args.generate_participant_listing
+    if participant_listing is None:
+        generate_participant_listing = True
+    install_datasets(
+        datasets=datasets_to_install,
+        sourcedata=sourcedata_dir,
+        dataset_types=args.dataset_types,
+        generate_participant_listing=generate_participant_listing,
+    )
 
 
 def _return_bids_filter(args: argparse.Namespace) -> dict[str, dict[str, dict[str, str]]] | None:
