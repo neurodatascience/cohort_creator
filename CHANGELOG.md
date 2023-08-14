@@ -24,17 +24,18 @@ and this project adheres to
 
 ### Added
 
-- Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau
-- Add a dockerfile for the package. #64 @Remi-Gau
-- Call MRIQC docker to regenerate group level plots after copying mriqc data. #32 @Remi-Gau
-- Create a bagel.csv file for a new cohort to list
+- [ENH] Skip mriqc if requested. #80 @Remi-Gau
+- [ENH] Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau
+- [ENH] Add a dockerfile for the package. #64 @Remi-Gau
+- [ENH] Call MRIQC docker to regenerate group level plots after copying mriqc data. #32 @Remi-Gau
+- [ENH] Create a bagel.csv file for a new cohort to list
   what pipeline has been run on which subject / session pair. #29 @Remi-Gau
-- Change output layout output to comply with recommendations
+- [ENH] Change output layout output to comply with recommendations
   from the "Mega" extension to BIDS. #24 @Remi-Gau
-- Implement the usage of a "bids filter file" to define "suffix groups"
+- [ENH] Implement the usage of a "bids filter file" to define "suffix groups"
   with their own datatype, BIDS entities and suffix and extensions
   to flexibly allow to copy data from any datatype for each dataset type. #35 @Remi-Gau
-- Allow to run without using any participant file.
+- [ENH] Allow to run without using any participant file.
   In this case all participants of each datasets are downloaded. #75 @Remi-Gau
 
 ### Removed
