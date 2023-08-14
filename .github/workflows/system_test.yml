@@ -80,6 +80,9 @@ jobs:
                     --space T1w MNI152NLin2009cAsym \
                     --verbosity 3
 
+        -   name: datasets as list of strings
+            run: cohort_creator install -d ds000001 ds000002 -o outputs
+
         -   name: Check outputs
             run: |
                 cat outputs/logs/docker.log
