@@ -18,6 +18,42 @@ from cohort_creator._version import __version__
 cc_log = cc_logger()
 
 
+def create_tsv_participant_session_in_datasets(
+    output_dir: Path, dataset_paths: list[Path]
+) -> Path:
+    (output_dir.parent / "code").mkdir(exist_ok=True, parents=True)
+    content: dict[str, list[str]] = {
+        "DatasetID": [],
+        "SubjectID": [],
+        "SessionID": [],
+        "SessionPath": [],
+    }
+
+    for dataset in dataset_paths:
+        layout = BIDSLayout(dataset)
+
+        subjects = layout.get_subjects()
+        for sub in sorted(subjects):
+            sessions = layout.get_sessions(subject=sub) or ["n/a"]
+            for ses in sorted(sessions):
+                if ses != "n/a":
+                    ses = f"ses-{ses}"
+
+                content["DatasetID"].append(dataset.name)
+                content["SubjectID"].append(f"sub-{sub}")
+                content["SessionID"].append(ses)
+                if ses != "n/a":
+                    ses += "/"
+                else:
+                    ses = ""
+                content["SessionPath"].append(f"{dataset.name}/sub-{sub}/{ses}")
+
+    df = pd.DataFrame(content)
+    output_file = output_dir.parent / "code" / "participants.tsv"
+    df.to_csv(output_file, sep="\t", index=False)
+    return output_file
+
+
 def check_tsv_for_empty_header(tsv_file: Path) -> pd.DataFrame:
     """Check if tsv first line is empty and reload if so."""
     dataset_listing_df = pd.read_csv(tsv_file, sep="\t")

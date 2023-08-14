@@ -20,6 +20,7 @@ from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import add_study_tsv
 from cohort_creator._utils import copy_top_files
 from cohort_creator._utils import create_ds_description
+from cohort_creator._utils import create_tsv_participant_session_in_datasets
 from cohort_creator._utils import dataset_path
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
@@ -42,7 +43,12 @@ from cohort_creator.logger import cc_logger
 cc_log = cc_logger()
 
 
-def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[str]) -> None:
+def install_datasets(
+    datasets: list[str],
+    sourcedata: Path,
+    dataset_types: list[str],
+    generate_participant_listing: bool = False,
+) -> None:
     """Will install several datalad datasets from openneuro.
 
     Parameters
@@ -58,14 +64,23 @@ def install_datasets(datasets: list[str], sourcedata: Path, dataset_types: list[
     dataset_types : list[str]
         Can contain any of: ``"raw"``, ``"fmriprep"``, ``"mriqc"``.
 
+    generate_participant_listing : bool, default=False
+        If True, will generate a participant listing for all datasets.
+
     """
     cc_log.info("Installing datasets")
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
-        _install(dataset_name=dataset_, dataset_types=dataset_types, output_path=sourcedata)
+        _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=sourcedata)
+
+    if generate_participant_listing:
+        dataset_paths = [dataset_path(sourcedata, dataset_) for dataset_ in datasets]
+        create_tsv_participant_session_in_datasets(
+            dataset_paths=dataset_paths, output_dir=sourcedata
+        )
 
 
-def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> None:
+def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> None:
     if not _is_dataset_in_openneuro(dataset_name):
         cc_log.warning(f"  {dataset_name} not found in openneuro")
         return None
@@ -76,7 +91,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_path: Path) -> 
             continue
 
         derivative = None if dataset_type_ == "raw" else dataset_type_
-        data_pth = dataset_path(output_path, dataset_name, derivative=derivative)
+        data_pth = dataset_path(output_dir, dataset_name, derivative=derivative)
 
         if data_pth.exists():
             cc_log.debug(f"  {dataset_type_} data already present at {data_pth}")

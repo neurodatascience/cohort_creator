@@ -18,6 +18,7 @@ def test_parser_install():
             str(Path()),
             "--dataset_types",
             "raw",
+            "--generate_participant_listing",
         ]
     )
     print(args)

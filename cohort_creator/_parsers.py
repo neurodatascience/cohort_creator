@@ -158,6 +158,11 @@ def global_parser() -> MuhParser:
         """,
     )
     install_parser = add_common_arguments(install_parser)
+    install_parser.add_argument(
+        "--generate_participant_listing",
+        action="store_true",
+        help="Skips rerunning mriqc on the subset of participants.",
+    )
 
     get_parser = subparsers.add_parser(
         "get",
