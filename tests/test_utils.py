@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 from bids import BIDSLayout
@@ -14,6 +15,7 @@ from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
 from cohort_creator._utils import create_ds_description
+from cohort_creator._utils import create_tsv_participant_session_in_datasets
 from cohort_creator._utils import get_anat_files
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_dataset_url
@@ -33,6 +35,25 @@ from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import set_name
 from cohort_creator._utils import set_version
 from cohort_creator._utils import validate_dataset_types
+
+
+def test_create_tsv_participant_session_in_datasets(bids_examples, tmp_path):
+    tsv_file = create_tsv_participant_session_in_datasets(
+        dataset_paths=[bids_examples / "ds001", bids_examples / "ds006"], output_dir=tmp_path
+    )
+    assert tsv_file.exists()
+    df = pd.read_csv(tsv_file, sep="\t")
+
+    assert df.columns.tolist() == ["DatasetID", "SubjectID", "SessionID", "SessionPath"]
+
+    assert df["DatasetID"].unique().tolist() == ["ds001", "ds006"]
+
+    nb_sub_ds001 = len(list_participants_in_dataset(bids_examples / "ds001"))
+    nb_sub_ds006 = len(list_participants_in_dataset(bids_examples / "ds006"))
+    nb_ses_ds006 = 2
+    assert len(df) == nb_sub_ds001 + nb_sub_ds006 * nb_ses_ds006
+
+    assert df["SessionID"].unique().tolist() == [np.nan, "ses-post", "ses-pre"]
 
 
 def test_get_dataset_url():

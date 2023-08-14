@@ -25,6 +25,17 @@ def test_install_datasets(tmp_path, caplog):
     # assert "data already present at" in caplog.text
 
 
+def test_install_datasets_create_participant_listing(tmp_path):
+    sourcedata = tmp_path / "sourcedata"
+    install_datasets(
+        datasets=["ds000002"],
+        sourcedata=sourcedata,
+        dataset_types=["raw"],
+        generate_participant_listing=True,
+    )
+    (tmp_path / "sourcedata" / "code" / "participants.tsv").exists()
+
+
 def test_construct_cohort(tmp_path):
     participants = pd.DataFrame(
         {"DatasetID": ["ds000001"], "SubjectID": ["sub-01"], "SessionID": [""]}

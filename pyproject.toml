@@ -11,12 +11,7 @@ maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.8"
-dependencies = [
-    "pandas",
-    "rich",
-    "datalad",
-    "pybids",
-]
+dependencies = ["pandas", "rich", "datalad", "pybids"]
 classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
@@ -53,17 +48,14 @@ Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
 "Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-]
+test = ["pytest", "pytest-cov"]
 doc = [
-	"furo",
-	"myst-parser",
-	"numpydoc",
-	"sphinx",
-	"sphinx-copybutton",
-    "sphinx-argparse"
+    "furo",
+    "myst-parser",
+    "numpydoc",
+    "sphinx",
+    "sphinx-copybutton",
+    "sphinx-argparse",
 ]
 dev = [
     "cohort_creator[doc,test]",
@@ -80,9 +72,7 @@ tests = ["cohort_creator[test]"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv --cov cohort_creator "
-testpaths = [
-    "tests/",
-]
+testpaths = ["tests/"]
 norecursedirs = "data"
 
 [tool.black]
@@ -114,7 +104,7 @@ module = [
     "pandas",
     "pytest",
     "cohort_creator._version",
-    "bids.*"
+    "bids.*",
 ]
 ignore_missing_imports = true
 
@@ -124,6 +114,6 @@ module = [
     'integration.*',
     'format_v016_to_v020',
     'format_v020_to_v030',
-    'rename'
+    'rename',
 ]
 ignore_errors = true
