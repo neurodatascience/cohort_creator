@@ -855,6 +855,7 @@ ds004520	33	False	False	n/a	False	['eeg']	[]	['Retrocue']	https://github.com/Ope
 ds004521	34	False	False	n/a	False	['eeg']	[]	['Postcues']	https://github.com/OpenNeuroDatasets/ds004521	n/a	n/a	n/a
 ds004529	34	True	False	['participant_id', 'age', 'sex', 'handedness', 'exclusion']	False	['anat', 'func']	[]	['frapps', 'localizer']	https://github.com/OpenNeuroDatasets/ds004529	n/a	n/a	https://github.com/OpenNeuroDatasets/ds004529/tree/main/derivatives/mriqc
 ds004532	110	True	True	['participant_id', 'Original_ID', 'sex', 'age', 'Study', 'sess1_Drug', 'sess2_Drug']	False	['eeg']	['01', '02']	['PST']	https://github.com/OpenNeuroDatasets/ds004532	n/a	n/a	n/a
+ds004533	45	True	False	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	[]	['ironiavev', 'rest']	https://github.com/OpenNeuroDatasets/ds004533	n/a	n/a	n/a
 ds004539	10	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	['001', '002']	['blockStim', 'blockStimLongTR', 'blockStimRandom', 'blockStimVisOnly', 'eventStim', 'eventStimRandom', 'eventStimVisOnly']	https://github.com/OpenNeuroDatasets/ds004539	n/a	n/a	n/a
 ds004544	38	True	False	['participant_id', 'sex', 'age']	False	['anat', 'func']	[]	['GoalAchievement', 'Phrases', 'Words']	https://github.com/OpenNeuroDatasets/ds004544	n/a	n/a	n/a
 ds004551	114	True	True	['participant_id', 'age', 'sex', 'handedness']	False	['ieeg']	['01', '02', '03']	['sleep']	https://github.com/OpenNeuroDatasets/ds004551	n/a	n/a	n/a
@@ -881,6 +882,7 @@ ds004597	27	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'f
 ds004598	9	True	False	['participant_id', 'genotype']	False	['eeg']	['1', '2', '3']	['LinearTrack']	https://github.com/OpenNeuroDatasets/ds004598	n/a	n/a	n/a
 ds004602	182	True	True	['participant_id', 'SubjectID', 'Gender', 'Sex', 'Age', 'Race', 'Ethnicity', 'StudySite']	False	['eeg']	[]	['flanker', 'gonogo', 'stroop']	https://github.com/OpenNeuroDatasets/ds004602	n/a	n/a	n/a
 ds004603	37	True	True	['participant_id', 'sex', 'age', 'nationality', 'hand', 'date', 'comments']	False	['beh', 'eeg']	[]	['CTP']	https://github.com/OpenNeuroDatasets/ds004603	n/a	n/a	n/a
+ds004604	50	True	True	['participant_id', 'sex', 'age']	False	['anat', 'func']	[]	['gas']	https://github.com/OpenNeuroDatasets/ds004604	https://github.com/OpenNeuroDatasets/ds004604/tree/main/derivatives/fmriprep_v21.0.4	n/a	n/a
 ds004616	26	True	False	['participant_id', 'age', 'sex']	False	['anat', 'func']	['01', '02']	['handgrasp']	https://github.com/OpenNeuroDatasets/ds004616	n/a	n/a	n/a
 ds004620	8	True	True	['participant_id', 'exam_date', 'group', 'field_strength']	False	['anat']	['20211227', '20211228', '20220706', '20220826', '20230406', '20230413']	n/a	https://github.com/OpenNeuroDatasets/ds004620	n/a	n/a	n/a
 ds004624	1	True	True	['participant_id', 'sex']	False	['anat', 'ieeg']	['intraop01', 'plan', 'postop01']	[]	https://github.com/OpenNeuroDatasets/ds004624	n/a	n/a	n/a
