@@ -69,7 +69,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
 
     if args.command in ["install", "all"]:
-        execute_install(dataset_listing, args, sourcedata_dir)
+        _execute_install(dataset_listing, args, sourcedata_dir)
     if args.command == "install":
         return None
 
@@ -111,13 +111,14 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         return None
 
 
-def execute_install(
+def _execute_install(
     dataset_listing: pd.DataFrame, args: argparse.Namespace, sourcedata_dir: Path
 ) -> None:
     participant_listing = _get_participant_listing_from_args(args)
     datasets_to_install = get_list_datasets_to_install(
         dataset_listing=dataset_listing, participant_listing=participant_listing
     )
+    generate_participant_listing = False
     if args.generate_participant_listing:
         generate_participant_listing = args.generate_participant_listing
     if participant_listing is None:

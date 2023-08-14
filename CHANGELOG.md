@@ -24,6 +24,7 @@ and this project adheres to
 
 ### Added
 
+- [ENH] Index dataset and return participant listing if not provided. #81 @Remi-Gau
 - [ENH] Skip mriqc if requested. #80 @Remi-Gau
 - [ENH] Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau
 - [ENH] Add a dockerfile for the package. #64 @Remi-Gau
