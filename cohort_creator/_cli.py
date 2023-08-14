@@ -118,9 +118,7 @@ def _execute_install(
     datasets_to_install = get_list_datasets_to_install(
         dataset_listing=dataset_listing, participant_listing=participant_listing
     )
-    generate_participant_listing = False
-    if args.generate_participant_listing:
-        generate_participant_listing = args.generate_participant_listing
+    generate_participant_listing = getattr(args, "generate_participant_listing", False)
     if participant_listing is None:
         generate_participant_listing = True
     install_datasets(
