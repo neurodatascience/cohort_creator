@@ -24,6 +24,26 @@ def test_parser_install():
     print(args)
 
 
+def test_parser_install_list_datasets():
+    parser = global_parser()
+    args = parser.parse_args(
+        [
+            "install",
+            "-d",
+            "ds000001",
+            "ds000002",
+            "-p",
+            str(Path()),
+            "-o",
+            str(Path()),
+            "--dataset_types",
+            "raw",
+            "--generate_participant_listing",
+        ]
+    )
+    print(args)
+
+
 def test_parser_install_no_participant():
     parser = global_parser()
     args = parser.parse_args(

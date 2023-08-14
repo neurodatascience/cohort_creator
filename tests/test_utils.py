@@ -319,11 +319,17 @@ def test_list_all_files_with_filter_func_fmriprep(bids_examples):
     ]
 
 
+def test_load_dataset_listing():
+    datasets_listing_file = root_dir() / "inputs" / "dataset-results.tsv"
+    load_dataset_listing([str(datasets_listing_file)])
+    load_dataset_listing(["ds000001", "ds000002"])
+
+
 def test_get_list_datasets_to_install():
     participants_listing_file = root_dir() / "inputs" / "participant-results.tsv"
     participant_listing = load_participant_listing(participants_listing_file)
     datasets_listing_file = root_dir() / "inputs" / "dataset-results.tsv"
-    dataset_listing = load_dataset_listing(datasets_listing_file)
+    dataset_listing = load_dataset_listing([str(datasets_listing_file)])
 
     datasets_to_install = get_list_datasets_to_install(dataset_listing, participant_listing)
 
@@ -366,7 +372,7 @@ def test_get_participant_ids():
     participants_listing_file = root_dir() / "inputs" / "participant-results.tsv"
     participants = load_participant_listing(participants_listing_file)
     datasets_listing_file = root_dir() / "inputs" / "dataset-results.tsv"
-    datasets = load_dataset_listing(datasets_listing_file)
+    datasets = load_dataset_listing([str(datasets_listing_file)])
 
     participant_ids = get_participant_ids(
         datasets=datasets, participants=participants, dataset_name="ds000244"

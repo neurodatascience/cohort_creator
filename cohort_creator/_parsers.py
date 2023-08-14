@@ -43,7 +43,7 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         Path to TSV file containing the list of datasets to get.
         """,
         required=True,
-        nargs=1,
+        nargs="+",
     )
     parser.add_argument(
         "-p",
