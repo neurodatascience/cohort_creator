@@ -33,6 +33,9 @@ lint:
 clean:
 	sudo rm -rf outputs
 
+demo_datasets_as-str:
+	cohort_creator install -d ds000001 ds000002 -o outputs
+
 demo_no_participant:
 	cohort_creator install \
 		-d tests/data/datasets.tsv \

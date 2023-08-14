@@ -40,7 +40,8 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
         "-d",
         "--dataset_listing",
         help="""
-        Path to TSV file containing the list of datasets to get.
+        Path to TSV file containing the list of datasets to get
+        or a list of datasets to install (``ds000001 ds000002``).
         """,
         required=True,
         nargs="+",
@@ -152,6 +153,21 @@ def global_parser() -> MuhParser:
             cohort_creator install \\
                 --dataset_listing inputs/dataset-results.tsv \\
                 --participant_listing inputs/participant-results.tsv \\
+                --output_dir outputs \\
+                --dataset_types raw mriqc fmriprep \\
+                --verbosity 3
+
+        If no ``--participant_listing`` is provided,
+        a ``participants.tsv`` file will be generated
+        in ``output_dir/code`` that contains all participants
+        for all datasets in ``dataset_listing``.
+
+        Datasets listing can be passed directly as a list of datasets:
+
+        .. code-block:: bash
+
+            cohort_creator install \\
+                --dataset_listing ds000001 ds000002 \\
                 --output_dir outputs \\
                 --dataset_types raw mriqc fmriprep \\
                 --verbosity 3
