@@ -101,6 +101,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         return None
 
     if args.command in ["copy", "all"]:
+        if args.skip_group_mriqc:
+            skip_group_mriqc = True
+        else:
+            skip_group_mriqc = False
         construct_cohort(
             output_dir=output_dir,
             sourcedata_dir=sourcedata_dir,
@@ -110,6 +114,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             datatypes=datatypes,
             space=space,
             bids_filter=bids_filter,
+            skip_group_mriqc=skip_group_mriqc,
         )
         return None
 

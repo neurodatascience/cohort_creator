@@ -27,8 +27,8 @@ and this project adheres to
 - Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau
 - Add a dockerfile for the package. #64 @Remi-Gau
 - Call MRIQC docker to regenerate group level plots after copying mriqc data. #32 @Remi-Gau
-- Create a bagel.csv file for a new cohort to list what pipeline
-  has been run on which subject / session pair. #29 @Remi-Gau
+- Create a bagel.csv file for a new cohort to list
+  what pipeline has been run on which subject / session pair. #29 @Remi-Gau
 - Change output layout output to comply with recommendations
   from the "Mega" extension to BIDS. #24 @Remi-Gau
 - Implement the usage of a "bids filter file" to define "suffix groups"

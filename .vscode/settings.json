@@ -1,9 +1,4 @@
 {
   "autoDocstring.docstringFormat": "numpy",
-  "esbonio.sphinx.confDir": "",
-  "editor.formatOnSave": true,
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
-  "python.formatting.provider": "none"
+  "editor.formatOnSave": false
 }
