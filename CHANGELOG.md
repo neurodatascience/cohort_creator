@@ -24,6 +24,7 @@ and this project adheres to
 
 ### Added
 
+- [ENH] pass dataset listings as list of strings via the CLI. #82 @Remi-Gau
 - [ENH] Index dataset and return participant listing if not provided. #81 @Remi-Gau
 - [ENH] Skip mriqc if requested. #80 @Remi-Gau
 - [ENH] Add an "all" sub command that runs install, get and copy in sequence. #65 @Remi-Gau

@@ -62,8 +62,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     participant_listing = _get_participant_listing_from_args(args)
 
-    dataset_listing = Path(args.dataset_listing[0]).resolve()
-    dataset_listing = load_dataset_listing(dataset_listing=dataset_listing)
+    dataset_listing = load_dataset_listing(dataset_listing=args.dataset_listing)
 
     sourcedata_dir = output_dir / "sourcedata"
     sourcedata_dir.mkdir(exist_ok=True, parents=True)
