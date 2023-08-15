@@ -43,6 +43,10 @@ from cohort_creator.logger import cc_logger
 cc_log = cc_logger()
 
 
+def superdataset(sourcedata: Path) -> api.Dataset:
+    return api.Dataset(sourcedata.parent)
+
+
 def install_datasets(
     datasets: list[str],
     sourcedata: Path,
@@ -98,7 +102,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
         else:
             cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
             if uri := get_dataset_url(dataset_name, dataset_type_):
-                api.install(path=data_pth, source=uri)
+                api.install(path=data_pth, source=uri, dataset=superdataset(sourcedata=output_dir))
 
 
 def get_data(
