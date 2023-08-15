@@ -116,8 +116,8 @@ def test_get_sessions():
     input_file = root_dir() / "tests" / "data" / "participants.tsv"
     participants = load_participant_listing(input_file)
 
-    assert get_sessions(participants, "ds000002", "sub-13") == [None]
-    assert get_sessions(participants, "ds001226", "sub-CON03") == ["preop"]
+    assert get_sessions(participants, "ds000002", "sub-13") == [np.nan]
+    assert get_sessions(participants, "ds001226", "sub-CON03") == ["ses-postop", "ses-preop"]
 
 
 def test_validate_dataset_types():
@@ -242,6 +242,36 @@ def test_list_all_files_with_filter_raw(bids_examples):
     )
     assert len(files) == 1
     assert files == ["sub-01/anat/sub-01_T1w.nii.gz"]
+
+
+@pytest.mark.parametrize(
+    "sessions, expected",
+    (
+        ([None], []),
+        (["ses-pre"], ["sub-01/ses-pre/anat/sub-01_ses-pre_T1w.nii.gz"]),
+        (
+            ["ses-pre", "ses-post"],
+            [
+                "sub-01/ses-post/anat/sub-01_ses-post_T1w.nii.gz",
+                "sub-01/ses-pre/anat/sub-01_ses-pre_T1w.nii.gz",
+            ],
+        ),
+        (["foo"], []),
+    ),
+)
+def test_list_all_files_with_filter_raw_with_sessions(bids_examples, sessions, expected):
+    dataset_type = "raw"
+    datatype = "anat"
+    filters = get_filters(dataset_type=dataset_type, datatype=datatype)
+    files = list_all_files_with_filter(
+        data_pth=bids_examples / "ds006",
+        dataset_type=dataset_type,
+        filters=filters,
+        subject="sub-01",
+        sessions=sessions,
+        datatype=datatype,
+    )
+    assert files == expected
 
 
 def test_list_all_files_with_filter_func(bids_examples):
