@@ -251,7 +251,7 @@ def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None
     if sessions := [
         x.name for x in participant_pth.iterdir() if x.is_dir() and x.name.startswith("ses-")
     ]:
-        return sessions
+        return sorted(sessions)
     else:
         return [None]
 
