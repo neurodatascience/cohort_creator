@@ -5,9 +5,11 @@ import functools
 import itertools
 import json
 import shutil
+from math import isnan
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
@@ -238,7 +240,11 @@ def get_sessions(
     participants: pd.DataFrame, dataset: str, participant: str
 ) -> list[str] | list[None]:
     mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
-    return sorted(participants[mask].SessionID.values.tolist())
+    sessions = sorted(participants[mask].SessionID.values.tolist())
+    for i, ses in enumerate(sessions):
+        if isinstance(ses, float) and isnan(ses):
+            sessions[i] = None
+    return sessions
 
 
 def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None]:
@@ -532,7 +538,7 @@ def list_all_files_with_filter(
     for session_ in sessions:
         # TODO
         # take care of data averaged across sessions for fmriprep anat
-        if not session_:
+        if not session_ or session_ in [np.nan]:
             datatype_pth = data_pth / subject / datatype
         else:
             datatype_pth = data_pth / subject / session_ / datatype

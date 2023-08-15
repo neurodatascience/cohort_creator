@@ -116,7 +116,7 @@ def test_get_sessions():
     input_file = root_dir() / "tests" / "data" / "participants.tsv"
     participants = load_participant_listing(input_file)
 
-    assert get_sessions(participants, "ds000002", "sub-13") == [np.nan]
+    assert get_sessions(participants, "ds000002", "sub-13") == [None]
     assert get_sessions(participants, "ds001226", "sub-CON03") == ["ses-postop", "ses-preop"]
 
 
