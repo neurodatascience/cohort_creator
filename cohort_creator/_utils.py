@@ -5,9 +5,11 @@ import functools
 import itertools
 import json
 import shutil
+from math import isnan
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
@@ -82,7 +84,7 @@ def load_dataset_listing(dataset_listing: list[str]) -> pd.DataFrame:
     elif len(dataset_listing) == 1:
         dataset = dataset_listing[0]
         if not Path(dataset).exists():
-            return pd.DataFrame({"DatasetID": dataset})
+            return pd.DataFrame({"DatasetID": [dataset]})
         dataset_tsv = Path(dataset).resolve()
         return check_tsv_content(dataset_tsv)
 
@@ -238,17 +240,18 @@ def get_sessions(
     participants: pd.DataFrame, dataset: str, participant: str
 ) -> list[str] | list[None]:
     mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
-    sessions = participants[mask].SessionID.values
-    return listify(sessions[0])
+    sessions = sorted(participants[mask].SessionID.values.tolist())
+    for i, ses in enumerate(sessions):
+        if isinstance(ses, float) and isnan(ses):
+            sessions[i] = None
+    return sessions
 
 
 def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None]:
     if sessions := [
-        x.name.split("-")[1]
-        for x in participant_pth.iterdir()
-        if x.is_dir() and x.name.startswith("ses-")
+        x.name for x in participant_pth.iterdir() if x.is_dir() and x.name.startswith("ses-")
     ]:
-        return sessions
+        return sorted(sessions)
     else:
         return [None]
 
@@ -535,10 +538,10 @@ def list_all_files_with_filter(
     for session_ in sessions:
         # TODO
         # take care of data averaged across sessions for fmriprep anat
-        if not session_:
+        if not session_ or session_ in [np.nan]:
             datatype_pth = data_pth / subject / datatype
         else:
-            datatype_pth = data_pth / subject / f"ses-{session_}" / datatype
+            datatype_pth = data_pth / subject / session_ / datatype
         if not datatype_pth.exists():
             cc_log.warning(f"Path '{datatype_pth}' does not exist")
             continue

@@ -11,6 +11,8 @@ import requests
 import yaml
 from rich import print
 
+from cohort_creator._utils import list_participants_in_dataset
+
 
 OPENNEURO = "OpenNeuroDatasets"
 URL_OPENNEURO = f"https://github.com/{OPENNEURO}/"
@@ -73,12 +75,8 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
     }
 
 
-def get_subjects(pth: Path) -> list[str]:
-    return [v.name for v in pth.glob("sub-*") if v.is_dir()]
-
-
 def get_nb_subjects(pth: Path) -> int:
-    return len(get_subjects(pth))
+    return len(list_participants_in_dataset(pth))
 
 
 def has_participant_tsv(pth: Path) -> tuple[bool, bool, str | list[str]]:

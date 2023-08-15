@@ -11,10 +11,12 @@ from typing import Any
 
 import pandas as pd
 from utils import config
-from utils import get_subjects
 from utils import known_derivatives
 from utils import OPENNEURO
 from utils import URL_OPENNEURO
+
+from cohort_creator._utils import list_participants_in_dataset
+from cohort_creator._utils import list_sessions_in_participant
 
 
 def init_dataset() -> dict[str, list[str]]:
@@ -47,6 +49,13 @@ def list_mriqc_in_derivatives(datasets: dict[str, Any]) -> dict[str, Any]:
     return datasets
 
 
+def has_mri(session_pth: Path) -> bool:
+    """Return True if the session has at least one MRI."""
+    return any(
+        "anat" in x.name or "func" in x.name for x in session_pth.glob("**/*") if x.is_dir()
+    )
+
+
 def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
     """List all participants in all mriqc datasets."""
     datasets.pop("PortalURI")
@@ -58,20 +67,26 @@ def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:
 
         dataset_pth = get_raw_dataset_path(dataset_name)
 
-        subjects = get_subjects(dataset_pth)
-
-        sessions = [
-            x.name.replace("ses-", "") for x in dataset_pth.glob("sub-*/ses-*") if x.is_dir()
-        ]
-        sessions = list(set(sessions))
+        subjects = sorted(list_participants_in_dataset(dataset_pth))
 
         for subject_ in subjects:
-            dataset = new_dataset(dataset_name)
-            dataset["SubjectID"] = subject_
-            dataset["SessionID"] = sessions
+            sessions = list_sessions_in_participant(dataset_pth / subject_)
 
-            for keys in datasets:
-                datasets[keys].append(dataset[keys])
+            for session_ in sessions:
+                dataset = new_dataset(dataset_name)
+
+                if session_ is None:
+                    session_ = "n/a"
+                    dataset["SubjectID"] = subject_
+                    dataset["SessionID"] = session_
+                    for keys in datasets:
+                        datasets[keys].append(dataset[keys])
+
+                elif has_mri(dataset_pth / subject_ / session_):
+                    dataset["SubjectID"] = subject_
+                    dataset["SessionID"] = session_
+                    for keys in datasets:
+                        datasets[keys].append(dataset[keys])
 
     return datasets
 

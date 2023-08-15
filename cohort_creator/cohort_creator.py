@@ -104,7 +104,7 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
 def get_data(
     sourcedata: Path,
     datasets: pd.DataFrame,
-    participants: pd.DataFrame,
+    participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: list[str],
     space: str,
@@ -235,7 +235,7 @@ def construct_cohort(
     output_dir: Path,
     sourcedata_dir: Path,
     datasets: pd.DataFrame,
-    participants: pd.DataFrame,
+    participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: list[str],
     space: str,
