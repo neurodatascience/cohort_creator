@@ -1,10 +1,9 @@
 """General parser for the cohort_creator package."""
 from __future__ import annotations
 
-import argparse
-from typing import IO
+from argparse import ArgumentParser
 
-import rich
+from rich_argparse import RichHelpFormatter
 
 from ._version import __version__
 
@@ -12,19 +11,15 @@ DOC_URL = "https://cohort-creator.readthedocs.io/en/latest/"
 FAQ_URL = f"{DOC_URL}faq.html"
 
 
-class MuhParser(argparse.ArgumentParser):
-    def _print_message(self, message: str, file: IO[str] | None = None) -> None:
-        rich.print(message, file=file)
-
-
-def base_parser() -> MuhParser:
-    parser = MuhParser(
+def base_parser() -> ArgumentParser:
+    parser = ArgumentParser(
         prog="cohort_creator",
         description="Creates a cohort by grabbing specific subjects from opennneuro datasets.",
         epilog=f"""
         For a more readable version of this help section,
         see the `online doc <{DOC_URL}>`_.
         """,
+        formatter_class=RichHelpFormatter,
     )
     parser.add_argument(
         "-v",
@@ -35,7 +30,7 @@ def base_parser() -> MuhParser:
     return parser
 
 
-def add_common_arguments(parser: MuhParser) -> MuhParser:
+def add_common_arguments(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "-d",
         "--dataset_listing",
@@ -94,7 +89,7 @@ def add_common_arguments(parser: MuhParser) -> MuhParser:
     return parser
 
 
-def add_specialized_args(parser: MuhParser) -> MuhParser:
+def add_specialized_args(parser: ArgumentParser) -> ArgumentParser:
     """Add arguments for get and copy."""
     parser.add_argument(
         "--datatypes",
@@ -133,7 +128,7 @@ def add_specialized_args(parser: MuhParser) -> MuhParser:
     return parser
 
 
-def global_parser() -> MuhParser:
+def global_parser() -> ArgumentParser:
     parser = base_parser()
     subparsers = parser.add_subparsers(
         dest="command",
@@ -172,6 +167,7 @@ def global_parser() -> MuhParser:
                 --dataset_types raw mriqc fmriprep \\
                 --verbosity 3
         """,
+        formatter_class=parser.formatter_class,
     )
     install_parser = add_common_arguments(install_parser)
     install_parser.add_argument(
@@ -199,6 +195,7 @@ def global_parser() -> MuhParser:
                 --jobs 6 \\
                 --verbosity 3
         """,
+        formatter_class=parser.formatter_class,
     )
     get_parser = add_common_arguments(get_parser)
     get_parser = add_specialized_args(get_parser)
@@ -231,6 +228,7 @@ def global_parser() -> MuhParser:
                 --space T1w MNI152NLin2009cAsym \\
                 --verbosity 3
         """,
+        formatter_class=parser.formatter_class,
     )
     copy_parser = add_common_arguments(copy_parser)
     copy_parser = add_specialized_args(copy_parser)
@@ -258,6 +256,7 @@ def global_parser() -> MuhParser:
                 --space T1w MNI152NLin2009cAsym \\
                 --verbosity 3
         """,
+        formatter_class=parser.formatter_class,
     )
     all_parser = add_common_arguments(all_parser)
     all_parser = add_specialized_args(all_parser)

@@ -229,6 +229,10 @@ def openneuro_df() -> pd.DataFrame:
     return pd.read_csv(openneuro_listing_tsv(), sep="\t")
 
 
+def sourcedata(pth: Path) -> Path:
+    return pth / "sourcedata"
+
+
 def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Path:
     if derivative is None:
         return root / dataset

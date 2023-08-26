@@ -24,6 +24,7 @@ and this project adheres to
 
 ### Added
 
+- [ENH] turns output into a yoda datalad dataset. #84 @Remi-Gau
 - [ENH] pass dataset listings as list of strings via the CLI. #82 @Remi-Gau
 - [ENH] Index dataset and return participant listing if not provided. #81 @Remi-Gau
 - [ENH] Skip mriqc if requested. #80 @Remi-Gau
