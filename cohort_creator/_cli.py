@@ -50,7 +50,7 @@ def _get_participant_listing_from_args(args: argparse.Namespace) -> pd.DataFrame
 def create_yoda(output_dir: Path) -> None:
     if not output_dir.exists():
         api.create(path=output_dir, cfg_proc="yoda")
-    if output_dir.exists() and not (output_dir / "sourcedata").exists():
+    if not (output_dir / ".datalad").exists():
         api.create(path=output_dir, cfg_proc="yoda", force=True)
 
 
@@ -72,12 +72,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     dataset_listing = load_dataset_listing(dataset_listing=args.dataset_listing)
 
-    sourcedata_dir = output_dir / "sourcedata"
-
     if args.command in ["install", "all"]:
         create_yoda(output_dir)
-        sourcedata_dir.mkdir(exist_ok=True, parents=True)
-        _execute_install(dataset_listing, args, sourcedata_dir)
+        (output_dir / "sourcedata").mkdir(exist_ok=True, parents=True)
+        _execute_install(dataset_listing, args, output_dir)
     if args.command == "install":
         return None
 
@@ -91,7 +89,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         if isinstance(jobs, list):
             jobs = jobs[0]
         get_data(
-            sourcedata=sourcedata_dir,
+            output_dir=output_dir,
             datasets=dataset_listing,
             participants=participant_listing,
             dataset_types=dataset_types,
@@ -107,7 +105,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         skip_group_mriqc = bool(args.skip_group_mriqc)
         construct_cohort(
             output_dir=output_dir,
-            sourcedata_dir=sourcedata_dir,
             datasets=dataset_listing,
             participants=participant_listing,
             dataset_types=dataset_types,
@@ -120,7 +117,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
 
 def _execute_install(
-    dataset_listing: pd.DataFrame, args: argparse.Namespace, sourcedata_dir: Path
+    dataset_listing: pd.DataFrame, args: argparse.Namespace, output_dir: Path
 ) -> None:
     participant_listing = _get_participant_listing_from_args(args)
 
@@ -135,7 +132,7 @@ def _execute_install(
 
     install_datasets(
         datasets=datasets_to_install,
-        sourcedata=sourcedata_dir,
+        output_dir=output_dir,
         dataset_types=args.dataset_types,
         generate_participant_listing=generate_participant_listing,
     )

@@ -1,17 +1,9 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]
 
 [project]
-name = "cohort_creator"
-description = "Creates a neuroimaging cohort by aggregating data across datasets."
-long_description = { file = "README.md" }
-authors = [{ name = "Rémi Gau" }]
-maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
-readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.8"
-dependencies = ["pandas", "rich", "datalad", "pybids"]
+authors = [{name = "Rémi Gau"}]
 classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
@@ -26,37 +18,24 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.11"
 ]
+dependencies = [
+    "pandas",
+    "rich",
+    "datalad",
+    "pybids",
+    "rich_argparse"
+]
+description = "Creates a neuroimaging cohort by aggregating data across datasets."
 dynamic = ["version"]
-
-[project.scripts]
-cohort_creator = "cohort_creator._cli:cli"
-
-[tool.hatch.build.targets.wheel]
-packages = ["cohort_creator"]
-
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "cohort_creator/_version.py"
-
-[project.urls]
-Homepage = "https://github.com/neurodatascience/cohort_creator"
-Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
-"Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
+license = {text = "MIT"}
+maintainers = [{name = "Rémi Gau", email = "remi.gau@gmail.com"}]
+name = "cohort_creator"
+readme = "README.md"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
-doc = [
-    "furo",
-    "myst-parser",
-    "numpydoc",
-    "sphinx",
-    "sphinx-copybutton",
-    "sphinx-argparse",
-]
 dev = [
     "cohort_creator[doc,test]",
     "pre-commit",
@@ -65,27 +44,48 @@ dev = [
     "flake8-docstrings",
     "codespell",
     "mypy",
-    "pandas-stubs",
+    "pandas-stubs"
+]
+doc = [
+    "furo",
+    "myst-parser",
+    "numpydoc",
+    "sphinx",
+    "sphinx-copybutton",
+    "sphinx-argparse"
 ]
 docs = ["cohort_creator[doc]"]
+test = ["pytest", "pytest-cov"]
 tests = ["cohort_creator[test]"]
 
-[tool.pytest.ini_options]
-addopts = "-ra -q -vv --cov cohort_creator "
-testpaths = ["tests/"]
-norecursedirs = "data"
+[project.scripts]
+cohort_creator = "cohort_creator._cli:cli"
+
+[project.urls]
+"Bug trakcer" = "https://github.com/neurodatascience/cohort_creator/issues"
+Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
+Homepage = "https://github.com/neurodatascience/cohort_creator"
 
 [tool.black]
-line-length = 99
-safe = true
 extend-exclude = '''
 (
     ^/tests/data
 )
 '''
+line-length = 99
+safe = true
 
 [tool.codespell]
 skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,cohort_creator/data/openneuro.tsv"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "cohort_creator/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cohort_creator"]
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.mypy]
 check_untyped_defs = true
@@ -97,6 +97,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
+ignore_missing_imports = true
 module = [
     "datalad.*",
     "rich",
@@ -105,15 +106,20 @@ module = [
     "pytest",
     "cohort_creator._version",
     "bids.*",
+    "rich_argparse"
 ]
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+ignore_errors = true
 module = [
     'tests.*',
     'integration.*',
     'format_v016_to_v020',
     'format_v020_to_v030',
-    'rename',
+    'rename'
 ]
-ignore_errors = true
+
+[tool.pytest.ini_options]
+addopts = "-ra -q -vv --cov cohort_creator "
+norecursedirs = "data"
+testpaths = ["tests/"]

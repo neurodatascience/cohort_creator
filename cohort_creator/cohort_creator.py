@@ -35,6 +35,7 @@ from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import return_target_pth
+from cohort_creator._utils import sourcedata
 from cohort_creator.bagelify import _new_bagel
 from cohort_creator.bagelify import bagelify
 from cohort_creator.logger import cc_logger
@@ -43,13 +44,13 @@ from cohort_creator.logger import cc_logger
 cc_log = cc_logger()
 
 
-def superdataset(sourcedata: Path) -> api.Dataset:
-    return api.Dataset(sourcedata.parent)
+def superdataset(pth: Path) -> api.Dataset:
+    return api.Dataset(pth)
 
 
 def install_datasets(
     datasets: list[str],
-    sourcedata: Path,
+    output_dir: Path,
     dataset_types: list[str],
     generate_participant_listing: bool = False,
 ) -> None:
@@ -62,7 +63,7 @@ def install_datasets(
 
         Example: ``["ds000001", "ds000002"]``
 
-    sourcedata : Path
+    output_dir : Path
         Path where the datasets will be installed.
 
     dataset_types : list[str]
@@ -75,12 +76,12 @@ def install_datasets(
     cc_log.info("Installing datasets")
     for dataset_ in datasets:
         cc_log.info(f" {dataset_}")
-        _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=sourcedata)
+        _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=output_dir)
 
     if generate_participant_listing:
-        dataset_paths = [dataset_path(sourcedata, dataset_) for dataset_ in datasets]
+        dataset_paths = [dataset_path(sourcedata(output_dir), dataset_) for dataset_ in datasets]
         create_tsv_participant_session_in_datasets(
-            dataset_paths=dataset_paths, output_dir=sourcedata
+            dataset_paths=dataset_paths, output_dir=sourcedata(output_dir)
         )
 
 
@@ -95,18 +96,19 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
             continue
 
         derivative = None if dataset_type_ == "raw" else dataset_type_
-        data_pth = dataset_path(output_dir, dataset_name, derivative=derivative)
+        data_pth = dataset_path(sourcedata(output_dir), dataset_name, derivative=derivative)
 
         if data_pth.exists():
             cc_log.debug(f"  {dataset_type_} data already present at {data_pth}")
         else:
             cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
             if uri := get_dataset_url(dataset_name, dataset_type_):
-                api.install(path=data_pth, source=uri, dataset=superdataset(sourcedata=output_dir))
+                print(output_dir)
+                api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
 
 
 def get_data(
-    sourcedata: Path,
+    output_dir: Path,
     datasets: pd.DataFrame,
     participants: pd.DataFrame | None,
     dataset_types: list[str],
@@ -120,7 +122,7 @@ def get_data(
 
     Parameters
     ----------
-    sourcedata : Path
+    output_dir : Path
 
     datasets : pd.DataFrame
 
@@ -163,7 +165,7 @@ def get_data(
             cc_log.info(f"  getting data for: {participants_ids}")
 
         else:
-            data_pth = dataset_path(sourcedata, dataset_)
+            data_pth = dataset_path(sourcedata(output_dir), dataset_)
             participants_ids = list_participants_in_dataset(data_pth)
             cc_log.info(f"  getting data for all participants in dataset {dataset_}")
 
@@ -174,7 +176,7 @@ def get_data(
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-            data_pth = dataset_path(sourcedata, dataset_, derivative=derivative)
+            data_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
 
@@ -237,7 +239,6 @@ def _get_data_this_subject(
 
 def construct_cohort(
     output_dir: Path,
-    sourcedata_dir: Path,
     datasets: pd.DataFrame,
     participants: pd.DataFrame | None,
     dataset_types: list[str],
@@ -251,8 +252,6 @@ def construct_cohort(
     Parameters
     ----------
     output_dir : Path
-
-    sourcedata_dir : Path
 
     datasets : pd.DataFrame
 
@@ -293,7 +292,7 @@ def construct_cohort(
                 continue
             cc_log.info(f"  creating cohort with: {participants_ids}")
         else:
-            data_pth = dataset_path(sourcedata_dir, dataset_)
+            data_pth = dataset_path(sourcedata(output_dir), dataset_)
             participants_ids = list_participants_in_dataset(data_pth)
             cc_log.info(f"  creating cohort with all participants in dataset {dataset_}")
 
@@ -304,7 +303,7 @@ def construct_cohort(
             cc_log.info(f"  {dataset_type_}")
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
-            src_pth = dataset_path(sourcedata_dir, dataset_, derivative=derivative)
+            src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
 
             target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
@@ -337,7 +336,6 @@ def construct_cohort(
 
     _generate_bagel_for_cohort(
         output_dir=output_dir,
-        sourcedata_dir=sourcedata_dir,
         dataset_names=dataset_names,
         dataset_types=dataset_types,
     )
@@ -390,7 +388,7 @@ def _copy_this_subject(
 
 
 def _generate_bagel_for_cohort(
-    output_dir: Path, sourcedata_dir: Path, dataset_names: list[str], dataset_types: list[str]
+    output_dir: Path, dataset_names: list[str], dataset_types: list[str]
 ) -> None:
     """Track what subjects have been processed by what pipeline."""
     cc_log.info(" creating bagel.csv file")
@@ -403,7 +401,7 @@ def _generate_bagel_for_cohort(
 
         raw_pth = return_target_pth(output_dir, "raw", dataset_)
 
-        src_pth = dataset_path(sourcedata_dir, dataset_, derivative=dataset_type_)
+        src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=dataset_type_)
         derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
 
         bagel = bagelify(bagel, raw_pth, derivative_pth)
