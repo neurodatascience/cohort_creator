@@ -5,6 +5,9 @@
 [![Sourcery](https://img.shields.io/badge/Sourcery-enabled-brightgreen)](https://sourcery.ai)
 [![Documentation Status](https://readthedocs.org/projects/cohort-creator/badge/?version=latest)](https://cohort-creator.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/neurodatascience/cohort_creator/branch/main/graph/badge.svg?token=PMQYH0DIPX)](https://codecov.io/gh/neurodatascience/cohort_creator)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8313304.svg)](https://doi.org/10.5281/zenodo.8313304)
+[![python versions](https://img.shields.io/pypi/pyversions/cohort_creator.svg)](https://pypi.org/project/cohort_creator/)
+
 
 # Cohort creator
 
