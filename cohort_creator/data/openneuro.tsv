@@ -917,3 +917,4 @@ ds004706	34	True	True	['participant_id', 'age', 'sex', 'hand']	False	['beh', 'ee
 ds004711	187	True	True	['participant_id', 'gender', 'age', 'bart_run1', 'bart_run2', 'delay_discounting']	False	['anat', 'func']	[]	['bart', 'delaydiscounting']	https://github.com/OpenNeuroDatasets/ds004711	n/a	n/a	n/a
 ds004717	42	True	True	['participant_id', 'gender', 'age', 'tumor_type', 'Ki67', 'grade', 'IDH1', '1p19q']	False	['anat', 'dwi']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004717	n/a	n/a	n/a
 ds004720	2	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	[]	['multiband', 'singleband']	https://github.com/OpenNeuroDatasets/ds004720	n/a	n/a	https://github.com/OpenNeuroDatasets/ds004720/tree/main/derivatives/mriqc
+ds004738	4	True	False	['participant_id', 'Manufacturer', 'ModelName', 'ElectrodeModelName']	False	['meg']	['220426', '220616']	['dip13', 'dip13mov']	https://github.com/OpenNeuroDatasets/ds004738	n/a	n/a	n/a
