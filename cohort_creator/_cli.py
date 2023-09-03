@@ -9,6 +9,7 @@ from typing import Sequence
 
 import pandas as pd
 from datalad import api
+from rich_argparse import RichHelpFormatter
 
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import get_bids_filter
@@ -56,7 +57,7 @@ def create_yoda(output_dir: Path) -> None:
 
 def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
-    parser = global_parser()
+    parser = global_parser(formatter_class=RichHelpFormatter)
 
     args, _ = parser.parse_known_args(argv[1:])
 
