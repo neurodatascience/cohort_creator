@@ -22,6 +22,17 @@ export PRINT_HELP_PYSCRIPT
 
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
+## PACKAGING
+
+build:
+	rm -fr dist
+	pip install --upgrade build
+	python -m build
+
+upload: build
+	pip install --upgrade twine
+	python -m twine upload dist/*
+
 ## MAINTENANCE
 
 lint:
