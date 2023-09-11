@@ -918,6 +918,7 @@ ds004711	187	True	True	['participant_id', 'gender', 'age', 'bart_run1', 'bart_ru
 ds004717	42	True	True	['participant_id', 'gender', 'age', 'tumor_type', 'Ki67', 'grade', 'IDH1', '1p19q']	False	['anat', 'dwi']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004717	n/a	n/a	n/a
 ds004720	2	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	[]	['multiband', 'singleband']	https://github.com/OpenNeuroDatasets/ds004720	n/a	n/a	https://github.com/OpenNeuroDatasets/ds004720/tree/main/derivatives/mriqc
 ds004725	87	True	True	['participant_id', 'age', 'sex', 'handedness', 'treatment_group', 'years_of_education', 'self_report_race', 'self_report_ethnicity', 'bmi']	True	['anat', 'func']	[]	['rest']	https://github.com/OpenNeuroDatasets/ds004725	n/a	n/a	n/a
+ds004737	19	False	False	n/a	False	['dwi']	['1']	n/a	https://github.com/OpenNeuroDatasets/ds004737	n/a	n/a	n/a
 ds004738	4	True	False	['participant_id', 'Manufacturer', 'ModelName', 'ElectrodeModelName']	False	['meg']	['220426', '220616']	['dip13', 'dip13mov']	https://github.com/OpenNeuroDatasets/ds004738	n/a	n/a	n/a
 ds004742	1	False	False	n/a	False	['dwi']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004742	n/a	n/a	n/a
 ds004743	19	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['audiotact']	https://github.com/OpenNeuroDatasets/ds004743	n/a	n/a	n/a
