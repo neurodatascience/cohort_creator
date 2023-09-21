@@ -1,12 +1,12 @@
 ---
 auth:
-    username: Remi-Gau
-    token_file: /home/remi/Documents/tokens/gh_read_repo_for_orga.txt
+  username: Remi-Gau
+  token_file: /home/remi/Documents/tokens/gh_read_repo_for_orga.txt
 local_paths:
-    datalad:
+  datalad:
     # paths to the datalad datasets contained
     # in the datalad superdataset
-        OpenNeuroDatasets: /home/remi/datalad/datasets.datalad.org/openneuro
-        OpenNeuroDerivatives: /home/remi/datalad/datasets.datalad.org/openneuro-derivatives
-    openneuro:
-        OpenNeuroDatasets: /home/remi/openneuro/
+    OpenNeuroDatasets: /home/remi/datalad/datasets.datalad.org/openneuro
+    OpenNeuroDerivatives: /home/remi/datalad/datasets.datalad.org/openneuro-derivatives
+  openneuro:
+    OpenNeuroDatasets: /home/remi/openneuro/

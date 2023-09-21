@@ -112,7 +112,7 @@ def get_data(
     datasets: pd.DataFrame,
     participants: pd.DataFrame | None,
     dataset_types: list[str],
-    datatypes: list[str],
+    datatypes: str | list[str],
     space: str,
     jobs: int,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
