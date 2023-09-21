@@ -2,60 +2,60 @@
 name: Update datasets
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: ["*"]
-  schedule:
-    - cron: 0 0 * * 1 # every monday
+    push:
+        branches: [main]
+    pull_request:
+        branches: ['*']
+    schedule:
+    -   cron: 0 0 * * 1   # every monday
 
 jobs:
-  update_listing:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11"]
+    update_listing:
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ['3.11']
 
-    runs-on: ubuntu-latest
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
+        steps:
+        -   uses: actions/checkout@v3
+            with:
+                fetch-depth: 0
+                submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+        -   name: Set up Python ${{ matrix.python-version }}
+            uses: actions/setup-python@v4
+            with:
+                python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git-annex
-          python -m pip install --upgrade pip
-          pip install .
-          cd tools && pip install -r requirements.txt
+        -   name: Install dependencies
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y git-annex
+                python -m pip install --upgrade pip
+                pip install .
+                cd tools && pip install -r requirements.txt
 
-      - name: Post-install
-        run: |
-          git config --global --add user.name "Ford Escort"
-          git config --global --add user.email 42@H2G2.com
+        -   name: Post-install
+            run: |
+                git config --global --add user.name "Ford Escort"
+                git config --global --add user.email 42@H2G2.com
 
-      - name: Update datasets
-        run: |
-          cd tools && make update
-          git status
+        -   name: Update datasets
+            run: |
+                cd tools && make update
+                git status
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          commit-message: BIDS schema update
-          base: main
-          delete-branch: true
-          title: "[BOT] update datasets listing"
-          body: done via this [GitHub Action](https://github.com/neurodatascience/cohort_creator/tree/main/.github/workflows/update_listing.yml)
+        -   name: Create Pull Request
+            uses: peter-evans/create-pull-request@v5
+            with:
+                commit-message: BIDS schema update
+                base: main
+                delete-branch: true
+                title: '[BOT] update datasets listing'
+                body: done via this [GitHub Action](https://github.com/neurodatascience/cohort_creator/tree/main/.github/workflows/update_listing.yml)

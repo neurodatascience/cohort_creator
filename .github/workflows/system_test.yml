@@ -2,89 +2,89 @@
 name: system_test
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: ["*"]
+    push:
+        branches: [main]
+    pull_request:
+        branches: ['*']
 
 jobs:
-  system_test:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11"]
+    system_test:
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ['3.11']
 
-    runs-on: ubuntu-latest
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
+        steps:
+        -   uses: actions/checkout@v3
+            with:
+                fetch-depth: 0
+                submodules: recursive
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+        -   name: Set up Python ${{ matrix.python-version }}
+            uses: actions/setup-python@v4
+            with:
+                python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git-annex tree
-          python -m pip install --upgrade pip
+        -   name: Install dependencies
+            run: |
+                sudo apt-get update
+                sudo apt-get install -y git-annex tree
+                python -m pip install --upgrade pip
 
-      - name: Install
-        run: pip install .[test]
+        -   name: Install
+            run: pip install .[test]
 
-      - name: Post-install
-        run: |
-          git config --global --add user.name "Ford Escort"
-          git config --global --add user.email 42@H2G2.com
+        -   name: Post-install
+            run: |
+                git config --global --add user.name "Ford Escort"
+                git config --global --add user.email 42@H2G2.com
 
-      - name: Check set up
-        run: |
-          datalad wtf
-          cohort_creator --version
+        -   name: Check set up
+            run: |
+                datalad wtf
+                cohort_creator --version
 
-      - name: install datasets
-        run: |
-          cohort_creator install \
-              -d tests/data/datasets.tsv \
-              -p tests/data/participants.tsv \
-              -o outputs \
-              --dataset_types raw mriqc fmriprep \
-              --verbosity 3
-      - name: get data
-        run: |
-          cohort_creator get \
-              -d tests/data/datasets.tsv \
-              -p tests/data/participants.tsv \
-              -o outputs \
-              --dataset_types raw mriqc fmriprep \
-              --datatype anat func \
-              --space T1w MNI152NLin2009cAsym \
-              --jobs 6 \
-              --verbosity 3
-      - name: copy data
-        run: |
-          cohort_creator copy \
-              -d tests/data/datasets.tsv \
-              -p tests/data/participants.tsv \
-              -o outputs \
-              --dataset_types raw mriqc fmriprep \
-              --datatype anat func \
-              --space T1w MNI152NLin2009cAsym \
-              --verbosity 3
+        -   name: install datasets
+            run: |
+                cohort_creator install \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
+                    -o outputs \
+                    --dataset_types raw mriqc fmriprep \
+                    --verbosity 3
+        -   name: get data
+            run: |
+                cohort_creator get \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
+                    -o outputs \
+                    --dataset_types raw mriqc fmriprep \
+                    --datatype anat func \
+                    --space T1w MNI152NLin2009cAsym \
+                    --jobs 6 \
+                    --verbosity 3
+        -   name: copy data
+            run: |
+                cohort_creator copy \
+                    -d tests/data/datasets.tsv \
+                    -p tests/data/participants.tsv \
+                    -o outputs \
+                    --dataset_types raw mriqc fmriprep \
+                    --datatype anat func \
+                    --space T1w MNI152NLin2009cAsym \
+                    --verbosity 3
 
-      - name: datasets as list of strings
-        run: cohort_creator install -d ds000001 ds000002 -o outputs
+        -   name: datasets as list of strings
+            run: cohort_creator install -d ds000001 ds000002 -o outputs
 
-      - name: Check outputs
-        run: |
-          cat outputs/logs/docker.log
-          tree -L 2 --dirsfirst outputs
-          tree --dirsfirst outputs/study-ds000002
+        -   name: Check outputs
+            run: |
+                cat outputs/logs/docker.log
+                tree -L 2 --dirsfirst outputs
+                tree --dirsfirst outputs/study-ds000002

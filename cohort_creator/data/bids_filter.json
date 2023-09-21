@@ -1,79 +1,79 @@
 {
-  "raw": {
-    "bold": {
-      "datatype": "func",
-      "task": "*",
-      "suffix": "bold",
-      "ext": "nii*"
+    "raw": {
+        "bold": {
+            "datatype": "func",
+            "task": "*",
+            "suffix": "bold",
+            "ext": "nii*"
+        },
+        "events": {
+            "datatype": "func",
+            "task": "*",
+            "suffix": "events",
+            "ext": "tsv"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "suffix": "T1w",
+            "ext": "nii*"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "suffix": "T2w",
+            "ext": "nii*"
+        },
+        "fmap": {
+            "datatype": "fmap",
+            "suffix": "*",
+            "ext": "nii*"
+        }
     },
-    "events": {
-      "datatype": "func",
-      "task": "*",
-      "suffix": "events",
-      "ext": "tsv"
+    "mriqc": {
+        "bold": {
+            "datatype": "func",
+            "suffix": "bold",
+            "ext": "json"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "suffix": "T1w",
+            "ext": "json"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "suffix": "T2w",
+            "ext": "json"
+        }
     },
-    "t1w": {
-      "datatype": "anat",
-      "suffix": "T1w",
-      "ext": "nii*"
-    },
-    "t2w": {
-      "datatype": "anat",
-      "suffix": "T2w",
-      "ext": "nii*"
-    },
-    "fmap": {
-      "datatype": "fmap",
-      "suffix": "*",
-      "ext": "nii*"
+    "fmriprep": {
+        "bold": {
+            "datatype": "func",
+            "task": "*",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "bold",
+            "ext": "nii*"
+        },
+        "confounds": {
+            "datatype": "func",
+            "task": "*",
+            "desc": "confounds",
+            "suffix": "timeseries",
+            "ext": "tsv"
+        },
+        "t1w": {
+            "datatype": "anat",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "T1w",
+            "ext": "nii*"
+        },
+        "t2w": {
+            "datatype": "anat",
+            "space": "*",
+            "desc": "preproc",
+            "suffix": "T2w",
+            "ext": "nii*"
+        }
     }
-  },
-  "mriqc": {
-    "bold": {
-      "datatype": "func",
-      "suffix": "bold",
-      "ext": "json"
-    },
-    "t1w": {
-      "datatype": "anat",
-      "suffix": "T1w",
-      "ext": "json"
-    },
-    "t2w": {
-      "datatype": "anat",
-      "suffix": "T2w",
-      "ext": "json"
-    }
-  },
-  "fmriprep": {
-    "bold": {
-      "datatype": "func",
-      "task": "*",
-      "space": "*",
-      "desc": "preproc",
-      "suffix": "bold",
-      "ext": "nii*"
-    },
-    "confounds": {
-      "datatype": "func",
-      "task": "*",
-      "desc": "confounds",
-      "suffix": "timeseries",
-      "ext": "tsv"
-    },
-    "t1w": {
-      "datatype": "anat",
-      "space": "*",
-      "desc": "preproc",
-      "suffix": "T1w",
-      "ext": "nii*"
-    },
-    "t2w": {
-      "datatype": "anat",
-      "space": "*",
-      "desc": "preproc",
-      "suffix": "T2w",
-      "ext": "nii*"
-    }
-  }
 }
