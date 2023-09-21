@@ -52,13 +52,13 @@ body:
     validations:
         required: false
 
-  # - type: textarea
-  #   attributes:
-  #     label: Version
-  #     description: |
-  #       Which version did you encounter this bug on?
-  #     value: |
-  #       - version:
+      # - type: textarea
+      #   attributes:
+      #     label: Version
+      #     description: |
+      #       Which version did you encounter this bug on?
+      #     value: |
+      #       - version:
 
 -   type: textarea
     attributes:

@@ -92,8 +92,12 @@ check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+enable_error_code = ["ignore-without-code", "redundant-expr"]  # "truthy-bool"
 no_implicit_optional = true
+show_error_codes = true
+# strict = true
 warn_redundant_casts = true
+warn_unreachable = true
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
@@ -120,6 +124,10 @@ module = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "-ra -q -vv --cov cohort_creator "
+addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator"
+# filterwarnings = ["error"]
+# log_cli_level = "warning"
+minversion = "6.0.0"
 norecursedirs = "data"
 testpaths = ["tests/"]
+xfail_strict = true

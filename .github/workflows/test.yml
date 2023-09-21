@@ -12,9 +12,7 @@ on:
         branches: ['*']
 
 jobs:
-
     unit_test:
-
         strategy:
             fail-fast: false
             matrix:

@@ -147,7 +147,7 @@ def get_list_of_datasets(gh_orga: str) -> list[str]:
         resp = request_list_of_repos(gh_orga, page=page, auth=auth)
         if resp is None:
             break
-        datasets.extend(repo["name"] for repo in resp)  # type: ignore
+        datasets.extend(repo["name"] for repo in resp)  # type: ignore[index]
         page += 1
     datasets = [x for x in datasets if x.startswith("ds")]
     return datasets

@@ -14,9 +14,7 @@ on:
     -   cron: 0 0 * * 1   # every monday
 
 jobs:
-
     update_listing:
-
         strategy:
             fail-fast: false
             matrix:
