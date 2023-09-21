@@ -883,6 +883,7 @@ ds004588	42	True	True	['participant_id']	False	['eeg']	[]	['unnamed']	https://gi
 ds004589	99	True	False	['participant_id', 'age', 'sex', 'handedness', 'EHI', 'LI', 'cog_bias']	False	['anat', 'func']	[]	['FaceStudy', 'FaceTest', 'SemanticFluency', 'WordStudy', 'WordTest']	https://github.com/OpenNeuroDatasets/ds004589	n/a	n/a	n/a
 ds004590	4	True	True	['participant_id', 'age', 'sex', 'state', 'included']	False	['anat', 'fmap', 'func']	['001', '002', '003', '004', '005']	['recognition', 'retrieval']	https://github.com/OpenNeuroDatasets/ds004590	n/a	n/a	n/a
 ds004592	27	True	False	['participant_id', 'sex', 'handedness', 'age']	False	['anat', 'func']	['01', '02', '03']	['documentary', 'gradCPTface', 'gradCPTscene', 'rest1', 'rest2', 'sitcomep1', 'sitcomep2']	https://github.com/OpenNeuroDatasets/ds004592	n/a	n/a	n/a
+ds004594	20	False	False	n/a	False	['anat', 'func']	[]	['matchjudgment']	https://github.com/OpenNeuroDatasets/ds004594	n/a	n/a	n/a
 ds004595	53	True	True	['participant_id', 'Original_ID', 'sex', 'age', 'GROUP', 'BDI', 'AUDIT', 'EDUCATION']	False	['eeg']	[]	['ThreeArmedBandit']	https://github.com/OpenNeuroDatasets/ds004595	n/a	n/a	n/a
 ds004597	27	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['Gloups', 'GloupsA2', 'GloupsB2', 'GloupsC1', 'GloupsD1', 'gloups', 'gloupsshort']	https://github.com/OpenNeuroDatasets/ds004597	n/a	n/a	n/a
 ds004598	9	True	False	['participant_id', 'genotype']	False	['eeg']	['1', '2', '3']	['LinearTrack']	https://github.com/OpenNeuroDatasets/ds004598	n/a	n/a	n/a
