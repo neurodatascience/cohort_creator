@@ -56,6 +56,13 @@ repos:
     -   id: black
         args: [--verbose, --config=pyproject.toml]
 
+-   repo: https://github.com/adamchainz/blacken-docs
+    rev: 1.16.0
+    hooks:
+    -   id: blacken-docs
+        additional_dependencies:
+        -   black==22.12.0
+
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.2.5
     hooks:
@@ -86,6 +93,8 @@ repos:
         language: docker_image
         types: [dockerfile]
         entry: ghcr.io/hadolint/hadolint hadolint
+
+
 
 ci:
     skip: [hadolint-docker]
