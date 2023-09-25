@@ -932,3 +932,4 @@ ds004745	6	True	True	['participant_id']	False	['eeg']	[]	['unnamed']	https://git
 ds004752	15	True	True	['participant_id', 'usz_identifier', 'sciAdv_identifier', 'eLife_identifier', 'age', 'sex', 'pathology']	False	['eeg', 'ieeg']	['01', '02', '03', '04', '05', '06', '07', '08']	['verbalWM']	https://github.com/OpenNeuroDatasets/ds004752	n/a	n/a	n/a
 ds004767	55	False	False	n/a	False	['anat']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004767	n/a	n/a	n/a
 ds004770	10	True	True	['participant_id', 'age', 'sex', 'handedness']	False	['ieeg']	['base', 'task']	['game']	https://github.com/OpenNeuroDatasets/ds004770	n/a	n/a	n/a
+ds004771	61	True	True	['participant_id', 'original_id', 'gender', 'age', 'python_expertise', 'data_usability']	False	['eeg']	[]	['PY']	https://github.com/OpenNeuroDatasets/ds004771	n/a	n/a	n/a
