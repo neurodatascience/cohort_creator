@@ -15,10 +15,6 @@ on:
 
 jobs:
     update_listing:
-        strategy:
-            fail-fast: false
-            matrix:
-                python-version: ['3.11']
 
         runs-on: ubuntu-latest
 
@@ -31,7 +27,8 @@ jobs:
         -   name: Set up Python ${{ matrix.python-version }}
             uses: actions/setup-python@v4
             with:
-                python-version: ${{ matrix.python-version }}
+                python-version: 3.12
+                allow-prereleases: true
 
         -   name: Install dependencies
             run: |
