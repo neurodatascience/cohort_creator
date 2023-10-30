@@ -957,3 +957,4 @@ ds004817	20	True	False	['participant_id', 'date', 'age', 'handedness', 'gender']
 ds004819	1	True	True	['participant_id', 'collectionIssues', 'testdate', 'age', 'sex', 'StimulationTest1', 'StimulationTest2', 'StimulationTest3']	False	['ieeg']	['postimp']	['BaselineandStimRecordingRAWEDF']	https://github.com/OpenNeuroDatasets/ds004819	n/a	n/a	n/a
 ds004822	12	True	False	['participant_id']	False	['nirs']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004822	n/a	n/a	n/a
 ds004830	12	True	False	['participant_id']	False	['nirs']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004830	n/a	n/a	n/a
+ds004835	6	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['auditory']	https://github.com/OpenNeuroDatasets/ds004835	n/a	n/a	n/a
