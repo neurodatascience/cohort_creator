@@ -874,6 +874,7 @@ ds004561	23	True	True	['participant_id', 'age', 'sex', 'hand']	False	['eeg']	[]	
 ds004562	23	True	True	['participant_id', 'age', 'sex']	False	['anat', 'beh', 'func']	['01pre', '02fmri']	['adaptation']	https://github.com/OpenNeuroDatasets/ds004562	n/a	n/a	n/a
 ds004563	40	True	True	['participant_id', 'sex', 'age', 'group']	False	['eeg']	['01', '02', '03']	['touchdecoding']	https://github.com/OpenNeuroDatasets/ds004563	n/a	n/a	n/a
 ds004564	2	True	False	['participant_id']	False	['anat', 'func']	[]	['rest']	https://github.com/OpenNeuroDatasets/ds004564	n/a	n/a	n/a
+ds004569	58	True	False	['participant_id', 'age', 'sex', 'race', 'handedness', 'english_native', 'number_of_sessions', 'minGVTD', 'maxGVTD', 'minSNR', 'maxSNR']	False	['func', 'nirs']	['01', '02', '03', '04', '05', '06', '07']	['movie', 'movie.mat', 'movie.snirf']	https://github.com/OpenNeuroDatasets/ds004569	n/a	n/a	n/a
 ds004572	52	True	True	['participant_id', 'age', 'sex', 'hand']	False	['eeg']	['01']	['baseline1', 'baseline2', 'experience1', 'experience2', 'experience3', 'experience4', 'induction1', 'induction2', 'induction3', 'induction4']	https://github.com/OpenNeuroDatasets/ds004572	n/a	n/a	n/a
 ds004574	146	True	True	['participant_id', 'GROUP', 'ID', 'EEG', 'BEHAVIOR', 'AGE', 'GENDER', 'MOCA', 'UPDRS', 'TYPE']	False	['beh', 'eeg']	[]	['Oddball']	https://github.com/OpenNeuroDatasets/ds004574	n/a	n/a	n/a
 ds004577	103	True	False	['participant_id', 'sex']	False	['eeg']	['1', '2', '3', '4']	['EEG']	https://github.com/OpenNeuroDatasets/ds004577	n/a	n/a	n/a
@@ -956,5 +957,7 @@ ds004816	20	True	False	['participant_id', 'date', 'age', 'handedness', 'gender',
 ds004817	20	True	False	['participant_id', 'date', 'age', 'handedness', 'gender']	False	['eeg']	[]	['rsvp']	https://github.com/OpenNeuroDatasets/ds004817	n/a	n/a	n/a
 ds004819	1	True	True	['participant_id', 'collectionIssues', 'testdate', 'age', 'sex', 'StimulationTest1', 'StimulationTest2', 'StimulationTest3']	False	['ieeg']	['postimp']	['BaselineandStimRecordingRAWEDF']	https://github.com/OpenNeuroDatasets/ds004819	n/a	n/a	n/a
 ds004822	12	True	False	['participant_id']	False	['nirs']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004822	n/a	n/a	n/a
+ds004829	30	False	False	n/a	False	['anat', 'fmap', 'func']	[]	['SRmapping', 'localizer']	https://github.com/OpenNeuroDatasets/ds004829	n/a	n/a	n/a
 ds004830	12	True	False	['participant_id']	False	['nirs']	[]	n/a	https://github.com/OpenNeuroDatasets/ds004830	n/a	n/a	n/a
 ds004835	6	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	[]	['auditory']	https://github.com/OpenNeuroDatasets/ds004835	n/a	n/a	n/a
+ds004837	60	False	False	n/a	False	['anat', 'meg']	['0001']	['attnmod']	https://github.com/OpenNeuroDatasets/ds004837	n/a	n/a	n/a
