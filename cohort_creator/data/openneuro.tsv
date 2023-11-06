@@ -447,6 +447,7 @@ ds003104	1	True	True	['participant_id', 'age', 'sex', 'hand']	False	['anat', 'me
 ds003114	49	True	True	['participant_id', 'age', 'sex', 'group', 'Progesterone (pg/ml)', 'Estrogen (pg/ml)', 'BAS-rewards', 'BAS-drive', 'BAS-fun seeking', 'BIS']	False	['anat', 'func']	[]	['rest']	https://github.com/OpenNeuroDatasets/ds003114	n/a	n/a	https://github.com/OpenNeuroDerivatives/ds003114-mriqc
 ds003126	58	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'func']	['1', '2']	['read']	https://github.com/OpenNeuroDatasets/ds003126	n/a	n/a	https://github.com/OpenNeuroDerivatives/ds003126-mriqc
 ds003136	25	True	False	['participant_id', 'age', 'sex']	True	['anat', 'fmap', 'func']	['01', '02']	['affect', 'infant']	https://github.com/OpenNeuroDatasets/ds003136	n/a	n/a	https://github.com/OpenNeuroDerivatives/ds003136-mriqc
+ds003138	53	True	True	['participant_id', 'age', 'sex', 'group']	False	['anat', 'dwi', 'fmap']	['1', '2', '3']	n/a	https://github.com/OpenNeuroDatasets/ds003138	n/a	n/a	n/a
 ds003145	147	False	False	n/a	False	['anat', 'fmap', 'func']	[]	['verbgen']	https://github.com/OpenNeuroDatasets/ds003145	n/a	n/a	n/a
 ds003146	33	True	True	['participant_id', 'Group']	False	['anat', 'func']	[]	['vocal']	https://github.com/OpenNeuroDatasets/ds003146	n/a	n/a	https://github.com/OpenNeuroDerivatives/ds003146-mriqc
 ds003148	60	False	False	n/a	False	['anat', 'func']	[]	['Digit', 'Feature', 'Grammatical', 'ML', 'Odd', 'Paired', 'Polygon', 'Rotation', 'SOS', 'Spatial', 'Tree', 'Trouble']	https://github.com/OpenNeuroDatasets/ds003148	n/a	n/a	n/a
@@ -763,6 +764,7 @@ ds004262	21	True	True	['participant_id', 'participant', 'datetime', 'age', 'sex'
 ds004264	21	True	True	['participant_id', 'participant', 'datetime', 'age', 'sex', 'handedness']	False	['beh', 'eeg']	[]	['steertheship']	https://github.com/OpenNeuroDatasets/ds004264	n/a	n/a	n/a
 ds004265	5	False	False	n/a	False	['anat', 'func']	[]	['HeatFus']	https://github.com/OpenNeuroDatasets/ds004265	n/a	n/a	n/a
 ds004271	2	True	True	['participant_id', 'sex', 'age']	False	['anat', 'fmap', 'func']	['01', '02', '03', '04', '05']	['AttendFixGazeCenterFS', 'AttendStimGazeCenterFS', 'Calib', 'GazeCCW', 'GazeCW', 'GazeColumns', 'GazeLines']	https://github.com/OpenNeuroDatasets/ds004271	https://github.com/OpenNeuroDatasets/ds004271/tree/main/derivatives/fmriprep	n/a	https://github.com/OpenNeuroDatasets/ds004271/tree/main/derivatives/mriqc
+ds004274	33	True	True	['participant_id', 'age', 'sex', 'first_condition', 'Donor-id']	False	['anat', 'func']	['001', '002']	['PSAP']	https://github.com/OpenNeuroDatasets/ds004274	n/a	n/a	n/a
 ds004276	19	True	True	['participant_id', 'age', 'sex', 'hand']	False	['meg']	['20191007']	['noise']	https://github.com/OpenNeuroDatasets/ds004276	n/a	n/a	n/a
 ds004278	30	True	True	['Unnamed: 0', 'participant_id', 'age', 'sex', 'hand']	False	['meg']	[]	['CuedRecall']	https://github.com/OpenNeuroDatasets/ds004278	n/a	n/a	n/a
 ds004279	56	True	True	['participant_id', 'age', 'sex', 'hand']	False	['eeg']	['01', '02', '03', '04']	['sentences']	https://github.com/OpenNeuroDatasets/ds004279	n/a	n/a	n/a
