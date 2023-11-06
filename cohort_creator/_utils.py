@@ -301,16 +301,16 @@ def add_study_tsv(output_dir: Path, datasets: list[str]) -> None:
             studies["InstitutionAddress"].append("n/a")
             continue
 
-        partcipants = pd.read_csv(participants_tsv, sep="\t")
+        participants = pd.read_csv(participants_tsv, sep="\t")
 
-        if "age" in partcipants.columns:
-            mean_age = partcipants["age"].mean()
+        if "age" in participants.columns:
+            mean_age = participants["age"].mean()
             studies["mean_age"].append(mean_age)
         else:
             studies["mean_age"].append("n/a")
 
-        if "sex" in partcipants.columns:
-            ratio_female = partcipants["sex"].value_counts(normalize=True)["F"]
+        if "sex" in participants.columns:
+            ratio_female = participants["sex"].value_counts(normalize=True)["F"]
             studies["ratio_female"].append(ratio_female)
         else:
             studies["ratio_female"].append("n/a")
