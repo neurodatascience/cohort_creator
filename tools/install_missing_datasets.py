@@ -1,4 +1,9 @@
-"""Install openneuro datasets that are not part of the datalad superdatasets."""
+"""Install openneuro datasets.
+
+This script installs all the datasets from openneuro:
+- that are not in the openneuro.tsv file
+- OR that are not part of the datalad superdatasets.
+"""
 from __future__ import annotations
 
 import os
@@ -12,9 +17,16 @@ from utils import OPENNEURO
 
 from cohort_creator._utils import openneuro_df
 
+# set to True to only datasets known to the datalad datasets as known
+RESET = False
+
 
 def main() -> None:
-    known_datasets = openneuro_df()["name"].values.tolist()
+    if RESET:
+        path_known_datasets = Path(config()["local_paths"]["datalad"][OPENNEURO])
+        known_datasets = [x.name for x in path_known_datasets.glob("*")]
+    else:
+        known_datasets = openneuro_df()["name"].values.tolist()
 
     datasets = get_list_of_datasets(OPENNEURO)
     unknown_datasets = set(datasets) - set(known_datasets)

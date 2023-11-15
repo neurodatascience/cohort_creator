@@ -621,4 +621,4 @@ def return_dataset_uri(dataset_name: str) -> str:
 
 
 def list_participants_in_dataset(data_pth: Path) -> list[str]:
-    return [x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")]
+    return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
