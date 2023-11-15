@@ -314,13 +314,9 @@ def _get_institutions(dataset_pth: Path) -> list[str]:
         try:
             with open(json_file) as f:
                 json_dict = json.load(f)
-                if not isinstance(json_dict, dict):
-                    return []
-                institution_name = json_dict.get("InstitutionName", "").strip()
-                institution_address = json_dict.get("InstitutionAddress", "").strip()
-                tmp = ", ".join([institution_name, institution_address])
-                if tmp := tmp.strip(", "):
+                if tmp := _construct_institution_string(json_dict).strip(", "):
                     institutions.append(tmp)
+
         except json.decoder.JSONDecodeError:
             warn(f"Could not parse: {json_file}")
         except UnicodeDecodeError:
@@ -329,6 +325,18 @@ def _get_institutions(dataset_pth: Path) -> list[str]:
             warn(f"Could not find: {json_file}")
 
     return sorted(list({x for x in institutions if x}))
+
+
+def _construct_institution_string(json_dict: Any) -> str:
+    if not isinstance(json_dict, dict):
+        return ""
+    institution_name = json_dict.get("InstitutionName", "")
+    if not isinstance(institution_name, str):
+        institution_name = ""
+    institution_address = json_dict.get("InstitutionAddress", "")
+    if not isinstance(institution_address, str):
+        institution_address = ""
+    return ", ".join([institution_name.strip(), institution_address.strip()])
 
 
 def _get_dataset_size(dataset_pth: Path) -> str:

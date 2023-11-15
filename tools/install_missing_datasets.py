@@ -15,7 +15,7 @@ from utils import config
 from utils import get_list_of_datasets
 from utils import OPENNEURO
 
-from cohort_creator._utils import openneuro_df
+from cohort_creator._utils import known_datasets_df
 
 # set to True to only datasets known to the datalad datasets as known
 RESET = False
@@ -26,7 +26,7 @@ def main() -> None:
         path_known_datasets = Path(config()["local_paths"]["datalad"][OPENNEURO])
         known_datasets = [x.name for x in path_known_datasets.glob("*")]
     else:
-        known_datasets = openneuro_df()["name"].values.tolist()
+        known_datasets = known_datasets_df()["name"].values.tolist()
 
     datasets = get_list_of_datasets(OPENNEURO)
     unknown_datasets = set(datasets) - set(known_datasets)

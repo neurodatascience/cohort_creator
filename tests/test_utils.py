@@ -11,7 +11,6 @@ from bids import BIDSLayout
 
 from .conftest import path_test_data
 from .conftest import root_dir
-from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
 from cohort_creator._utils import create_ds_description
@@ -26,6 +25,7 @@ from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
+from cohort_creator._utils import is_known_dataset
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
@@ -89,9 +89,9 @@ def test_set_name(bids_examples, tmp_path):
     assert set_name(derivative_path) == "MRIQC"
 
 
-def test_is_dataset_in_openneuro():
-    assert _is_dataset_in_openneuro("ds000001")
-    assert not _is_dataset_in_openneuro("foo")
+def testis_known_dataset():
+    assert is_known_dataset("ds000001")
+    assert not is_known_dataset("foo")
 
 
 def test_is_subject_in_dataset(bids_examples):

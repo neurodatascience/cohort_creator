@@ -14,8 +14,8 @@ import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
 
-from .logger import cc_logger
 from cohort_creator._version import __version__
+from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
@@ -190,14 +190,14 @@ def get_pipeline_name(pth: Path) -> None | str:
     return data.get("GeneratedBy")[0].get("Name")
 
 
-def _is_dataset_in_openneuro(dataset_name: str) -> bool:
-    openneuro = openneuro_df()
+def is_known_dataset(dataset_name: str) -> bool:
+    openneuro = known_datasets_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
 
 
 def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
-    openneuro = openneuro_df()
+    openneuro = known_datasets_df()
     mask = openneuro.name == dataset_name
     url = openneuro[mask][dataset_type].values[0]
     return False if pd.isna(url) else url
@@ -224,9 +224,17 @@ def openneuro_listing_tsv() -> Path:
     return data_dir / "openneuro.tsv"
 
 
+def non_openneuro_listing_tsv() -> Path:
+    root_dir = Path(__file__).parent
+    data_dir = root_dir / "data"
+    return data_dir / "non_openneuro.tsv"
+
+
 @functools.lru_cache(maxsize=1)
-def openneuro_df() -> pd.DataFrame:
-    return pd.read_csv(openneuro_listing_tsv(), sep="\t")
+def known_datasets_df() -> pd.DataFrame:
+    openneuro_df = pd.read_csv(openneuro_listing_tsv(), sep="\t")
+    non_opnenneuro_df = pd.read_csv(non_openneuro_listing_tsv(), sep="\t")
+    return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
 def sourcedata(pth: Path) -> Path:

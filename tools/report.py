@@ -4,13 +4,13 @@ from __future__ import annotations
 import pandas as pd
 from rich import print
 
+from cohort_creator._utils import known_datasets_df
 from cohort_creator._utils import listify
-from cohort_creator._utils import openneuro_df
 
 
 def main() -> None:
     print("**OpenNeuro datasets:**\n")
-    datasets = openneuro_df()
+    datasets = known_datasets_df()
     datasets.fillna(False, inplace=True)
     print_results(datasets)
 
