@@ -35,8 +35,7 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install -y git-annex
                 python -m pip install --upgrade pip
-                pip install .
-                cd tools && pip install -r requirements.txt
+                pip install .[dev]
 
         -   name: Post-install
             run: |

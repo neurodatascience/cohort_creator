@@ -16,7 +16,7 @@ from utils import init_dataset
 from utils import list_datasets_in_dir
 from utils import OPENNEURO
 
-from cohort_creator._utils import openneuro_df
+from cohort_creator._utils import known_datasets_df
 
 DEBUG = False
 
@@ -25,7 +25,7 @@ RESET = False
 
 
 def main() -> None:
-    datasets = openneuro_df()
+    datasets = known_datasets_df()
     datasets.replace({pd.NA: "n/a"}, inplace=True)
     datasets = datasets.to_dict(orient="list")
 

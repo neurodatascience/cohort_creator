@@ -16,7 +16,6 @@ from datalad.support.exceptions import (
     IncompleteResultsError,
 )
 
-from cohort_creator._utils import _is_dataset_in_openneuro
 from cohort_creator._utils import add_study_tsv
 from cohort_creator._utils import copy_top_files
 from cohort_creator._utils import create_ds_description
@@ -29,6 +28,7 @@ from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
+from cohort_creator._utils import is_known_dataset
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
@@ -86,7 +86,7 @@ def install_datasets(
 
 
 def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> None:
-    if not _is_dataset_in_openneuro(dataset_name):
+    if not is_known_dataset(dataset_name):
         cc_log.warning(f"  {dataset_name} not found in openneuro")
         return None
 

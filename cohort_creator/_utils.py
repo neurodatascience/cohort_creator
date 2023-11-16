@@ -14,10 +14,26 @@ import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
 
-from .logger import cc_logger
 from cohort_creator._version import __version__
+from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
+
+KNOWN_MODALITIES = [
+    "anat",
+    "dwi",
+    "func",
+    "perf",
+    "fmap",
+    "beh",
+    "meg",
+    "eeg",
+    "ieeg",
+    "pet",
+    "micr",
+    "nirs",
+    "motion",
+]
 
 
 def create_tsv_participant_session_in_datasets(
@@ -190,14 +206,14 @@ def get_pipeline_name(pth: Path) -> None | str:
     return data.get("GeneratedBy")[0].get("Name")
 
 
-def _is_dataset_in_openneuro(dataset_name: str) -> bool:
-    openneuro = openneuro_df()
+def is_known_dataset(dataset_name: str) -> bool:
+    openneuro = known_datasets_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
 
 
 def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
-    openneuro = openneuro_df()
+    openneuro = known_datasets_df()
     mask = openneuro.name == dataset_name
     url = openneuro[mask][dataset_type].values[0]
     return False if pd.isna(url) else url
@@ -224,9 +240,45 @@ def openneuro_listing_tsv() -> Path:
     return data_dir / "openneuro.tsv"
 
 
+def non_openneuro_listing_tsv() -> Path:
+    root_dir = Path(__file__).parent
+    data_dir = root_dir / "data"
+    return data_dir / "non_openneuro.tsv"
+
+
 @functools.lru_cache(maxsize=1)
-def openneuro_df() -> pd.DataFrame:
-    return pd.read_csv(openneuro_listing_tsv(), sep="\t")
+def known_datasets_df() -> pd.DataFrame:
+    openneuro_df = pd.read_csv(
+        openneuro_listing_tsv(),
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
+    non_opnenneuro_df = pd.read_csv(
+        non_openneuro_listing_tsv(),
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
+    return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
 def sourcedata(pth: Path) -> Path:
@@ -621,4 +673,73 @@ def return_dataset_uri(dataset_name: str) -> str:
 
 
 def list_participants_in_dataset(data_pth: Path) -> list[str]:
-    return [x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")]
+    return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
+
+
+def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Do general wrangling of the known datasets."""
+    df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
+
+    # if only one column we assume it is only a participant_id file
+    useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
+    df["useful_participants_tsv"] = useful_participants_tsv
+
+    # set non empty fmriprep / freesurfer / mriqc to true
+    for der in [
+        "fmriprep",
+        "freesurfer",
+        "mriqc",
+    ]:
+        df[der].fillna(False, inplace=True)
+        df[der] = df[der].apply(lambda x: bool(x))
+
+    df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
+
+    df["is_openneuro"] = df["raw"].apply(
+        lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
+    )
+
+    source = []
+    for row in df.iterrows():
+        if row[1]["is_openneuro"]:
+            source.append("openneuro")
+        elif row[1]["name"].startswith("ABIDE2"):
+            source.append("abide 2")
+        elif row[1]["name"].startswith("ABIDE"):
+            source.append("abide")
+        elif row[1]["name"].startswith("ADHD200"):
+            source.append("adhd200")
+        elif row[1]["name"].startswith("CORR"):
+            source.append("corr")
+        elif row[1]["name"].startswith("CNEUROMOD"):
+            source.append("neuromod")
+    df["source"] = source
+
+    # standardize size
+    # convert to GB
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**12
+        if isinstance(x, str) and x.endswith("TB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**9
+        if isinstance(x, str) and x.endswith("GB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**6
+        if isinstance(x, str) and x.endswith("MB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**3
+        if isinstance(x, str) and x.endswith("KB")
+        else x
+    )
+    df["mean_size"] = df["size"] / df["nb_subjects"]
+
+    for modality in KNOWN_MODALITIES:
+        df[modality] = df["modalities"].apply(lambda x: modality in x)
+
+    return df

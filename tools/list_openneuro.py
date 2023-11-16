@@ -28,7 +28,11 @@ def main() -> None:
 
     datasets_df = pd.DataFrame.from_dict(datasets)
     datasets_df = datasets_df.sort_values("name")
-    datasets_df.to_csv(Path() / "openneuro.tsv", index=False, sep="\t")
+
+    output_file = Path(__file__).parent.parent / "openneuro.tsv"
+    datasets_df.to_csv(output_file, index=False, sep="\t")
+
+    print("data saved to:", output_file)
 
 
 if __name__ == "__main__":

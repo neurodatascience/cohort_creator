@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import functools
+import json
+import logging
+import subprocess
 from pathlib import Path
 from typing import Any
 from warnings import warn
@@ -9,9 +12,14 @@ from warnings import warn
 import pandas as pd
 import requests
 import yaml
+from datalad.api import Dataset
 from rich import print
 
+from cohort_creator._utils import KNOWN_MODALITIES
 from cohort_creator._utils import list_participants_in_dataset
+
+logging.getLogger("datalad").setLevel(logging.WARNING)
+logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
 OPENNEURO = "OpenNeuroDatasets"
@@ -32,6 +40,7 @@ def gh_api_base_url() -> str:
 
 
 def known_derivatives() -> list[str]:
+    """Focus on openneuro derivatives repositories."""
     tsv = Path(__file__).resolve().parent / f"{OPENNEURO_DERIVATIVES}.tsv"
     if not tsv.exists():
         raise FileNotFoundError(
@@ -51,6 +60,9 @@ def init_dataset() -> dict[str, list[Any]]:
         "modalities": [],
         "sessions": [],  # list of sessions if exist
         "tasks": [],
+        "size": [],
+        "authors": [],
+        "institutions": [],
         "raw": [],  # link to raw dataset
         "fmriprep": [],  # link to fmriprep dataset if exists
         "freesurfer": [],  # link to freesurfer dataset if exists
@@ -64,11 +76,14 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
         "nb_subjects": "n/a",
         "has_participant_tsv": "n/a",
         "has_participant_json": "n/a",
-        "participant_columns": "n/a",
+        "participant_columns": [],
         "has_phenotype_dir": "n/a",
         "modalities": "n/a",
-        "tasks": "n/a",
-        "raw": f"{URL_OPENNEURO}{name}",
+        "tasks": [],
+        "size": "n/a",
+        "authors": [],
+        "institutions": [],
+        "raw": "n/a",
         "fmriprep": "n/a",
         "freesurfer": "n/a",
         "mriqc": "n/a",
@@ -85,7 +100,7 @@ def has_participant_tsv(pth: Path) -> tuple[bool, bool, str | list[str]]:
     if tsv_status:
         return tsv_status, json_status, list_participants_tsv_columns(pth / "participants.tsv")
     else:
-        return tsv_status, json_status, "n/a"
+        return tsv_status, json_status, []
 
 
 def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
@@ -96,24 +111,12 @@ def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
     except pd.errors.ParserError:
         warn(f"Could not parse: {participant_tsv}")
         return ["cannot be parsed"]
+    except UnicodeDecodeError:
+        warn(f"Could not parse: {participant_tsv}")
+        return ["cannot be parsed"]
 
 
 def is_known_bids_modality(modality: str) -> bool:
-    KNOWN_MODALITIES = [
-        "anat",
-        "dwi",
-        "func",
-        "perf",
-        "fmap",
-        "beh",
-        "meg",
-        "eeg",
-        "ieeg",
-        "pet",
-        "micr",
-        "nirs",
-        "motion",
-    ]
     return modality in KNOWN_MODALITIES
 
 
@@ -184,31 +187,59 @@ def get_auth() -> tuple[str, str] | None:
 
 
 def list_datasets_in_dir(
-    datasets: dict[str, list[Any]], path: Path, debug: bool
+    datasets: dict[str, list[Any]],
+    path: Path,
+    debug: bool,
+    dataset_name_prefix: str = "ds",
+    study_prefix: str = "",
+    include: None | list[str] = None,
 ) -> dict[str, list[Any]]:
     print(f"Listing datasets in {path}")
 
-    raw_datasets = sorted(list(path.glob("ds*")))
+    EXCLUDED = [
+        ".git",
+        ".github",
+        ".datalad",
+        ".gitattributes",
+        ".gitmodules",
+        ".DS_Store",
+        "code",
+        "docs",
+    ]
+    raw_datasets = sorted(list(path.glob(f"{dataset_name_prefix}*")))
+    raw_datasets = [x for x in raw_datasets if path.is_dir() and x.name not in EXCLUDED]
+    if include:
+        raw_datasets = [x for x in raw_datasets if x.name in include]
 
     derivatives = known_derivatives()
 
     for i, dataset_pth in enumerate(raw_datasets):
-        if debug and i > 10:
+        if debug and i > 50:
             break
 
         dataset_name = dataset_pth.name
         print(f" {dataset_name}")
 
-        dataset = new_dataset(dataset_name)
-        dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
+        dataset = new_dataset(f"{study_prefix}{dataset_name}")
 
+        if dataset_name.startswith("ds"):
+            raw_url = f"{URL_OPENNEURO}{dataset_name}"
+        else:
+            raw_url = Dataset.siblings(dataset_pth, name="origin")[0]["url"]
+        dataset["raw"] = raw_url
+
+        dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
         if dataset["nb_subjects"] == 0:
             continue
+
+        dataset["size"] = _get_dataset_size(dataset_pth)
 
         sessions = list_sessions(dataset_pth)
         dataset["sessions"] = sessions
 
         modalities = list_modalities(dataset_pth, sessions=sessions)
+        dataset["modalities"] = sorted(modalities)
+
         if any(
             mod in modalities
             for mod in ["func", "eeg", "ieeg", "meg", "beh", "perf", "pet", "motion"]
@@ -216,23 +247,97 @@ def list_datasets_in_dir(
             tasks = list_tasks(dataset_pth, sessions=sessions)
             check_task(tasks, modalities, sessions, dataset_pth)
             dataset["tasks"] = sorted(tasks)
-        dataset["modalities"] = sorted(modalities)
 
         tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
         dataset["has_participant_tsv"] = tsv_status
         dataset["has_participant_json"] = json_status
         dataset["participant_columns"] = columns
+
         dataset["has_phenotype_dir"] = bool((dataset_pth / "phenotype").exists())
+
+        dataset["authors"] = _get_authors(dataset_pth)
+
+        # TODO only do in first subject ?
+        dataset["institutions"] = _get_institutions(dataset_pth)
+
+        # TODO imaging time for first subject
 
         dataset = add_derivatives(dataset, dataset_pth, derivatives)
 
         if dataset["name"] in datasets["name"]:
-            raise ValueError(f"dataset {dataset['name']} already in datasets")
+            # raise ValueError(f"dataset {dataset['name']} already in datasets")
+            warn(f"dataset {dataset['name']} already in datasets")
 
         for keys in datasets:
             datasets[keys].append(dataset[keys])
 
     return datasets
+
+
+def _get_authors(dataset_pth: Path) -> list[str]:
+    if not (dataset_pth / "dataset_description.json").exists():
+        warn("no dataset_description.json")
+        return []
+    with open(dataset_pth / "dataset_description.json") as f:
+        dataset_description = json.load(f)
+        return dataset_description.get("Authors", [])
+
+
+def _get_institutions(dataset_pth: Path) -> list[str]:
+    """List institutions in JSON files in root folder and first subject.
+
+    Assumes that first subject is representative of the dataset.
+    """
+    json_files = list(dataset_pth.glob("*.json"))
+    first_subject = list_participants_in_dataset(dataset_pth)[0]
+    json_files.extend(list(dataset_pth.glob(f"{first_subject}/**/*.json")))
+
+    institutions = []
+    for json_file in json_files:
+        if Path(json_file).name.startswith("."):
+            continue
+
+        try:
+            with open(json_file) as f:
+                json_dict = json.load(f)
+                if tmp := _construct_institution_string(json_dict).strip(", "):
+                    institutions.append(tmp)
+
+        except json.decoder.JSONDecodeError:
+            warn(f"Could not parse: {json_file}")
+        except UnicodeDecodeError:
+            warn(f"Could not parse: {json_file}")
+        except FileNotFoundError:
+            warn(f"Could not find: {json_file}")
+
+    return sorted(list({x for x in institutions if x}))
+
+
+def _construct_institution_string(json_dict: Any) -> str:
+    if not isinstance(json_dict, dict):
+        return ""
+    institution_name = json_dict.get("InstitutionName", "")
+    if not isinstance(institution_name, str):
+        institution_name = ""
+    institution_address = json_dict.get("InstitutionAddress", "")
+    if not isinstance(institution_address, str):
+        institution_address = ""
+    return ", ".join([institution_name.strip(), institution_address.strip()])
+
+
+def _get_dataset_size(dataset_pth: Path) -> str:
+    result = subprocess.run(
+        f"datalad status -d {dataset_pth} --annex all", shell=True, capture_output=True, text=True
+    )
+    size = result.stdout.split("/")
+    if len(size) > 1:
+        size = result.stdout.split("/")[1].split(" ")[:2]
+        return " ".join(size)
+    else:
+        return "n/a"
+    # TODO
+    # possible to get for each folder by doing
+    # datalad -f '{bytesize}' status --annex -- <paths> | paste -sd+ | bc
 
 
 def list_sessions(dataset_pth: Path) -> list[str]:
