@@ -677,18 +677,14 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
 
 
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
-    # for col in ["has_participant_tsv", "has_participant_json"]:
-    #     df[col] = df[col].apply(lambda x: x == "True")
-
-    # df["participant_columns"] == df["participant_columns"].apply(lambda x: pd.eval(x))
-
+    """Do general wrangling of the known datasets."""
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
 
     # if only one column we assume it is only a participant_id file
     useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
     df["useful_participants_tsv"] = useful_participants_tsv
 
-    # non empty fmriprep / freesurfer / mriqc to true
+    # set non empty fmriprep / freesurfer / mriqc to true
     for der in [
         "fmriprep",
         "freesurfer",
@@ -697,12 +693,27 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         df[der].fillna(False, inplace=True)
         df[der] = df[der].apply(lambda x: bool(x))
 
-    # set nan in tasks to an empty list
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
 
     df["is_openneuro"] = df["raw"].apply(
         lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
     )
+
+    source = []
+    for row in df.iterrows():
+        if row[1]["is_openneuro"]:
+            source.append("openneuro")
+        elif row[1]["name"].startswith("ABIDE2"):
+            source.append("abide 2")
+        elif row[1]["name"].startswith("ABIDE"):
+            source.append("abide")
+        elif row[1]["name"].startswith("ADHD200"):
+            source.append("adhd200")
+        elif row[1]["name"].startswith("CORR"):
+            source.append("corr")
+        elif row[1]["name"].startswith("CNEUROMOD"):
+            source.append("neuromod")
+    df["source"] = source
 
     # standardize size
     # convert to GB
@@ -729,6 +740,6 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     df["mean_size"] = df["size"] / df["nb_subjects"]
 
     for modality in KNOWN_MODALITIES:
-        df[f"has_{modality}"] = df["modalities"].apply(lambda x: modality in x)
+        df[modality] = df["modalities"].apply(lambda x: modality in x)
 
     return df

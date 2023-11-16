@@ -48,7 +48,9 @@ dev = [
     "mypy",
     "pandas-stubs",
     "requests",
-    "pyyaml"
+    "pyyaml",
+    "plotly",
+    "kaleido"
 ]
 doc = [
     "furo",
@@ -115,7 +117,8 @@ module = [
     "cohort_creator._version",
     "bids.*",
     "rich_argparse",
-    "plotly.*"
+    "plotly.*",
+    "matplotlib"
 ]
 
 [[tool.mypy.overrides]]
