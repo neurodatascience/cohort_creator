@@ -6,25 +6,31 @@ from rich import print
 
 from cohort_creator._utils import known_datasets_df
 from cohort_creator._utils import listify
+from cohort_creator._utils import wrangle_data
 
 
 def main() -> None:
-    print("**OpenNeuro datasets:**\n")
+    print("**BIDS datasets:**\n")
     datasets = known_datasets_df()
-    datasets.fillna(False, inplace=True)
+    datasets = wrangle_data(datasets)
+
     print_results(datasets)
+
+    datasets.to_csv("tmp.tsv", sep="\t")
 
 
 def print_results(datasets: pd.Dataframe) -> None:
-    print(
-        f"Number of datasets: {len(datasets)} with {datasets.nb_subjects.sum()} subjects including:"
-    )
+    print(f"Number of datasets: {len(datasets)} with {datasets.nb_subjects.sum()} subjects")
+    print(f"Total of data: {int(datasets['size'].sum() / 10**12)} TB")
+    print(datasets["has_phenotype_dir"].value_counts())
+    print(f" - with phenotype directory: {datasets['has_phenotype_dir'].count()}")
+    # print(f" - with participants.tsv: {sum(datasets['useful_participants_tsv']) / len(datasets) * 100} %")
+
+    print(datasets["institutions"].value_counts())
+
     datasets = has_mri(datasets)
     print(f"- {datasets['has_mri'].sum()} datasets with MRI data")
     mask = datasets.has_mri
-    data_with_mri = datasets[mask]
-    print(f" - with participants.tsv: {data_with_mri.has_participant_tsv.sum()} ")
-    print(f" - with phenotype directory: {data_with_mri.has_phenotype_dir.sum()}")
     for der in [
         "fmriprep",
         "freesurfer",
@@ -33,8 +39,6 @@ def print_results(datasets: pd.Dataframe) -> None:
         mask = datasets[der] != False  # noqa
         data_with_der = datasets[mask]
         print(f" - with {der}: {(mask).sum()} ({data_with_der.nb_subjects.sum()} subjects)")
-        print(f"   - with participants.tsv: {data_with_der.has_participant_tsv.sum()}")
-        print(f"   - with phenotype directory: {data_with_der.has_phenotype_dir.sum()}")
 
 
 def has_mri(datasets: pd.Dataframe) -> pd.Dataframe:

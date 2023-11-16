@@ -19,6 +19,22 @@ from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
+KNOWN_MODALITIES = [
+    "anat",
+    "dwi",
+    "func",
+    "perf",
+    "fmap",
+    "beh",
+    "meg",
+    "eeg",
+    "ieeg",
+    "pet",
+    "micr",
+    "nirs",
+    "motion",
+]
+
 
 def create_tsv_participant_session_in_datasets(
     output_dir: Path, dataset_paths: list[Path]
@@ -630,3 +646,53 @@ def return_dataset_uri(dataset_name: str) -> str:
 
 def list_participants_in_dataset(data_pth: Path) -> list[str]:
     return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
+
+
+def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
+    for col in ["has_participant_tsv", "has_participant_json"]:
+        df[col] = df[col].apply(lambda x: x == "True")
+
+    df["participant_columns"] == df["participant_columns"].apply(lambda x: pd.eval(x))
+
+    df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
+
+    # non empty fmriprep and mriqc to true
+    df["fmriprep"] = df["fmriprep"].apply(lambda x: bool(x))
+    df["mriqc"] = df["mriqc"].apply(lambda x: bool(x))
+
+    # set nan in tasks to an empty list
+    df["tasks"] = df["tasks"].apply(lambda x: [] if pd.isna(x) else pd.eval(x))
+    df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
+
+    df["is_openneuro"] = df["raw"].apply(
+        lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
+    )
+
+    # standardize size
+    # convert to GB
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**12
+        if isinstance(x, str) and x.endswith("TB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**9
+        if isinstance(x, str) and x.endswith("GB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**6
+        if isinstance(x, str) and x.endswith("MB")
+        else x
+    )
+    df["size"] = df["size"].apply(
+        lambda x: float(x.split(" ")[0]) * 10**3
+        if isinstance(x, str) and x.endswith("KB")
+        else x
+    )
+    df["mean_size"] = df["size"] / df["nb_subjects"]
+
+    for modality in KNOWN_MODALITIES:
+        df[f"has_{modality}"] = df["modalities"].apply(lambda x: modality in x)
+
+    return df

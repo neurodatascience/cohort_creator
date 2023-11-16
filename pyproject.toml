@@ -111,7 +111,8 @@ module = [
     "pytest",
     "cohort_creator._version",
     "bids.*",
-    "rich_argparse"
+    "rich_argparse",
+    "plotly.*"
 ]
 
 [[tool.mypy.overrides]]

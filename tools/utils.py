@@ -15,6 +15,7 @@ import yaml
 from datalad.api import Dataset
 from rich import print
 
+from cohort_creator._utils import KNOWN_MODALITIES
 from cohort_creator._utils import list_participants_in_dataset
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
@@ -116,21 +117,6 @@ def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
 
 
 def is_known_bids_modality(modality: str) -> bool:
-    KNOWN_MODALITIES = [
-        "anat",
-        "dwi",
-        "func",
-        "perf",
-        "fmap",
-        "beh",
-        "meg",
-        "eeg",
-        "ieeg",
-        "pet",
-        "micr",
-        "nirs",
-        "motion",
-    ]
     return modality in KNOWN_MODALITIES
 
 
