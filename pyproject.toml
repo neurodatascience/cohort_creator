@@ -37,15 +37,18 @@ readme = "README.md"
 requires-python = ">=3.8"
 
 [project.optional-dependencies]
+browse = ["plotly"]
 dev = [
-    "cohort_creator[doc,test]",
+    "cohort_creator[browse,doc,test]",
     "pre-commit",
     "black",
     "flake8",
     "flake8-docstrings",
     "codespell",
     "mypy",
-    "pandas-stubs"
+    "pandas-stubs",
+    "requests",
+    "pyyaml"
 ]
 doc = [
     "furo",

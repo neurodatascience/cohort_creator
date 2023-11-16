@@ -1,5 +1,10 @@
 #! /bin/bash
 
+# Installs:
+# - BIDS datasets
+#   - contained in datalad superdataset
+#   - from courtois-neuromod
+
 set -eux
 
 rm -fr ./tmp/ && mkdir ./tmp/
