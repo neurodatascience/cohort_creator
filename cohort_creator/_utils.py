@@ -246,38 +246,28 @@ def non_openneuro_listing_tsv() -> Path:
     return data_dir / "non_openneuro.tsv"
 
 
+def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
+    return pd.read_csv(
+        tsv_file,
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
+
+
 @functools.lru_cache(maxsize=1)
 def known_datasets_df() -> pd.DataFrame:
-    openneuro_df = pd.read_csv(
-        openneuro_listing_tsv(),
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "modalities": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-        },
-    )
-    non_opnenneuro_df = pd.read_csv(
-        non_openneuro_listing_tsv(),
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "modalities": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-        },
-    )
+    openneuro_df = load_known_datasets(openneuro_listing_tsv())
+    non_opnenneuro_df = load_known_datasets(non_openneuro_listing_tsv())
     return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
