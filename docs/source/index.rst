@@ -9,6 +9,7 @@ Welcome to cohort creator's documentation!
    usage_notes
    inputs
    outputs
+   accessible_datasets
    FAQ
    modules
    contributing

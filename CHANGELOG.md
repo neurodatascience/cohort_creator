@@ -27,17 +27,9 @@ and this project adheres to
 
 ### Added
 
+- [ENH] Add non-openneuro datasets (ABIDE, CORR, ADHD200, Neuromod...). #124 @Remi-Gau
+
 ### Removed
-
-
-<!--
-- `Added` Added for new features.
-- `Changed` Changed for changes in existing functionality.
-- `Deprecated` Deprecated for soon-to-be removed features.
-- `Removed` Removed for now removed features.
-- `Fixed` Fixed for any bug fixes.
-- `Security` Security in case of vulnerabilities.
--->
 
 ## 0.2.0 - 2023-09-03
 

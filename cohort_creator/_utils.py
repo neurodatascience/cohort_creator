@@ -248,8 +248,36 @@ def non_openneuro_listing_tsv() -> Path:
 
 @functools.lru_cache(maxsize=1)
 def known_datasets_df() -> pd.DataFrame:
-    openneuro_df = pd.read_csv(openneuro_listing_tsv(), sep="\t")
-    non_opnenneuro_df = pd.read_csv(non_openneuro_listing_tsv(), sep="\t")
+    openneuro_df = pd.read_csv(
+        openneuro_listing_tsv(),
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
+    non_opnenneuro_df = pd.read_csv(
+        non_openneuro_listing_tsv(),
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
     return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
@@ -649,19 +677,27 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
 
 
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
-    for col in ["has_participant_tsv", "has_participant_json"]:
-        df[col] = df[col].apply(lambda x: x == "True")
+    # for col in ["has_participant_tsv", "has_participant_json"]:
+    #     df[col] = df[col].apply(lambda x: x == "True")
 
-    df["participant_columns"] == df["participant_columns"].apply(lambda x: pd.eval(x))
+    # df["participant_columns"] == df["participant_columns"].apply(lambda x: pd.eval(x))
 
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
 
-    # non empty fmriprep and mriqc to true
-    df["fmriprep"] = df["fmriprep"].apply(lambda x: bool(x))
-    df["mriqc"] = df["mriqc"].apply(lambda x: bool(x))
+    # if only one column we assume it is only a participant_id file
+    useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
+    df["useful_participants_tsv"] = useful_participants_tsv
+
+    # non empty fmriprep / freesurfer / mriqc to true
+    for der in [
+        "fmriprep",
+        "freesurfer",
+        "mriqc",
+    ]:
+        df[der].fillna(False, inplace=True)
+        df[der] = df[der].apply(lambda x: bool(x))
 
     # set nan in tasks to an empty list
-    df["tasks"] = df["tasks"].apply(lambda x: [] if pd.isna(x) else pd.eval(x))
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
 
     df["is_openneuro"] = df["raw"].apply(
