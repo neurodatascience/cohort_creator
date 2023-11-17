@@ -19,7 +19,7 @@ from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
-KNOWN_MODALITIES = [
+KNOWN_DATATYPES = [
     "anat",
     "dwi",
     "func",
@@ -247,7 +247,7 @@ def non_openneuro_listing_tsv() -> Path:
 
 
 def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
-    return pd.read_csv(
+    df = pd.read_csv(
         tsv_file,
         sep="\t",
         converters={
@@ -262,6 +262,9 @@ def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
             "institutions": pd.eval,
         },
     )
+
+    df["datatypes"] = df["modalities"]
+    return df.drop(columns=["modalities"])
 
 
 @functools.lru_cache(maxsize=1)
@@ -670,6 +673,8 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     """Do general wrangling of the known datasets."""
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
 
+    df["nb_datatypes"] = df["datatypes"].apply(lambda x: len(x))
+
     # if only one column we assume it is only a participant_id file
     useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
     df["useful_participants_tsv"] = useful_participants_tsv
@@ -729,7 +734,7 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["mean_size"] = df["size"] / df["nb_subjects"]
 
-    for modality in KNOWN_MODALITIES:
-        df[modality] = df["modalities"].apply(lambda x: modality in x)
+    for datatype in KNOWN_DATATYPES:
+        df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
 
     return df

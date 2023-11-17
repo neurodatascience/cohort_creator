@@ -15,7 +15,7 @@ import yaml
 from datalad.api import Dataset
 from rich import print
 
-from cohort_creator._utils import KNOWN_MODALITIES
+from cohort_creator._utils import KNOWN_DATATYPES
 from cohort_creator._utils import list_participants_in_dataset
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
@@ -116,15 +116,15 @@ def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
         return ["cannot be parsed"]
 
 
-def is_known_bids_modality(modality: str) -> bool:
-    return modality in KNOWN_MODALITIES
+def is_known_bids_datatype(datatype: str) -> bool:
+    return datatype in KNOWN_DATATYPES
 
 
-def list_modalities(bids_pth: Path, sessions: list[str]) -> list[str]:
+def list_datatypes(bids_pth: Path, sessions: list[str]) -> list[str]:
     pattern = "sub-*/ses-*/*" if sessions else "sub-*/*"
     sub_dirs = [v.name for v in bids_pth.glob(pattern) if v.is_dir()]
-    modalities = [v for v in set(sub_dirs) if is_known_bids_modality(v)]
-    return list(set(modalities))
+    datatypes = [v for v in set(sub_dirs) if is_known_bids_datatype(v)]
+    return list(set(datatypes))
 
 
 def list_data_files(bids_pth: Path, sessions: list[str]) -> list[str]:
@@ -237,15 +237,15 @@ def list_datasets_in_dir(
         sessions = list_sessions(dataset_pth)
         dataset["sessions"] = sessions
 
-        modalities = list_modalities(dataset_pth, sessions=sessions)
-        dataset["modalities"] = sorted(modalities)
+        datatypes = list_datatypes(dataset_pth, sessions=sessions)
+        dataset["modalities"] = sorted(datatypes)
 
         if any(
-            mod in modalities
+            mod in datatypes
             for mod in ["func", "eeg", "ieeg", "meg", "beh", "perf", "pet", "motion"]
         ):
             tasks = list_tasks(dataset_pth, sessions=sessions)
-            check_task(tasks, modalities, sessions, dataset_pth)
+            check_task(tasks, datatypes, sessions, dataset_pth)
             dataset["tasks"] = sorted(tasks)
 
         tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
@@ -346,16 +346,16 @@ def list_sessions(dataset_pth: Path) -> list[str]:
 
 
 def check_task(
-    tasks: list[str], modalities: list[str], sessions: list[str], dataset_pth: Path
+    tasks: list[str], datatypes: list[str], sessions: list[str], dataset_pth: Path
 ) -> None:
-    """Check if tasks are present in dataset with modalities that can have tasks."""
+    """Check if tasks are present in dataset with datatypes that can have tasks."""
     if (
-        any(mod in modalities for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
+        any(mod in datatypes for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
         and not tasks
     ):
         warn(
             f"no tasks found in {dataset_pth} "
-            f"with modalities {modalities} "
+            f"with datatypes {datatypes} "
             f"and files {list_data_files(dataset_pth, sessions)}"
         )
 

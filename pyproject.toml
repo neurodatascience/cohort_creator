@@ -49,7 +49,6 @@ dev = [
     "pandas-stubs",
     "requests",
     "pyyaml",
-    "plotly",
     "kaleido"
 ]
 doc = [
