@@ -28,6 +28,16 @@ def main() -> None:
     fig = scatter_subject_vs(df, y="mean_size", size=None, color="source")
     fig.write_image(output_dir / "subject_vs_size.png", scale=2, width=1000)
 
+    fig = scatter_subject_vs(
+        filter_data(df, is_openneuro=True), y="mean_size", size=None, color="mriqc"
+    )
+    fig.write_image(output_dir / "openneuro_subject_vs_mriqc.png", scale=2, width=1000)
+
+    fig = scatter_subject_vs(
+        filter_data(df, is_openneuro=True), y="mean_size", size=None, color="fmriprep"
+    )
+    fig.write_image(output_dir / "openneuro_subject_vs_fmriprep.png", scale=2, width=1000)
+
     nb_datatypes_df = (
         df[["source", "nb_datatypes"]].groupby(["source", "nb_datatypes"])["nb_datatypes"].count()
     )

@@ -22,27 +22,17 @@ def main() -> None:
         datasets = known_datasets_df()
         datasets = wrangle_data(datasets)
 
-        tasks = []
-        for row in datasets.iterrows():
-            tasks.extend(row[1]["tasks"])
-        tasks = sorted(list(set(tasks)))
-        print(tasks)
+        # tasks = []
+        # for row in datasets.iterrows():
+        #     tasks.extend(row[1]["tasks"])
+        # tasks = sorted(list(set(tasks)))
+        # print(tasks)
 
-        institutions = []
-        for row in datasets.iterrows():
-            institutions.extend(row[1]["institutions"])
-        institutions = sorted(list(set(institutions)))
-        print(institutions)
-
-        nb_datatypes_df = (
-            datasets[["source", "nb_datatypes"]]
-            .groupby(["source", "nb_datatypes"])["nb_datatypes"]
-            .count()
-        )
-        nb_datatypes_df = nb_datatypes_df.reset_index(level=[0])
-        nb_datatypes_df["count"] = nb_datatypes_df["nb_datatypes"]
-        nb_datatypes_df["nb_datatypes"] = nb_datatypes_df.index
-        print(nb_datatypes_df)
+        # institutions = []
+        # for row in datasets.iterrows():
+        #     institutions.extend(row[1]["institutions"])
+        # institutions = sorted(list(set(institutions)))
+        # print(institutions)
 
         print(
             f"Number of datasets: {len(datasets)} with {datasets.nb_subjects.sum()} subjects",

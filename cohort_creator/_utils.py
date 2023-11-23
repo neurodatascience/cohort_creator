@@ -17,6 +17,8 @@ from bids.layout import BIDSFile
 from cohort_creator._version import __version__
 from cohort_creator.logger import cc_logger
 
+# import gender_guesser.detector as gender
+
 cc_log = cc_logger()
 
 KNOWN_DATATYPES = [
@@ -694,6 +696,60 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
     )
 
+    df["source"] = get_source_study(df)
+
+    # standardize size
+    # convert to kilobytes
+    for unit, exponent in zip(["TB", "GB", "MB", "KB"], [12, 9, 6, 3]):
+        df["size"] = df["size"].apply(
+            lambda x: float(x.split(" ")[0]) * 10**exponent
+            if isinstance(x, str) and x.endswith(unit)
+            else x
+        )
+    df["mean_size"] = df["size"] / df["nb_subjects"]
+
+    for datatype in KNOWN_DATATYPES:
+        df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
+
+    df["nb_authors"] = df["authors"].apply(lambda x: len(x))
+
+    # new_cols = {
+    #     "author_male": [],
+    #     "author_female": [],
+    #     "author_andy": [],
+    #     "author_unknown": [],
+    #     "author_mostly_male": [],
+    #     "author_mostly_female": [],
+    # }
+    # for row in df.iterrows():
+    #     if len(row[1]["authors"]) == 0:
+    #         for key in new_cols:
+    #             new_cols[key].append(np.nan)
+    #     else:
+    #         print(row[1]["name"])
+    #         results = {
+    #             "male": 0,
+    #             "female": 0,
+    #             "andy": 0,
+    #             "unknown": 0,
+    #             "mostly_male": 0,
+    #             "mostly_female": 0,
+    #         }
+    #         total = 0
+    #         for author in row[1]["authors"]:
+    #             d = gender.Detector()
+    #             #  TODO assuming the surname comes first
+    #             guess = d.get_gender(author.replace(", ", " ").split(" ")[0])
+    #             # print(f"{author}: {guess}")
+    #             results[guess] += 1
+    #             total += 1
+    #         for key in results:
+    #             new_cols[f"author_{key}"].append(results[key] / total)
+
+    return df
+
+
+def get_source_study(df: pd.DataFrame) -> list[str]:
     source = []
     for row in df.iterrows():
         if row[1]["is_openneuro"]:
@@ -708,33 +764,4 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
             source.append("corr")
         elif row[1]["name"].startswith("CNEUROMOD"):
             source.append("neuromod")
-    df["source"] = source
-
-    # standardize size
-    # convert to GB
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**12
-        if isinstance(x, str) and x.endswith("TB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**9
-        if isinstance(x, str) and x.endswith("GB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**6
-        if isinstance(x, str) and x.endswith("MB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**3
-        if isinstance(x, str) and x.endswith("KB")
-        else x
-    )
-    df["mean_size"] = df["size"] / df["nb_subjects"]
-
-    for datatype in KNOWN_DATATYPES:
-        df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
-
-    return df
+    return source
