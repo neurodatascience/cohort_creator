@@ -20,6 +20,7 @@ from rich import print
 
 def summary(df: pd.DataFrame) -> None:
     print(f"number participants: {len(df)}")
+    print(f"number datasets: {nb_datasets(df)}")
     print(
         f"number female: {sum(df['Sex'] == 'F')} ({sum(df['Sex'] == 'F') / len(df) * 100 :0.2f})"
     )
@@ -65,13 +66,17 @@ def plot_missing(df: pd.DataFrame, column: str) -> None:
     missing_df = df.groupby("dataset_name", as_index=False)[column].mean()
     missing_df[column] = missing_df[column] * 100
     missing_df = missing_df[missing_df[column] != 0]
+    missing_df = missing_df.sort_values(by=[column])
 
-    fig = bar_plot_per_dataset(df, column)
+    fig = bar_plot_per_dataset(missing_df, column)
     fig.show()
 
 
+def nb_datasets(df: pd.DataFrame) -> int:
+    return len(set(df["dataset_name"].to_list()))
+
+
 def bar_plot_per_dataset(df: pd.DataFrame, column: str) -> figure:
-    df = df.sort_values(by=column)
     return px.bar(
         df,
         x="dataset_name",
@@ -82,73 +87,73 @@ def bar_plot_per_dataset(df: pd.DataFrame, column: str) -> figure:
             "missing_sex": "percentage sex value missing",
             "F_to_M_ratio": "F / M ratio",
         },
+        title=f"{column} for each dataset",
     )
 
 
-input_file = Path(__file__).parent / "participant-level-results.tsv"
+def main() -> None:
+    input_file = Path(__file__).parent / "participant-level-results.tsv"
 
-df = pd.read_csv(input_file, sep="\t")
+    df = pd.read_csv(input_file, sep="\t")
 
-df = wrangle(df)
+    df = wrangle(df)
 
-df.to_csv("tmp.tsv", sep="\t")
+    summary(df)
 
-summary(df)
+    plot_missing(df, "missing_age")
 
-plot_missing(df, "missing_age")
+    plot_missing(df, "missing_sex")
 
-plot_missing(df, "missing_sex")
+    sex_df = df[df.Sex.notna()]
+    print("\nAfter removing missing sex values")
+    summary(sex_df)
 
-sex_df = df[df.Sex.notna()]
+    # plot F / M ratio for each dataset
+    sex_df = sex_df.groupby(["dataset_name"], as_index=False).agg(
+        nb_subjects=pd.NamedAgg(column="SubjectID", aggfunc="count"),
+        F_to_M_ratio=pd.NamedAgg(column="Sex", aggfunc=lambda x: sum(x == "F") / len(x)),
+    )
+    sex_df = sex_df.sort_values(by=["F_to_M_ratio"])
 
-summary(sex_df)
+    fig = bar_plot_per_dataset(sex_df, column="F_to_M_ratio")
+    fig.show()
 
-# plot F / M ratio for each dataset
-sex_df = sex_df.groupby(["dataset_name"], as_index=False).agg(
-    nb_subjects=pd.NamedAgg(column="SubjectID", aggfunc="count"),
-    F_to_M_ratio=pd.NamedAgg(column="Sex", aggfunc=lambda x: sum(x == "F") / len(x)),
-)
+    # plot F / M ratio VS nb subjects for each dataset
+    fig = px.scatter(
+        sex_df,
+        x="nb_subjects",
+        y="F_to_M_ratio",
+        hover_name="dataset_name",
+        labels={
+            "dataset_name": "dataset",
+            "nb_subjects": "nb subjects",
+            "F_to_M_ratio": "F / M ratio",
+        },
+    )
+    fig.show()
 
-fig = bar_plot_per_dataset(sex_df, column="F_to_M_ratio")
-fig.show()
+    df_with_age = df[df.Age.notna()]
+    print("\nAfter removing missing age values")
+    summary(df_with_age)
 
-# plot F / M ratio VS nb subjects for each dataset
-fig = px.scatter(
-    sex_df,
-    x="nb_subjects",
-    y="F_to_M_ratio",
-    hover_name="dataset_name",
-    labels={
-        "dataset_name": "dataset",
-        "nb_subjects": "nb subjects",
-        "F_to_M_ratio": "F / M ratio",
-    },
-)
+    df_with_age_and_sex = df_with_age[df.Sex.notna()]
+    print("\nAfter removing missing sex and age values")
+    summary(df_with_age_and_sex)
 
-# fig.show()
+    fig = go.Figure()
+    fig.add_trace(
+        go.Histogram(x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "F"].round()["Age"])
+    )
+    fig.add_trace(
+        go.Histogram(x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "M"].round()["Age"])
+    )
+    fig.update_layout(
+        barmode="overlay",
+        title=f"Age distribution ({nb_datasets(df_with_age_and_sex)} MRI datasets from openneuro)",
+    )
+    fig.update_traces(opacity=0.75)
+    fig.show()
 
-df_with_age = df[df.Age.notna()]
 
-summary(df_with_age)
-
-nb_datasets = len(set(df["dataset_name"].to_list()))
-
-fig = px.histogram(
-    df_with_age.round(),
-    x="Age",
-    color="Sex",
-    title=f"Age distribution ({nb_datasets} MRI datasets from openneuro)",
-)
-
-# fig.show()
-
-fig = go.Figure()
-fig.add_trace(go.Histogram(x=df[df["Sex"] == "F"].round()["Age"]))
-fig.add_trace(go.Histogram(x=df[df["Sex"] == "M"].round()["Age"]))
-
-# Overlay both histograms
-fig.update_layout(barmode="overlay")
-# Reduce opacity to see both histograms
-fig.update_traces(opacity=0.75)
-
-fig.show()
+if __name__ == "__main__":
+    main()
