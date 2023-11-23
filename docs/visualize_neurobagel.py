@@ -62,14 +62,14 @@ def wrangle(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def plot_missing(df: pd.DataFrame, column: str) -> None:
+def plot_missing(df: pd.DataFrame, column: str) -> figure:
     missing_df = df.groupby("dataset_name", as_index=False)[column].mean()
     missing_df[column] = missing_df[column] * 100
     missing_df = missing_df[missing_df[column] != 0]
     missing_df = missing_df.sort_values(by=[column])
 
     fig = bar_plot_per_dataset(missing_df, column)
-    fig.show()
+    return fig
 
 
 def nb_datasets(df: pd.DataFrame) -> int:
@@ -85,13 +85,15 @@ def bar_plot_per_dataset(df: pd.DataFrame, column: str) -> figure:
             "dataset_name": "dataset",
             "missing_age": "percentage age value missing",
             "missing_sex": "percentage sex value missing",
-            "F_to_M_ratio": "F / M ratio",
+            "F_to_M_ratio": "Female to Male ratio",
         },
         title=f"{column} for each dataset",
     )
 
 
 def main() -> None:
+    output_dir = Path(__file__).parent / "source" / "images" / "neurobagel"
+
     input_file = Path(__file__).parent / "participant-level-results.tsv"
 
     df = pd.read_csv(input_file, sep="\t")
@@ -100,9 +102,11 @@ def main() -> None:
 
     summary(df)
 
-    plot_missing(df, "missing_age")
+    fig = plot_missing(df, "missing_age")
+    fig.write_image(output_dir / "missing_age.png", scale=2, width=1000)
 
     plot_missing(df, "missing_sex")
+    fig.write_image(output_dir / "missing_sex.png", scale=2, width=1000)
 
     sex_df = df[df.Sex.notna()]
     print("\nAfter removing missing sex values")
@@ -116,7 +120,7 @@ def main() -> None:
     sex_df = sex_df.sort_values(by=["F_to_M_ratio"])
 
     fig = bar_plot_per_dataset(sex_df, column="F_to_M_ratio")
-    fig.show()
+    fig.write_image(output_dir / "sex_ratio.png", scale=2, width=1000)
 
     # plot F / M ratio VS nb subjects for each dataset
     fig = px.scatter(
@@ -129,8 +133,9 @@ def main() -> None:
             "nb_subjects": "nb subjects",
             "F_to_M_ratio": "F / M ratio",
         },
+        title="sex ratio VS number of subjects for each dataset",
     )
-    fig.show()
+    fig.write_image(output_dir / "subject_vs_sex_ratio.png", scale=2, width=1000)
 
     df_with_age = df[df.Age.notna()]
     print("\nAfter removing missing age values")
@@ -142,17 +147,24 @@ def main() -> None:
 
     fig = go.Figure()
     fig.add_trace(
-        go.Histogram(x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "F"].round()["Age"])
+        go.Histogram(
+            x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "F"].round()["Age"],
+            name="Female",
+        ),
     )
     fig.add_trace(
-        go.Histogram(x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "M"].round()["Age"])
+        go.Histogram(
+            x=df_with_age_and_sex[df_with_age_and_sex["Sex"] == "M"].round()["Age"], name="Male"
+        ),
     )
     fig.update_layout(
         barmode="overlay",
         title=f"Age distribution ({nb_datasets(df_with_age_and_sex)} MRI datasets from openneuro)",
+        xaxis_title=dict(text="Age (years)"),
+        yaxis_title=dict(text="count"),
     )
-    fig.update_traces(opacity=0.75)
-    fig.show()
+    fig.update_traces(opacity=0.8)
+    fig.write_image(output_dir / "age_distribution.png", scale=2, width=1000)
 
 
 if __name__ == "__main__":
