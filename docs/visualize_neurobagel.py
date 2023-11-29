@@ -17,6 +17,8 @@ import plotly.graph_objects as go
 from matplotlib import figure
 from rich import print
 
+SHOW = True
+
 
 def summary(df: pd.DataFrame) -> None:
     print(f"number participants: {len(df)}")
@@ -37,7 +39,7 @@ def wrangle(df: pd.DataFrame) -> pd.DataFrame:
     df = df.replace("http://purl.bioontology.org/ontology/SNOMEDCT/248152002", "F")
     #  I for intersex
     df = df.replace("http://purl.bioontology.org/ontology/SNOMEDCT/32570681000036106", "I")
-    df = df.replace(".*stardog.*", "", regex=True)
+    df = df.replace(".*stardog.*", None, regex=True)
 
     df["Age"] = df["Age"].astype(float)
 
@@ -103,9 +105,13 @@ def main() -> None:
     summary(df)
 
     fig = plot_missing(df, "missing_age")
+    if SHOW:
+        fig.show()
     fig.write_image(output_dir / "missing_age.png", scale=2, width=1000)
 
-    plot_missing(df, "missing_sex")
+    fig = plot_missing(df, "missing_sex")
+    if SHOW:
+        fig.show()
     fig.write_image(output_dir / "missing_sex.png", scale=2, width=1000)
 
     sex_df = df[df.Sex.notna()]
@@ -120,6 +126,8 @@ def main() -> None:
     sex_df = sex_df.sort_values(by=["F_to_M_ratio"])
 
     fig = bar_plot_per_dataset(sex_df, column="F_to_M_ratio")
+    if SHOW:
+        fig.show()
     fig.write_image(output_dir / "sex_ratio.png", scale=2, width=1000)
 
     # plot F / M ratio VS nb subjects for each dataset
@@ -135,6 +143,8 @@ def main() -> None:
         },
         title="sex ratio VS number of subjects for each dataset",
     )
+    if SHOW:
+        fig.show()
     fig.write_image(output_dir / "subject_vs_sex_ratio.png", scale=2, width=1000)
 
     df_with_age = df[df.Age.notna()]
@@ -163,7 +173,9 @@ def main() -> None:
         xaxis_title=dict(text="Age (years)"),
         yaxis_title=dict(text="count"),
     )
-    fig.update_traces(opacity=0.8)
+    fig.update_traces(opacity=0.5)
+    if SHOW:
+        fig.show()
     fig.write_image(output_dir / "age_distribution.png", scale=2, width=1000)
 
 
