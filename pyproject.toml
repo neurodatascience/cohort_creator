@@ -40,17 +40,12 @@ requires-python = ">=3.8"
 browse = ["plotly"]
 dev = [
     "cohort_creator[browse,doc,test]",
-    "pre-commit",
-    "black",
-    "flake8",
-    "flake8-docstrings",
-    "codespell",
-    "mypy",
-    "pandas-stubs",
     "requests",
     "pyyaml",
-    "plotly",
-    "kaleido"
+    "kaleido",
+    "gender_guesser",
+    "pre-commit",
+    "pandas-stubs"
 ]
 doc = [
     "furo",
@@ -118,17 +113,14 @@ module = [
     "bids.*",
     "rich_argparse",
     "plotly.*",
-    "matplotlib"
+    "matplotlib",
+    "dash.*"
 ]
 
 [[tool.mypy.overrides]]
 ignore_errors = true
 module = [
-    'tests.*',
-    'integration.*',
-    'format_v016_to_v020',
-    'format_v020_to_v030',
-    'rename'
+    'tests.*'
 ]
 
 [tool.pytest.ini_options]

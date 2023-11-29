@@ -17,9 +17,11 @@ from bids.layout import BIDSFile
 from cohort_creator._version import __version__
 from cohort_creator.logger import cc_logger
 
+# import gender_guesser.detector as gender
+
 cc_log = cc_logger()
 
-KNOWN_MODALITIES = [
+KNOWN_DATATYPES = [
     "anat",
     "dwi",
     "func",
@@ -246,38 +248,31 @@ def non_openneuro_listing_tsv() -> Path:
     return data_dir / "non_openneuro.tsv"
 
 
+def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
+    df = pd.read_csv(
+        tsv_file,
+        sep="\t",
+        converters={
+            "has_participant_tsv": pd.eval,
+            "has_participant_json": pd.eval,
+            "participant_columns": pd.eval,
+            "has_phenotype_dir": pd.eval,
+            "modalities": pd.eval,
+            "sessions": pd.eval,
+            "tasks": pd.eval,
+            "authors": pd.eval,
+            "institutions": pd.eval,
+        },
+    )
+
+    df["datatypes"] = df["modalities"]
+    return df.drop(columns=["modalities"])
+
+
 @functools.lru_cache(maxsize=1)
 def known_datasets_df() -> pd.DataFrame:
-    openneuro_df = pd.read_csv(
-        openneuro_listing_tsv(),
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "modalities": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-        },
-    )
-    non_opnenneuro_df = pd.read_csv(
-        non_openneuro_listing_tsv(),
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "modalities": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-        },
-    )
+    openneuro_df = load_known_datasets(openneuro_listing_tsv())
+    non_opnenneuro_df = load_known_datasets(non_openneuro_listing_tsv())
     return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
@@ -680,6 +675,8 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     """Do general wrangling of the known datasets."""
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
 
+    df["nb_datatypes"] = df["datatypes"].apply(lambda x: len(x))
+
     # if only one column we assume it is only a participant_id file
     useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
     df["useful_participants_tsv"] = useful_participants_tsv
@@ -699,6 +696,60 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
     )
 
+    df["source"] = get_source_study(df)
+
+    # standardize size
+    # convert to kilobytes
+    for unit, exponent in zip(["TB", "GB", "MB", "KB"], [12, 9, 6, 3]):
+        df["size"] = df["size"].apply(
+            lambda x: float(x.split(" ")[0]) * 10**exponent
+            if isinstance(x, str) and x.endswith(unit)
+            else x
+        )
+    df["mean_size"] = df["size"] / df["nb_subjects"]
+
+    for datatype in KNOWN_DATATYPES:
+        df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
+
+    df["nb_authors"] = df["authors"].apply(lambda x: len(x))
+
+    # new_cols = {
+    #     "author_male": [],
+    #     "author_female": [],
+    #     "author_andy": [],
+    #     "author_unknown": [],
+    #     "author_mostly_male": [],
+    #     "author_mostly_female": [],
+    # }
+    # for row in df.iterrows():
+    #     if len(row[1]["authors"]) == 0:
+    #         for key in new_cols:
+    #             new_cols[key].append(np.nan)
+    #     else:
+    #         print(row[1]["name"])
+    #         results = {
+    #             "male": 0,
+    #             "female": 0,
+    #             "andy": 0,
+    #             "unknown": 0,
+    #             "mostly_male": 0,
+    #             "mostly_female": 0,
+    #         }
+    #         total = 0
+    #         for author in row[1]["authors"]:
+    #             d = gender.Detector()
+    #             #  TODO assuming the surname comes first
+    #             guess = d.get_gender(author.replace(", ", " ").split(" ")[0])
+    #             # print(f"{author}: {guess}")
+    #             results[guess] += 1
+    #             total += 1
+    #         for key in results:
+    #             new_cols[f"author_{key}"].append(results[key] / total)
+
+    return df
+
+
+def get_source_study(df: pd.DataFrame) -> list[str]:
     source = []
     for row in df.iterrows():
         if row[1]["is_openneuro"]:
@@ -713,33 +764,4 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
             source.append("corr")
         elif row[1]["name"].startswith("CNEUROMOD"):
             source.append("neuromod")
-    df["source"] = source
-
-    # standardize size
-    # convert to GB
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**12
-        if isinstance(x, str) and x.endswith("TB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**9
-        if isinstance(x, str) and x.endswith("GB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**6
-        if isinstance(x, str) and x.endswith("MB")
-        else x
-    )
-    df["size"] = df["size"].apply(
-        lambda x: float(x.split(" ")[0]) * 10**3
-        if isinstance(x, str) and x.endswith("KB")
-        else x
-    )
-    df["mean_size"] = df["size"] / df["nb_subjects"]
-
-    for modality in KNOWN_MODALITIES:
-        df[modality] = df["modalities"].apply(lambda x: modality in x)
-
-    return df
+    return source

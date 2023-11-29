@@ -22,6 +22,18 @@ def main() -> None:
         datasets = known_datasets_df()
         datasets = wrangle_data(datasets)
 
+        # tasks = []
+        # for row in datasets.iterrows():
+        #     tasks.extend(row[1]["tasks"])
+        # tasks = sorted(list(set(tasks)))
+        # print(tasks)
+
+        # institutions = []
+        # for row in datasets.iterrows():
+        #     institutions.extend(row[1]["institutions"])
+        # institutions = sorted(list(set(institutions)))
+        # print(institutions)
+
         print(
             f"Number of datasets: {len(datasets)} with {datasets.nb_subjects.sum()} subjects",
             file=f,
@@ -63,7 +75,7 @@ def print_results(datasets: pd.Dataframe, file: TextIOWrapper) -> None:
 def has_mri(datasets: pd.Dataframe) -> pd.Dataframe:
     new_col = []
     for _, row in datasets.iterrows():
-        value = {"anat", "func", "dwi", "fmap", "perf"}.intersection(set(row["modalities"]))
+        value = {"anat", "func", "dwi", "fmap", "perf"}.intersection(set(row["datatypes"]))
         if value:
             new_col.append(True)
         else:
