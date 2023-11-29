@@ -265,8 +265,7 @@ def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
         },
     )
 
-    df["datatypes"] = df["modalities"]
-    return df.drop(columns=["modalities"])
+    return df
 
 
 @functools.lru_cache(maxsize=1)

@@ -57,7 +57,7 @@ def init_dataset() -> dict[str, list[Any]]:
         "has_participant_json": [],
         "participant_columns": [],
         "has_phenotype_dir": [],
-        "modalities": [],
+        "datatypes": [],
         "sessions": [],  # list of sessions if exist
         "tasks": [],
         "size": [],
@@ -78,7 +78,7 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
         "has_participant_json": "n/a",
         "participant_columns": [],
         "has_phenotype_dir": "n/a",
-        "modalities": "n/a",
+        "datatypes": "n/a",
         "tasks": [],
         "size": "n/a",
         "authors": [],
@@ -238,7 +238,7 @@ def list_datasets_in_dir(
         dataset["sessions"] = sessions
 
         datatypes = list_datatypes(dataset_pth, sessions=sessions)
-        dataset["modalities"] = sorted(datatypes)
+        dataset["datatypes"] = sorted(datatypes)
 
         if any(
             mod in datatypes
