@@ -257,7 +257,7 @@ def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
             "has_participant_json": pd.eval,
             "participant_columns": pd.eval,
             "has_phenotype_dir": pd.eval,
-            "modalities": pd.eval,
+            "datatypes": pd.eval,
             "sessions": pd.eval,
             "tasks": pd.eval,
             "authors": pd.eval,
