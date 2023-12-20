@@ -62,8 +62,10 @@ def init_dataset() -> dict[str, list[Any]]:
         "sessions": [],  # list of sessions if exist
         "tasks": [],
         "size": [],
+        "license": [],
         "authors": [],
         "institutions": [],
+        "references_and_links": [],
         "raw": [],  # link to raw dataset
         "fmriprep": [],  # link to fmriprep dataset if exists
         "freesurfer": [],  # link to freesurfer dataset if exists
@@ -83,8 +85,10 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
         "datatypes": "n/a",
         "tasks": [],
         "size": "n/a",
+        "license": "n/a",
         "authors": [],
         "institutions": [],
+        "references_and_links": [],
         "raw": "n/a",
         "fmriprep": "n/a",
         "freesurfer": "n/a",
@@ -227,7 +231,7 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     for i, dataset_pth in enumerate(raw_datasets):
-        if debug and i > 50:
+        if debug and i > 30:
             break
 
         dataset_name = dataset_pth.name
@@ -272,6 +276,10 @@ def list_datasets_in_dir(
 
         dataset["authors"] = _get_authors(dataset_pth)
 
+        dataset["license"] = _get_license(dataset_pth)
+
+        dataset["references_and_links"] = _get_references_and_links(dataset_pth)
+
         # TODO only do in first subject ?
         dataset["institutions"] = _get_institutions(dataset_pth)
 
@@ -296,6 +304,28 @@ def _get_authors(dataset_pth: Path) -> list[str]:
     with open(dataset_pth / "dataset_description.json") as f:
         dataset_description = json.load(f)
         return dataset_description.get("Authors", [])
+
+
+def _get_license(dataset_pth: Path) -> str:
+    if not (dataset_pth / "dataset_description.json").exists():
+        warn("no dataset_description.json")
+        return "n/a"
+    with open(dataset_pth / "dataset_description.json") as f:
+        dataset_description = json.load(f)
+        license = dataset_description.get("License", "n/a")
+        license = license.replace("\n", "")
+        if "Public Domain Dedication and License v1.0" in license:
+            return "PDDL 1.0"
+        return license
+
+
+def _get_references_and_links(dataset_pth: Path) -> list[str]:
+    if not (dataset_pth / "dataset_description.json").exists():
+        warn("no dataset_description.json")
+        return []
+    with open(dataset_pth / "dataset_description.json") as f:
+        dataset_description = json.load(f)
+        return dataset_description.get("ReferencesAndLinks", [])
 
 
 def _get_institutions(dataset_pth: Path) -> list[str]:
