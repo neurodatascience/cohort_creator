@@ -14,14 +14,14 @@ from utils import init_dataset
 from utils import list_datasets_in_dir
 from utils import OPENNEURO
 
-DEBUG = True
+DEBUG = False
 
 
 def main() -> None:
     datasets = init_dataset()
 
-    # path = Path(config()["local_paths"]["openneuro"][OPENNEURO])
-    # datasets = list_datasets_in_dir(datasets, path, debug=DEBUG)
+    path = Path(config()["local_paths"]["openneuro"][OPENNEURO])
+    datasets = list_datasets_in_dir(datasets, path, debug=DEBUG)
 
     path = Path(config()["local_paths"]["datalad"][OPENNEURO])
     datasets = list_datasets_in_dir(datasets, path, debug=DEBUG)

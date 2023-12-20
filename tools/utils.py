@@ -247,7 +247,7 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     for i, dataset_pth in enumerate(raw_datasets):
-        if debug and i > 5:
+        if debug and i > 30:
             break
 
         dataset_name = dataset_pth.name
@@ -315,8 +315,8 @@ def list_datasets_in_dir(
 
 
 def _get_scan_duration(dataset_pth: Path, datatypes: list[str]) -> dict[str, list[float]]:
-    print("  Getting 'scan' duration")
     first_sub = list_participants_in_dataset(dataset_pth)[0]
+    print(f"  Getting 'scan' duration for {first_sub}")
     duration_all_datatypes = {}
     for target_datatype in ["func", "pet"]:
         if target_datatype in datatypes:

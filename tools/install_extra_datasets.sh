@@ -14,9 +14,9 @@ set -eux
 # datalad install -s ///adhd200/RawDataBIDS/ ./tmp/adhd200
 # datalad install -s ///corr/RawDataBIDS/ ./tmp/corr
 
-# for sds in $PWD/tmp/*; do
-#     cd "${sds}" && datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
-# done
+for sds in $PWD/tmp/*; do
+    cd "${sds}" && datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
+done
 
 for sds in "$PWD"/tmp/*; do
     for ds in "${sds}"/*; do
