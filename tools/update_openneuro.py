@@ -19,10 +19,10 @@ from utils import OPENNEURO
 from cohort_creator._utils import load_known_datasets
 from cohort_creator._utils import openneuro_listing_tsv
 
-DEBUG = False
+DEBUG = True
 
 # if True, will overwrite the tsv file with the current openneuro datasets
-RESET = False
+RESET = True
 
 
 def main() -> None:
