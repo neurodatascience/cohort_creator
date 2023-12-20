@@ -52,6 +52,7 @@ def known_derivatives() -> list[str]:
 def init_dataset() -> dict[str, list[Any]]:
     return {
         "name": [],
+        "created_on": [],
         "nb_subjects": [],  # usually the number of subjects folder in raw dataset
         "has_participant_tsv": [],
         "has_participant_json": [],
@@ -73,6 +74,7 @@ def init_dataset() -> dict[str, list[Any]]:
 def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
     return {
         "name": name,
+        "created_on": "n/a",
         "nb_subjects": "n/a",
         "has_participant_tsv": "n/a",
         "has_participant_json": "n/a",
@@ -186,6 +188,17 @@ def get_auth() -> tuple[str, str] | None:
     return auth
 
 
+def _created_on(dataset_pth: Path) -> str:
+    """Use date of first commit as creation date."""
+    result = subprocess.run(
+        f'git -C {dataset_pth} log --reverse | sed -n -e "3,3p"',
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.replace("Date:", "").strip()
+
+
 def list_datasets_in_dir(
     datasets: dict[str, list[Any]],
     path: Path,
@@ -227,6 +240,8 @@ def list_datasets_in_dir(
         else:
             raw_url = Dataset.siblings(dataset_pth, name="origin")[0]["url"]
         dataset["raw"] = raw_url
+
+        dataset["created_on"] = _created_on(path / dataset_name)
 
         dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
         if dataset["nb_subjects"] == 0:

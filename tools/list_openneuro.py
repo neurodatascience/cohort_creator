@@ -14,7 +14,7 @@ from utils import init_dataset
 from utils import list_datasets_in_dir
 from utils import OPENNEURO
 
-DEBUG = False
+DEBUG = True
 
 
 def main() -> None:
