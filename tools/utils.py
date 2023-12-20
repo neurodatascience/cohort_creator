@@ -18,6 +18,8 @@ from rich import print
 from cohort_creator._utils import KNOWN_DATATYPES
 from cohort_creator._utils import list_participants_in_dataset
 
+DATASET_TYPE = dict[str, str | int | bool | list[str] | dict[str, list[float]]]
+
 logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
@@ -64,6 +66,7 @@ def init_dataset() -> dict[str, list[Any]]:
         "size": [],
         "authors": [],
         "institutions": [],
+        "duration": [],  # duration of recoding of each modality
         "raw": [],  # link to raw dataset
         "fmriprep": [],  # link to fmriprep dataset if exists
         "freesurfer": [],  # link to freesurfer dataset if exists
@@ -71,7 +74,7 @@ def init_dataset() -> dict[str, list[Any]]:
     }
 
 
-def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
+def new_dataset(name: str) -> DATASET_TYPE:
     return {
         "name": name,
         "created_on": "n/a",
@@ -85,6 +88,7 @@ def new_dataset(name: str) -> dict[str, str | int | bool | list[str]]:
         "size": "n/a",
         "authors": [],
         "institutions": [],
+        "duration": "n/a",
         "raw": "n/a",
         "fmriprep": "n/a",
         "freesurfer": "n/a",
@@ -141,6 +145,18 @@ def list_tasks(bids_pth: Path, sessions: list[str]) -> list[str]:
     tasks = [f.split("task-")[1].split("_")[0] for f in files]
     tasks = list(set(tasks))
     return tasks
+
+
+def _get_scan_duratrion(dataset_pth: Path, filepath: Path) -> float | None:
+    """Get only header of a nifti file and compute its acquisition time."""
+    script_path = Path(__file__).parent / "read_nb_vols"
+    cmd = f"datalad fsspec-head -d {dataset_pth} -c 1024 {filepath.relative_to(dataset_pth)} | python {script_path}"
+    # print(cmd)
+    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if not result.stderr:
+        return float(result.stdout.replace("\n", ""))
+    print(result.stderr)
+    return None
 
 
 def get_list_of_datasets(gh_orga: str) -> list[str]:
@@ -227,7 +243,7 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     for i, dataset_pth in enumerate(raw_datasets):
-        if debug and i > 50:
+        if debug and i > 5:
             break
 
         dataset_name = dataset_pth.name
@@ -275,7 +291,8 @@ def list_datasets_in_dir(
         # TODO only do in first subject ?
         dataset["institutions"] = _get_institutions(dataset_pth)
 
-        # TODO imaging time for first subject
+        # scan duration for first subject
+        dataset["duration"] = _get_scan_duration(dataset_pth, datatypes)
 
         dataset = add_derivatives(dataset, dataset_pth, derivatives)
 
@@ -287,6 +304,25 @@ def list_datasets_in_dir(
             datasets[keys].append(dataset[keys])
 
     return datasets
+
+
+def _get_scan_duration(dataset_pth: Path, datatypes: list[str]) -> dict[str, list[float]]:
+    print("  Getting 'scan' duration")
+    first_sub = list_participants_in_dataset(dataset_pth)[0]
+    duration_all_datatypes = {}
+    for target_datatype in ["func", "pet"]:
+        if target_datatype in datatypes:
+            if target_datatype == "func":
+                files = dataset_pth.glob(f"{first_sub}/**/func/*bold.nii*")
+            elif target_datatype == "pet":
+                files = dataset_pth.glob(f"{first_sub}/**/pet/*pet.nii*")
+            scan_duration = []
+            for filepath in files:
+                print(f"   {filepath.relative_to(dataset_pth)}")
+                if duration := _get_scan_duratrion(dataset_pth, filepath):
+                    scan_duration.append(duration)
+            duration_all_datatypes[target_datatype] = scan_duration
+    return duration_all_datatypes
 
 
 def _get_authors(dataset_pth: Path) -> list[str]:
@@ -376,8 +412,8 @@ def check_task(
 
 
 def add_derivatives(
-    dataset: dict[str, str | list[str] | bool | int], dataset_pth: Path, derivatives: list[str]
-) -> dict[str, str | list[str] | bool | int]:
+    dataset: DATASET_TYPE, dataset_pth: Path, derivatives: list[str]
+) -> DATASET_TYPE:
     """Update dict with links to derivatives if they exist."""
     dataset_name = dataset["name"]
     for der in ["fmriprep", "mriqc"]:

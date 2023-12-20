@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+"""Reads a nifti header and compute acquisition time.
+
+Assumes the value of
+
+https://neurostars.org/t/total-amount-of-fmri-hours-on-openneuro/27509/
+"""
+import sys, gzip, nibabel as nb
+
+with gzip.GzipFile(fileobj=sys.stdin.buffer, mode='rb') as img:
+    header = nb.Nifti1Image.from_stream(img).header
+
+print(header['dim'][4] * header.get_zooms()[3])

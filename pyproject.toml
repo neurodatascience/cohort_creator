@@ -45,7 +45,9 @@ dev = [
     "kaleido",
     "gender_guesser",
     "pre-commit",
-    "pandas-stubs"
+    "pandas-stubs",
+    'nibabel',
+    'datalad-fuse'
 ]
 doc = [
     "furo",
