@@ -9,6 +9,7 @@ from cohort_creator._utils import known_datasets_df
 from cohort_creator._utils import KNOWN_DATATYPES
 from cohort_creator._utils import wrangle_data
 from cohort_creator.plotting import filter_data
+from cohort_creator.plotting import histogram_tasks
 from cohort_creator.plotting import LABELS
 from cohort_creator.plotting import scatter_subject_vs
 
@@ -65,6 +66,9 @@ def main() -> None:
         title="datatypes in openneuro datasets",
     )
     fig.write_image(output_dir / "openeneuro_datatypes.png", scale=2, width=1000)
+
+    fig = histogram_tasks(df)
+    fig.write_image(output_dir / "tasks.png", scale=2, width=1000)
 
 
 if __name__ == "__main__":

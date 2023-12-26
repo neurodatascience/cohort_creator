@@ -46,3 +46,18 @@ def scatter_subject_vs(
         labels=LABELS,
         color=color,
     )
+
+
+def histogram_tasks(df: pd.Dataframe) -> figure:
+    tasks = []
+    for x in df.tasks:
+        tasks.extend(x)
+
+    new_df = pd.DataFrame({"tasks": tasks})
+
+    count = new_df.tasks.value_counts()
+    order = []
+    for i in count.items():
+        order.append(i[0])
+
+    return px.histogram(new_df, x="tasks", category_orders=dict(tasks=order))

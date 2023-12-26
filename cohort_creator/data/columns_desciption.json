@@ -1,0 +1,150 @@
+{
+    "Description": "Describes the columns of the listing of BIDS datasets. The Format of each column is described as python type. The content of the .bidsignore file is not taken into account.",
+    "Columns": {
+        "name": {
+            "Description": "Name of the dataset",
+            "Format": "str",
+            "Assumptions": "Openneuro datasets tart with 'ds'."
+        },
+        "created_on": {
+            "Description": "Date of the first commit of the datalad dataset.",
+            "Format": "Example: Thu May 18 14:34:38 YYYY +0000",
+            "Assumptions": "The dataset ay have been created or acquired long before it was turned into a datalad dataset."
+        },
+        "nb_subjects": {
+            "Description": "Number of 'sub-*' folders in the datasets.",
+            "Format": "int",
+            "Assumptions": "Folders containng only non valid BIDS files will still be listed."
+        },
+        "has_participant_tsv": {
+            "Description": "Whether the dataset has a 'participant.tsv' file.",
+            "Format": "bool",
+            "Assumptions": ""
+        },
+        "has_participant_json": {
+            "Description": "Whether the dataset has a 'participant.json' file.",
+            "Format": "bool",
+            "Assumptions": ""
+        },
+        "participant_columns": {
+            "Description": "Name of eaxh column in  the participant.tsv",
+            "Format": "list[str]",
+            "Assumptions": ""
+        },
+        "nb_sessions_tsv": {
+            "Description": "Total number of '*sessions.tsv' files in the dataset.",
+            "Format": "int",
+            "Assumptions": ""
+        },
+        "nb_scans_tsv": {
+            "Description": "Total number of '*scans.tsv' files in the dataset.",
+            "Format": "int",
+            "Assumptions": ""
+        },
+        "nb_physio_files": {
+            "Description": "Total number of '*physio.tsv.gz' files in the dataset.",
+            "Format": "int",
+            "Assumptions": "Does not check if the name of files are BIDS valid."
+        },
+        "nb_stim_files": {
+            "Description": "Total number of '*stim.tsv.gz' files in the dataset.",
+            "Format": "int",
+            "Assumptions": "Does not check if the name of files are BIDS valid."
+        },
+        "has_phenotype_dir": {
+            "Description": "Whether the dataset has a 'phenotype' folder.",
+            "Format": "bool",
+            "Assumptions": ""
+        },
+        "has_stimuli_dir": {
+            "Description": "Whether the dataset has a 'stmuli' folder.",
+            "Format": "bool",
+            "Assumptions": ""
+        },
+        "eeg_file_formats": {
+            "Description": "Total number of EEG files of each BIDS supported file format.",
+            "Format": "TypedDict('EegFileFormat', {'bdf': str, 'edf': int, 'eeg': int, 'set': int})",
+            "Assumptions": "Does not check if the name of files are BIDS valid."
+        },
+        "ieeg_file_formats": {
+            "Description": "Total number of iEEG files of each BIDS supported file format.",
+            "Format": "TypedDict('IeegFileFormat', {'nwb': str, 'edf': int, 'eeg': int, 'set': int, 'medf': int})",
+            "Assumptions": "Does not check if the name of files are BIDS valid."
+        },
+        "meg_file_formats": {
+            "Description": "Total number of MEG files of each BIDS supported file format.",
+            "Format": "TypedDict('MegFileFormat', {'bdf': str, 'edf': int, 'eeg': int, 'set': int})",
+            "Assumptions": "Does not check if the name of files are BIDS valid."
+        },
+        "nb_meeg_channels": {
+            "Description": "Number of channels EEG, iEEG or MEG channels. Read from the header where possible.",
+            "Format": "list[int]",
+            "Assumptions": "Based on data from the first participant only."
+        },
+        "datatypes": {
+            "Description": "List of BIDS supported datatypes found in the dataset.",
+            "Format": "list[str]",
+            "Assumptions": "The datatype will be listed even if it occurs only in a single subject."
+        },
+        "sessions": {
+            "Description": "List of the session names",
+            "Format": "list[str]",
+            "Assumptions": "A sessions name will be listed even if it occurs only once for a single subject. The session <ill be listed even if it contains 0 valid BIDS file in it."
+        },
+        "tasks": {
+            "Description": "List of the tasks names present in the dataset a they appear in filenames.",
+            "Format": "list[str]",
+            "Assumptions": "A sessions name will be listed even if it occurs only once for a single subject. The task be will be listed even if it comes from a file BIDS invalid filename."
+        },
+        "size": {
+            "Description": "Size of the whole dataset as reported by 'datalad stattus -annex all'",
+            "Format": "str",
+            "Assumptions": "This includes all BIDS invalid files and the content of the derivatives, sourcedata folders. So likely to be an overestiamtion."
+        },
+        "license": {
+            "Description": "Name of the license of the dataset.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "authors": {
+            "Description": "List of the authors as reported in the dataset_description",
+            "Format": "list[str]",
+            "Assumptions": ""
+        },
+        "institutions": {
+            "Description": "List of the unique institutions founn in the InstitutionName and InstitutionAddress of the JSON sidecars.",
+            "Format": "list[str]",
+            "Assumptions": "Based on the JSON sidecars of the first participant only."
+        },
+        "duration": {
+            "Description": "Duration in seconds of each run for the first participant of the dataset. Listing is done by datatypes and where possible split further by task.",
+            "Format": "dict[str: list[float] | dict[str, list[float]]]",
+            "Assumptions": "Examping to the whole dataset assumes that all participants followed the same protocol as the first subject."
+        },
+        "references_and_links": {
+            "Description": "List of the authors as reported in the dataset_description",
+            "Format": "list[str]",
+            "Assumptions": ""
+        },
+        "raw": {
+            "Description": "Link datalad sibling of the raw dataset.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "fmriprep": {
+            "Description": "Link datalad sibling of the fmiprep dataset in the derivatives folder or on OpenneuroDerivatives. Empty if it does not exist.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "freesurfer": {
+            "Description": "",
+            "Format": "",
+            "Assumptions": ""
+        },
+        "mriqc": {
+            "Description": "Link datalad sibling of the mriqc dataset in the derivatives folder or on OpenneuroDerivatives.",
+            "Format": "str",
+            "Assumptions": ""
+        }
+    }
+}

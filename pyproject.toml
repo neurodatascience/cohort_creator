@@ -21,13 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"
 ]
-dependencies = [
-    "pandas",
-    "rich",
-    "datalad",
-    "pybids",
-    "rich_argparse"
-]
+dependencies = ["pandas", "rich", "datalad", "pybids", "rich_argparse"]
 description = "Creates a neuroimaging cohort by aggregating data across datasets."
 dynamic = ["version"]
 license = {text = "MIT"}
@@ -47,7 +41,8 @@ dev = [
     "pre-commit",
     "pandas-stubs",
     'nibabel',
-    'datalad-fuse'
+    'datalad-fuse',
+    "mne"
 ]
 doc = [
     "furo",
@@ -116,14 +111,13 @@ module = [
     "rich_argparse",
     "plotly.*",
     "matplotlib",
-    "dash.*"
+    "dash.*",
+    "mne.*"
 ]
 
 [[tool.mypy.overrides]]
 ignore_errors = true
-module = [
-    'tests.*'
-]
+module = ['tests.*']
 
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator"

@@ -1,0 +1,1 @@
+- [ ] read header from .nii and not just .nii.gz
