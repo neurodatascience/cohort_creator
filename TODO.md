@@ -1,1 +1,2 @@
-- [ ] read header from .nii and not just .nii.gz
+-   [ ] read header from .nii and not just .nii.gz
+-   [ ] check that URL raw dataset does not give a 404

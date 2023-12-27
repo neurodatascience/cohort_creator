@@ -9,10 +9,10 @@ set -eux
 
 # rm -fr ./tmp/ && mkdir ./tmp/
 
-# datalad install -s ///abide/RawDataBIDS/ ./tmp/abide
-# datalad install -s ///abide2/RawData/ ./tmp/abide2
-# datalad install -s ///adhd200/RawDataBIDS/ ./tmp/adhd200
-# datalad install -s ///corr/RawDataBIDS/ ./tmp/corr
+datalad install -s ///abide/RawDataBIDS/ ./tmp/abide
+datalad install -s ///abide2/RawData/ ./tmp/abide2
+datalad install -s ///adhd200/RawDataBIDS/ ./tmp/adhd200
+datalad install -s ///corr/RawDataBIDS/ ./tmp/corr
 
 for sds in $PWD/tmp/*; do
     cd "${sds}" && datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
@@ -27,5 +27,5 @@ done
 
 # TODO get neuromod derivatives ?
 datalad install -s https://github.com/courtois-neuromod/cneuromod.git ./tmp/cneuromod
-cd ./tmp/cneuromod && datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
+cd ./tmp/cneuromod && datalad -f '{path}' subdatasets | xargs -n 1 -P 2 datalad install
 cd ../..

@@ -5,6 +5,7 @@ import functools
 import itertools
 import json
 import shutil
+from ast import literal_eval
 from math import isnan
 from pathlib import Path
 from typing import Any
@@ -262,7 +263,14 @@ def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
             "tasks": pd.eval,
             "authors": pd.eval,
             "institutions": pd.eval,
+            "has_stimuli_dir": pd.eval,
+            "eeg_file_formats": literal_eval,
+            "ieeg_file_formats": literal_eval,
+            "meg_file_formats": literal_eval,
+            "duration": literal_eval,
+            "references_and_links": pd.eval,
         },
+        parse_dates=["created_on"],
     )
 
     return df

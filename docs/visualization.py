@@ -18,6 +18,7 @@ def main() -> None:
     output_dir = Path(__file__).parent / "source" / "images"
 
     df = wrangle_data(known_datasets_df())
+
     df = filter_data(df, is_openneuro=None)
 
     fig = scatter_subject_vs(df, y="nb_sessions", size=None, color="source")
