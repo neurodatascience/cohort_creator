@@ -199,9 +199,7 @@ def _get_scan_duration(dataset_pth: Path, filepath: Path) -> float | None:
     return None
 
 
-def _get_meeg_header(
-    dataset_pth: Path, filepath: Path
-) -> tuple[None | dict[str, Any], None | int]:
+def _get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], None | int]:
     ds = Dataset(dataset_pth)
     try:
         ds.get(filepath)

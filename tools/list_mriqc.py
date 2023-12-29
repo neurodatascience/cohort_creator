@@ -51,9 +51,7 @@ def list_mriqc_in_derivatives(datasets: dict[str, Any]) -> dict[str, Any]:
 
 def has_mri(session_pth: Path) -> bool:
     """Return True if the session has at least one MRI."""
-    return any(
-        "anat" in x.name or "func" in x.name for x in session_pth.glob("**/*") if x.is_dir()
-    )
+    return any("anat" in x.name or "func" in x.name for x in session_pth.glob("**/*") if x.is_dir())
 
 
 def list_participants(datasets: dict[str, Any]) -> dict[str, Any]:

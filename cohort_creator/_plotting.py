@@ -52,10 +52,7 @@ def histogram_tasks(df: pd.Dataframe) -> figure:
     new_df = pd.DataFrame({"tasks": tasks})
 
     count = new_df.tasks.value_counts()
-    order = []
-    for i in count.items():
-        order.append(i[0])
-
+    order = [i[0] for i in count.items()]
     return px.histogram(new_df, x="tasks", category_orders=dict(tasks=order))
 
 

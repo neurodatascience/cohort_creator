@@ -143,6 +143,4 @@ def _return_bids_filter(args: argparse.Namespace) -> dict[str, dict[str, dict[st
     if args.bids_filter_file is None:
         return None
     bids_filter_file = Path(args.bids_filter_file[0]).resolve()
-    return (
-        get_bids_filter(bids_filter_file=bids_filter_file) if bids_filter_file.exists() else None
-    )
+    return get_bids_filter(bids_filter_file=bids_filter_file) if bids_filter_file.exists() else None

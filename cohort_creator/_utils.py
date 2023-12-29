@@ -22,9 +22,7 @@ from cohort_creator.logger import cc_logger
 cc_log = cc_logger()
 
 
-def create_tsv_participant_session_in_datasets(
-    output_dir: Path, dataset_paths: list[Path]
-) -> Path:
+def create_tsv_participant_session_in_datasets(output_dir: Path, dataset_paths: list[Path]) -> Path:
     (output_dir.parent / "code").mkdir(exist_ok=True, parents=True)
     content: dict[str, list[str]] = {
         "DatasetID": [],
@@ -138,9 +136,7 @@ def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:
         cc_log.debug(f"Renaming column: '      DatasetID' -> 'DatasetID' in:\n{tsv_file}")
         df.rename(columns={"      DatasetID": "DatasetID"}, inplace=True)
     if "DatasetID" not in df.columns:
-        raise ValueError(
-            f"Column 'DatasetID' not found in {tsv_file}. Columns found: {df.columns}"
-        )
+        raise ValueError(f"Column 'DatasetID' not found in {tsv_file}. Columns found: {df.columns}")
     return df
 
 

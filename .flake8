@@ -10,7 +10,7 @@ exclude =
     _version.py,
     tests/data/bids-examples
 docstring-convention = numpy
-max-line-length = 99
+max-line-length = 100
 max_complexity = 10
 max_function_length = 150
 ignore = D101, D103, I, W503

@@ -39,9 +39,7 @@ def main() -> None:
     fig.write_image(output_dir / "subject_vs_size.png", scale=2, width=1000)
 
     df_duration = df[df["total_duration"] > 0]
-    fig = scatter_subject_vs(
-        df_duration, y="total_duration", size=None, color="source", log_y=True
-    )
+    fig = scatter_subject_vs(df_duration, y="total_duration", size=None, color="source", log_y=True)
     fig.write_image(output_dir / "subject_vs_total_duration.png", scale=2, width=1000)
     fig.show()
 

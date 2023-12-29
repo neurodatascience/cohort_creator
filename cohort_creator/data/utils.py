@@ -8,7 +8,10 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from rich import print
+
+from cohort_creator.logger import cc_logger
+
+cc_log = cc_logger()
 
 KNOWN_DATATYPES = [
     "anat",
@@ -29,6 +32,13 @@ KNOWN_DATATYPES = [
 
 @functools.lru_cache(maxsize=1)
 def known_datasets_df() -> pd.DataFrame:
+    """Return dataframe of datasets known to the cohort creator.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe containing list of datasets known to the cohort creator.
+    """
     openneuro_df = _load_known_datasets(_openneuro_listing_tsv())
     non_opnenneuro_df = _load_known_datasets(_non_openneuro_listing_tsv())
     return pd.concat([openneuro_df, non_opnenneuro_df])
@@ -72,6 +82,13 @@ def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
 
 
 def is_known_dataset(dataset_name: str) -> bool:
+    """Check if a dataset is known to the cohort creator.
+
+    Parameters
+    ----------
+    dataset_name : :obj:`str`
+        Name of the dataset to check, for example ``ds000117``.
+    """
     openneuro = known_datasets_df()
     mask = openneuro.name == dataset_name
     return mask.sum() != 0
@@ -79,7 +96,33 @@ def is_known_dataset(dataset_name: str) -> bool:
 
 # @functools.lru_cache(maxsize=3)
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Do general wrangling of the known datasets."""
+    """Do general wrangling of the known datasets.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        dataframe of known datasets
+
+    Returns
+    -------
+    df : pd.DataFrame
+        dataframe of known datasets with extra columns
+
+    - ``nb_datatypes``: :obj:`int` Number of unique BIDS supported datatypes in the dataset.
+    - ``nb_sessions``: :obj:`int` Total number of unique sessions in the dataset.
+    - ``nb_authors``: :obj:`int` Number of authors as reported in the description of the dataset.
+    - ``nb_tasks``: :obj:`int` Total number of unique tasks in the dataset.
+    - ``useful_participants_tsv``: :obj:`bool`
+    - ``has_physio``: :obj:`bool` ``True`` if the dataset contains any ``*_physio.tsv.gz`` files.
+    - ``fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
+    - ``freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
+    - ``mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
+    - ``is_openneuro``: :obj:`bool` ``True`` if the dataset is hosted on openneuro.
+    - ``source``: Specifies the source of the dataset.
+    - ``mean_size``: size per subject in kilobytes
+    - datatype: one column for each BIDS known datatype with ``True`` if this dataset contains that datatype.
+    - ``total_duration``: Total "scanned" duration per participant (combines runs from: ``func``, ``eeg``, ``ieeg``)
+    """
     _detect_duplicate_datasets(df)
 
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
@@ -192,24 +235,23 @@ def _compute_total_duration(row: pd.Series) -> float:
 
 def _detect_missing_duration(df: pd.DataFrame) -> None:
     df["missing_duration"] = df.apply(_missing_duration, axis=1)
-    print(
-        f"\nMissing some duration for {df['missing_duration'].sum()} datasets ",
-        f"({df['missing_duration'].sum() / len(df) * 100 :0.1f} %).",
+    cc_log.debug(
+        f"\nMissing some duration for {df['missing_duration'].sum()} datasets "
+        f"({df['missing_duration'].sum() / len(df) * 100 :0.1f} %)."
     )
     for datatype in ["func", "ieeg", "eeg", "pet"]:
         mask = df[datatype]
         tmp_df = df[mask]
-        print(
-            f"Missing some duration for {tmp_df['missing_duration'].sum()} of {datatype} datasets ",
-            f"({tmp_df['missing_duration'].sum() / len(tmp_df) * 100:0.1f} %).",
+        cc_log.debug(
+            f"Missing some duration for {tmp_df['missing_duration'].sum()} of {datatype} datasets "
+            f"({tmp_df['missing_duration'].sum() / len(tmp_df) * 100:0.1f} %)."
         )
-    print()
 
 
 def _detect_duplicate_datasets(df: pd.DataFrame) -> None:
-    print("\nDuplicated datasets.")
+    cc_log.debug("\nDuplicated datasets.")
     tmp = df.name.value_counts()
-    print(tmp[tmp > 1])
+    cc_log.debug(tmp[tmp > 1])
 
 
 def _get_source_study(df: pd.DataFrame) -> list[str]:
@@ -230,7 +272,63 @@ def _get_source_study(df: pd.DataFrame) -> list[str]:
     return source
 
 
+DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
+    "is_openneuro": None,
+    "fmriprep": None,
+    "mriqc": None,
+    "physio": None,
+    "task": "",
+    "datatypes": KNOWN_DATATYPES,
+}
+
+
 def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
+    """Filter the listing of datasets based on some configuration.
+
+    Parameters
+    ----------
+    df : pd.Dataframe
+        Listing of datasets to filter.
+    config : Any, default=None
+        Should be a :obj:`dict` with any of the following keys.
+
+    - ``is_openneuro`` : None | bool
+    - ``fmriprep`` : None | bool
+    - ``mriqc`` : None | bool
+    - ``physio`` : None | bool
+    - ``task``: str
+    - ``datatypes`` : any of the BIDS datatypes
+
+    If ``None`` is passed will default to::
+
+        {
+            "is_openneuro": None,
+            "fmriprep": None,
+            "mriqc": None,
+            "physio": None,
+            "task": "",
+            "datatypes": [
+                "anat",
+                "dwi",
+                "func",
+                "perf",
+                "fmap",
+                "beh",
+                "meg",
+                "eeg",
+                "ieeg",
+                "pet",
+                "micr",
+                "nirs",
+                "motion",
+            ]
+        }
+
+    Returns
+    -------
+    pd.DataFrame
+        Filtered listing of datasets.
+    """
     ALL_TRUE = df["name"].apply(lambda x: bool(x))
 
     config = _check_config(config)
@@ -268,17 +366,12 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     return df[all_filters]
 
 
-def _check_config(config: Any) -> dict[str, bool | str | list[str]]:
-    DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
-        "is_openneuro": None,
-        "fmriprep": None,
-        "mriqc": None,
-        "physio": None,
-        "task": "",
-        "datatypes": KNOWN_DATATYPES,
-    }
+def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[str]]:
     if not config:
         config = DEFAULT_CONFIG
+
+    if not isinstance(config, dict):
+        raise (TypeError, "config must be a dictionary or None.")
 
     for key, value in DEFAULT_CONFIG.items():
         if key not in config:
