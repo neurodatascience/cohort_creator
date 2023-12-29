@@ -57,7 +57,6 @@ test = ["pytest", "pytest-cov"]
 tests = ["cohort_creator[test]"]
 
 [project.scripts]
-bids_browse = "cohort_creator._browse:main"
 cohort_creator = "cohort_creator._cli:cli"
 
 [project.urls]

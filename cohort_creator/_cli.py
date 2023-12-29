@@ -11,6 +11,7 @@ import pandas as pd
 from datalad import api
 from rich_argparse import RichHelpFormatter
 
+from cohort_creator._browse import main as browse
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_list_datasets_to_install
@@ -61,10 +62,14 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     args, _ = parser.parse_known_args(argv[1:])
 
-    output_dir = Path(args.output_dir[0]).resolve()
-
     verbosity = args.verbosity
     set_verbosity(verbosity)
+
+    if args.command in ["browse"]:
+        browse()
+        return
+
+    output_dir = Path(args.output_dir[0]).resolve()
 
     dataset_types = args.dataset_types
     validate_dataset_types(dataset_types)

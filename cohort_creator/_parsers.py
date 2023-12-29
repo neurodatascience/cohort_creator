@@ -135,6 +135,23 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         required=True,
     )
 
+    browse_parser = subparsers.add_parser(
+        "browse",
+        help="Launch a dash app in the browser to visualize the listing of known datasets..",
+        formatter_class=parser.formatter_class,
+    )
+    browse_parser.add_argument(
+        "--verbosity",
+        help="""
+        Verbosity level.
+        """,
+        required=False,
+        choices=[0, 1, 2, 3],
+        default=2,
+        type=int,
+        nargs=1,
+    )
+
     install_parser = subparsers.add_parser(
         "install",
         help="Install several openneuro datasets.",

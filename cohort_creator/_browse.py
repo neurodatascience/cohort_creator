@@ -2,9 +2,19 @@
 from __future__ import annotations
 
 import pandas as pd
+
+try:
+    from dash import Dash
+except ImportError as e:
+    raise RuntimeError(
+        "Dash must installed for this to work.\n"
+        "Install the cohort creator "
+        "with its development dependencies:\n\n"
+        "pip install 'cohort_creator[dev]'"
+    ) from e
+
 import plotly.express as px
 from dash import callback
-from dash import Dash
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -17,8 +27,6 @@ from cohort_creator._plotting import scatter_subject_vs
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.data.utils import KNOWN_DATATYPES
 from cohort_creator.data.utils import wrangle_data
-
-# from cohort_creator.plotting import filter_data
 
 df = wrangle_data(known_datasets_df())
 

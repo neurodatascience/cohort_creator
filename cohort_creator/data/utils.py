@@ -32,12 +32,15 @@ KNOWN_DATATYPES = [
 
 @functools.lru_cache(maxsize=1)
 def known_datasets_df() -> pd.DataFrame:
-    """Return dataframe of datasets known to the cohort creator.
+    """Return dataframe of all datasets known to the cohort creator.
 
     Returns
     -------
     pd.DataFrame
         Dataframe containing list of datasets known to the cohort creator.
+
+    A data dictionary can be found in:
+    ``cohort_creator/data/columns_description.json``
     """
     openneuro_df = _load_known_datasets(_openneuro_listing_tsv())
     non_opnenneuro_df = _load_known_datasets(_non_openneuro_listing_tsv())
