@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
+from rich import print
 
 from cohort_creator._version import __version__
 from cohort_creator.logger import cc_logger
@@ -678,8 +679,53 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
     return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
 
 
+def _missing_duration(row: pd.Series) -> None | bool:
+    if not set(row["datatypes"]).intersection(
+        ("pet", "eeg", "ieeg", "meg", "motion", "nirs", "func")
+    ):
+        return None
+    for _, value in row["duration"].items():
+        if isinstance(value, list) and len(value) == 0:
+            return True
+        if isinstance(value, dict):
+            for _, tmp in value.items():
+                if len(tmp) == 0:
+                    return True
+    return False
+
+
+def _compute_total_duration(row: pd.Series) -> float:
+    duration = []
+    for _, value in row["duration"].items():
+        if isinstance(value, list):
+            duration.extend(value)
+        if isinstance(value, dict):
+            for _, tmp in value.items():
+                duration.extend(tmp)
+    return np.cumsum(duration)[-1] / 3600 if duration else np.nan
+
+
+def _detect_missing_duration(df: pd.DataFrame) -> None:
+    df["missing_duration"] = df.apply(_missing_duration, axis=1)
+    print(
+        f"\nMissing some duration for {df['missing_duration'].sum()} datasets ",
+        f"({df['missing_duration'].sum() / len(df) * 100 :0.1f} %).",
+    )
+    for datatype in ["func", "ieeg", "eeg", "pet"]:
+        mask = df[datatype]
+        tmp_df = df[mask]
+        print(
+            f"Missing some duration for {tmp_df['missing_duration'].sum()} of {datatype} datasets ",
+            f"({tmp_df['missing_duration'].sum() / len(tmp_df) * 100:0.1f} %).",
+        )
+    print()
+
+
+# @functools.lru_cache(maxsize=3)
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     """Do general wrangling of the known datasets."""
+    _detect_duplicate_datasets(df)
+
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
 
     df["nb_datatypes"] = df["datatypes"].apply(lambda x: len(x))
@@ -695,7 +741,7 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         "mriqc",
     ]:
         df[der].fillna(False, inplace=True)
-        df[der] = df[der].apply(lambda x: bool(x))
+        df[f"has_{der}"] = df[der].apply(lambda x: bool(x))
 
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
 
@@ -718,7 +764,13 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     for datatype in KNOWN_DATATYPES:
         df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
 
+    _detect_missing_duration(df)
+
     df["nb_authors"] = df["authors"].apply(lambda x: len(x))
+
+    df["has_physio"] = df["nb_physio_files"] > 0
+
+    df["total_duration"] = df.apply(_compute_total_duration, axis=1)
 
     # new_cols = {
     #     "author_male": [],
@@ -754,6 +806,12 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     #             new_cols[f"author_{key}"].append(results[key] / total)
 
     return df
+
+
+def _detect_duplicate_datasets(df: pd.DataFrame) -> None:
+    print("\nDuplicated datasets.")
+    tmp = df.name.value_counts()
+    print(tmp[tmp > 1])
 
 
 def get_source_study(df: pd.DataFrame) -> list[str]:
