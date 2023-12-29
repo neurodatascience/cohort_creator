@@ -6,9 +6,9 @@ import pytest
 
 from cohort_creator._cli import create_yoda
 from cohort_creator._utils import sourcedata
-from cohort_creator.cohort_creator import construct_cohort
-from cohort_creator.cohort_creator import get_data
-from cohort_creator.cohort_creator import install_datasets
+from cohort_creator.main import construct_cohort
+from cohort_creator.main import get_data
+from cohort_creator.main import install_datasets
 
 
 @pytest.fixture

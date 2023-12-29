@@ -12,11 +12,11 @@ from dash import Input
 from dash import Output
 from matplotlib import figure
 
-from cohort_creator._utils import known_datasets_df
-from cohort_creator._utils import KNOWN_DATATYPES
-from cohort_creator._utils import wrangle_data
-from cohort_creator.plotting import datatypes_histogram
-from cohort_creator.plotting import scatter_subject_vs
+from cohort_creator._plotting import datatypes_histogram
+from cohort_creator._plotting import scatter_subject_vs
+from cohort_creator.data.utils import known_datasets_df
+from cohort_creator.data.utils import KNOWN_DATATYPES
+from cohort_creator.data.utils import wrangle_data
 
 # from cohort_creator.plotting import filter_data
 
@@ -88,5 +88,9 @@ def update_datatype_histogram(value: int) -> figure:
     return datatypes_histogram(df)
 
 
-if __name__ == "__main__":
+def main() -> None:
     app.run(debug=True)
+
+
+if __name__ == "__main__":
+    main()

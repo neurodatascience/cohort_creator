@@ -18,8 +18,8 @@ from datalad.support.exceptions import IncompleteResultsError
 from mne.io.brainvision.brainvision import _get_hdr_info
 from rich import print
 
-from cohort_creator._utils import KNOWN_DATATYPES
 from cohort_creator._utils import list_participants_in_dataset
+from cohort_creator.data.utils import KNOWN_DATATYPES
 
 DATASET_TYPE = dict[
     str,

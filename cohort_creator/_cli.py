@@ -17,10 +17,10 @@ from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import load_dataset_listing
 from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import validate_dataset_types
-from cohort_creator.cohort_creator import construct_cohort
-from cohort_creator.cohort_creator import get_data
-from cohort_creator.cohort_creator import install_datasets
 from cohort_creator.logger import cc_logger
+from cohort_creator.main import construct_cohort
+from cohort_creator.main import get_data
+from cohort_creator.main import install_datasets
 
 cc_log = cc_logger()
 

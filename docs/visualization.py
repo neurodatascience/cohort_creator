@@ -5,14 +5,14 @@ from pathlib import Path
 
 import plotly.express as px
 
-from cohort_creator._utils import known_datasets_df
-from cohort_creator._utils import wrangle_data
-from cohort_creator.plotting import datatypes_histogram
-from cohort_creator.plotting import filter_data
-from cohort_creator.plotting import histogram_tasks
-from cohort_creator.plotting import LABELS
-from cohort_creator.plotting import plot_dataset_size_vs_time
-from cohort_creator.plotting import scatter_subject_vs
+from cohort_creator._plotting import datatypes_histogram
+from cohort_creator._plotting import histogram_tasks
+from cohort_creator._plotting import LABELS
+from cohort_creator._plotting import plot_dataset_size_vs_time
+from cohort_creator._plotting import scatter_subject_vs
+from cohort_creator.data.utils import filter_data
+from cohort_creator.data.utils import known_datasets_df
+from cohort_creator.data.utils import wrangle_data
 
 
 # filter_config = {"is_openneuro": None, "task": "rest", "physio": True, "datatypes": ["func"]}

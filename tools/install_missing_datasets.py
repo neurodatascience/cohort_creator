@@ -15,7 +15,7 @@ from utils import config
 from utils import get_list_of_datasets
 from utils import OPENNEURO
 
-from cohort_creator._utils import known_datasets_df
+from cohort_creator.data.utils import known_datasets_df
 
 # set to True to only datasets known to the datalad datasets as known
 RESET = False
