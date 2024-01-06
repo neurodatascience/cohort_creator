@@ -1,12 +1,12 @@
 """Test bagel related module."""
 from __future__ import annotations
 
-from cohort_creator.bagelify import _new_bagel
 from cohort_creator.bagelify import bagelify
+from cohort_creator.bagelify import new_bagel
 
 
 def test_bagelify(bids_examples):
-    bagel = _new_bagel()
+    bagel = new_bagel()
     bagel = bagelify(
         bagel=bagel,
         raw_path=bids_examples / "ds001",
@@ -23,7 +23,7 @@ def test_bagelify(bids_examples):
 
 
 def test_bagelify_unavailable(bids_examples):
-    bagel = _new_bagel()
+    bagel = new_bagel()
     bagel = bagelify(
         bagel=bagel, raw_path=bids_examples / "asl001", derivative_path=bids_examples / "foo"
     )

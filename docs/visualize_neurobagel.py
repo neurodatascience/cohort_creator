@@ -23,9 +23,7 @@ SHOW = True
 def summary(df: pd.DataFrame) -> None:
     print(f"number participants: {len(df)}")
     print(f"number datasets: {nb_datasets(df)}")
-    print(
-        f"number female: {sum(df['Sex'] == 'F')} ({sum(df['Sex'] == 'F') / len(df) * 100 :0.2f})"
-    )
+    print(f"number female: {sum(df['Sex'] == 'F')} ({sum(df['Sex'] == 'F') / len(df) * 100 :0.2f})")
     print(f"Total missing Age value: {sum(df['missing_age'])}")
     print(f"Total missing Sex value: {sum(df['missing_sex'])}")
 

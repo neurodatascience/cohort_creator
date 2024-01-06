@@ -9,8 +9,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-from utils import init_dataset
-from utils import list_datasets_in_dir
+
+from cohort_creator.data._update import init_dataset
+from cohort_creator.data._update import list_datasets_in_dir
 
 DEBUG = False
 

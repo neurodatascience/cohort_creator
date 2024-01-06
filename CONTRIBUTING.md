@@ -13,7 +13,7 @@ git clone --recurse-submodules https://github.com/YOUR_GH_USERNAME/cohort_creato
 ### Install with all the dependencies in editable mode
 
 ```bash
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 ## Running the tests

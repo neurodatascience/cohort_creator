@@ -115,7 +115,7 @@ def _process_session(sub: str, ses: str | None = None) -> dict[str, str]:
     return new_record
 
 
-def _new_bagel() -> dict[str, list[str | None]]:
+def new_bagel() -> dict[str, list[str | None]]:
     return {
         "dataset_id": [],
         "bids_id": [],

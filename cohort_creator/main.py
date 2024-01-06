@@ -28,7 +28,6 @@ from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import get_participant_ids
 from cohort_creator._utils import get_pipeline_version
 from cohort_creator._utils import get_sessions
-from cohort_creator._utils import is_known_dataset
 from cohort_creator._utils import is_subject_in_dataset
 from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
@@ -36,8 +35,9 @@ from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import sourcedata
-from cohort_creator.bagelify import _new_bagel
 from cohort_creator.bagelify import bagelify
+from cohort_creator.bagelify import new_bagel
+from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
 
 
@@ -392,7 +392,7 @@ def _generate_bagel_for_cohort(
 ) -> None:
     """Track what subjects have been processed by what pipeline."""
     cc_log.info(" creating bagel.csv file")
-    bagel = _new_bagel()
+    bagel = new_bagel()
     supported_dataset_types = ["fmriprep", "mriqc"]
     for dataset_type_, dataset_ in itertools.product(dataset_types, dataset_names):
         if dataset_type_ not in supported_dataset_types:

@@ -11,16 +11,18 @@ import pandas as pd
 from datalad import api
 from rich_argparse import RichHelpFormatter
 
+from cohort_creator._browse import browse
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import load_dataset_listing
 from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import validate_dataset_types
-from cohort_creator.cohort_creator import construct_cohort
-from cohort_creator.cohort_creator import get_data
-from cohort_creator.cohort_creator import install_datasets
+from cohort_creator.data._update import update
 from cohort_creator.logger import cc_logger
+from cohort_creator.main import construct_cohort
+from cohort_creator.main import get_data
+from cohort_creator.main import install_datasets
 
 cc_log = cc_logger()
 
@@ -61,10 +63,22 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     args, _ = parser.parse_known_args(argv[1:])
 
-    output_dir = Path(args.output_dir[0]).resolve()
-
     verbosity = args.verbosity
     set_verbosity(verbosity)
+
+    if args.command in ["browse"]:
+        browse()
+        return
+
+    if args.command in ["update"]:
+        reset = getattr(args, "reset", False)
+        debug = getattr(args, "debug", True)
+        if debug:
+            reset = False
+        update(reset=reset, debug=debug)
+        return
+
+    output_dir = Path(args.output_dir[0]).resolve()
 
     dataset_types = args.dataset_types
     validate_dataset_types(dataset_types)
@@ -143,6 +157,4 @@ def _return_bids_filter(args: argparse.Namespace) -> dict[str, dict[str, dict[st
     if args.bids_filter_file is None:
         return None
     bids_filter_file = Path(args.bids_filter_file[0]).resolve()
-    return (
-        get_bids_filter(bids_filter_file=bids_filter_file) if bids_filter_file.exists() else None
-    )
+    return get_bids_filter(bids_filter_file=bids_filter_file) if bids_filter_file.exists() else None

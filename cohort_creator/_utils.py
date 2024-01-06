@@ -1,7 +1,6 @@
 """General utility functions for the cohort creator."""
 from __future__ import annotations
 
-import functools
 import itertools
 import json
 import shutil
@@ -15,32 +14,15 @@ from bids import BIDSLayout
 from bids.layout import BIDSFile
 
 from cohort_creator._version import __version__
+from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.logger import cc_logger
 
 # import gender_guesser.detector as gender
 
 cc_log = cc_logger()
 
-KNOWN_DATATYPES = [
-    "anat",
-    "dwi",
-    "func",
-    "perf",
-    "fmap",
-    "beh",
-    "meg",
-    "eeg",
-    "ieeg",
-    "pet",
-    "micr",
-    "nirs",
-    "motion",
-]
 
-
-def create_tsv_participant_session_in_datasets(
-    output_dir: Path, dataset_paths: list[Path]
-) -> Path:
+def create_tsv_participant_session_in_datasets(output_dir: Path, dataset_paths: list[Path]) -> Path:
     (output_dir.parent / "code").mkdir(exist_ok=True, parents=True)
     content: dict[str, list[str]] = {
         "DatasetID": [],
@@ -154,9 +136,7 @@ def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:
         cc_log.debug(f"Renaming column: '      DatasetID' -> 'DatasetID' in:\n{tsv_file}")
         df.rename(columns={"      DatasetID": "DatasetID"}, inplace=True)
     if "DatasetID" not in df.columns:
-        raise ValueError(
-            f"Column 'DatasetID' not found in {tsv_file}. Columns found: {df.columns}"
-        )
+        raise ValueError(f"Column 'DatasetID' not found in {tsv_file}. Columns found: {df.columns}")
     return df
 
 
@@ -208,19 +188,6 @@ def get_pipeline_name(pth: Path) -> None | str:
     return data.get("GeneratedBy")[0].get("Name")
 
 
-def is_known_dataset(dataset_name: str) -> bool:
-    openneuro = known_datasets_df()
-    mask = openneuro.name == dataset_name
-    return mask.sum() != 0
-
-
-def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
-    openneuro = known_datasets_df()
-    mask = openneuro.name == dataset_name
-    url = openneuro[mask][dataset_type].values[0]
-    return False if pd.isna(url) else url
-
-
 def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
     return (dataset_pth / subject).exists()
 
@@ -234,45 +201,6 @@ def no_files_found_msg(
      - subject: {subject}
      - datatype: {datatype}
      - filters: {filters}"""
-
-
-def openneuro_listing_tsv() -> Path:
-    root_dir = Path(__file__).parent
-    data_dir = root_dir / "data"
-    return data_dir / "openneuro.tsv"
-
-
-def non_openneuro_listing_tsv() -> Path:
-    root_dir = Path(__file__).parent
-    data_dir = root_dir / "data"
-    return data_dir / "non_openneuro.tsv"
-
-
-def load_known_datasets(tsv_file: Path) -> pd.DataFrame:
-    df = pd.read_csv(
-        tsv_file,
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "datatypes": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-        },
-    )
-
-    return df
-
-
-@functools.lru_cache(maxsize=1)
-def known_datasets_df() -> pd.DataFrame:
-    openneuro_df = load_known_datasets(openneuro_listing_tsv())
-    non_opnenneuro_df = load_known_datasets(non_openneuro_listing_tsv())
-    return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
 def sourcedata(pth: Path) -> Path:
@@ -670,97 +598,8 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
     return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
 
 
-def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Do general wrangling of the known datasets."""
-    df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
-
-    df["nb_datatypes"] = df["datatypes"].apply(lambda x: len(x))
-
-    # if only one column we assume it is only a participant_id file
-    useful_participants_tsv = [(len(row[1]["participant_columns"]) > 1) for row in df.iterrows()]
-    df["useful_participants_tsv"] = useful_participants_tsv
-
-    # set non empty fmriprep / freesurfer / mriqc to true
-    for der in [
-        "fmriprep",
-        "freesurfer",
-        "mriqc",
-    ]:
-        df[der].fillna(False, inplace=True)
-        df[der] = df[der].apply(lambda x: bool(x))
-
-    df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
-
-    df["is_openneuro"] = df["raw"].apply(
-        lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
-    )
-
-    df["source"] = get_source_study(df)
-
-    # standardize size
-    # convert to kilobytes
-    for unit, exponent in zip(["TB", "GB", "MB", "KB"], [12, 9, 6, 3]):
-        df["size"] = df["size"].apply(
-            lambda x: float(x.split(" ")[0]) * 10**exponent
-            if isinstance(x, str) and x.endswith(unit)
-            else x
-        )
-    df["mean_size"] = df["size"] / df["nb_subjects"]
-
-    for datatype in KNOWN_DATATYPES:
-        df[datatype] = df["datatypes"].apply(lambda x: datatype in x)
-
-    df["nb_authors"] = df["authors"].apply(lambda x: len(x))
-
-    # new_cols = {
-    #     "author_male": [],
-    #     "author_female": [],
-    #     "author_andy": [],
-    #     "author_unknown": [],
-    #     "author_mostly_male": [],
-    #     "author_mostly_female": [],
-    # }
-    # for row in df.iterrows():
-    #     if len(row[1]["authors"]) == 0:
-    #         for key in new_cols:
-    #             new_cols[key].append(np.nan)
-    #     else:
-    #         print(row[1]["name"])
-    #         results = {
-    #             "male": 0,
-    #             "female": 0,
-    #             "andy": 0,
-    #             "unknown": 0,
-    #             "mostly_male": 0,
-    #             "mostly_female": 0,
-    #         }
-    #         total = 0
-    #         for author in row[1]["authors"]:
-    #             d = gender.Detector()
-    #             #  TODO assuming the surname comes first
-    #             guess = d.get_gender(author.replace(", ", " ").split(" ")[0])
-    #             # print(f"{author}: {guess}")
-    #             results[guess] += 1
-    #             total += 1
-    #         for key in results:
-    #             new_cols[f"author_{key}"].append(results[key] / total)
-
-    return df
-
-
-def get_source_study(df: pd.DataFrame) -> list[str]:
-    source = []
-    for row in df.iterrows():
-        if row[1]["is_openneuro"]:
-            source.append("openneuro")
-        elif row[1]["name"].startswith("ABIDE2"):
-            source.append("abide 2")
-        elif row[1]["name"].startswith("ABIDE"):
-            source.append("abide")
-        elif row[1]["name"].startswith("ADHD200"):
-            source.append("adhd200")
-        elif row[1]["name"].startswith("CORR"):
-            source.append("corr")
-        elif row[1]["name"].startswith("CNEUROMOD"):
-            source.append("neuromod")
-    return source
+def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
+    openneuro = known_datasets_df()
+    mask = openneuro.name == dataset_name
+    url = openneuro[mask][dataset_type].values[0]
+    return False if pd.isna(url) else url

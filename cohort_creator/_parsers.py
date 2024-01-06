@@ -135,6 +135,50 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         required=True,
     )
 
+    browse_parser = subparsers.add_parser(
+        "browse",
+        help="Launch a dash app in the browser to visualize the listing of known datasets.",
+        formatter_class=parser.formatter_class,
+    )
+    browse_parser.add_argument(
+        "--verbosity",
+        help="""
+        Verbosity level.
+        """,
+        required=False,
+        choices=[0, 1, 2, 3],
+        default=2,
+        type=int,
+        nargs=1,
+    )
+
+    update_parser = subparsers.add_parser(
+        "update",
+        help="Update listing of known BIDS datasets.",
+        formatter_class=parser.formatter_class,
+    )
+    update_parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Will replace the internal listing of the cohort_creator once the update is done.",
+    )
+    update_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Only runs the update for a subset of datasets. Set reset to False.",
+    )
+    update_parser.add_argument(
+        "--verbosity",
+        help="""
+        Verbosity level.
+        """,
+        required=False,
+        choices=[0, 1, 2, 3],
+        default=2,
+        type=int,
+        nargs=1,
+    )
+
     install_parser = subparsers.add_parser(
         "install",
         help="Install several openneuro datasets.",
