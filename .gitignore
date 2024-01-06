@@ -1,10 +1,11 @@
-
 outputs
 tmp
-tmp.tsv
 cohort_creator/_version.py
-docs/source/data/*-results.csv
 *.docx
+tmp.tsv
+docs/source/data/*-results.csv
+OpenNeuroDatasets.tsv
+OpenNeuroDerivatives.tsv
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python

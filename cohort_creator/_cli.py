@@ -11,13 +11,14 @@ import pandas as pd
 from datalad import api
 from rich_argparse import RichHelpFormatter
 
-from cohort_creator._browse import main as browse
+from cohort_creator._browse import browse
 from cohort_creator._parsers import global_parser
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_list_datasets_to_install
 from cohort_creator._utils import load_dataset_listing
 from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import validate_dataset_types
+from cohort_creator.data._update import update
 from cohort_creator.logger import cc_logger
 from cohort_creator.main import construct_cohort
 from cohort_creator.main import get_data
@@ -67,6 +68,14 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     if args.command in ["browse"]:
         browse()
+        return
+
+    if args.command in ["update"]:
+        reset = getattr(args, "reset", False)
+        debug = getattr(args, "debug", True)
+        if debug:
+            reset = False
+        update(reset=reset, debug=debug)
         return
 
     output_dir = Path(args.output_dir[0]).resolve()

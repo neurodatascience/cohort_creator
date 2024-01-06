@@ -47,14 +47,16 @@ def known_datasets_df() -> pd.DataFrame:
     return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
+def _data_dir() -> Path:
+    return Path(__file__).parent
+
+
 def _openneuro_listing_tsv() -> Path:
-    data_dir = Path(__file__).parent
-    return data_dir / "openneuro.tsv"
+    return _data_dir() / "openneuro.tsv"
 
 
 def _non_openneuro_listing_tsv() -> Path:
-    data_dir = Path(__file__).parent
-    return data_dir / "non_openneuro.tsv"
+    return _data_dir() / "non_openneuro.tsv"
 
 
 def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
@@ -97,7 +99,6 @@ def is_known_dataset(dataset_name: str) -> bool:
     return mask.sum() != 0
 
 
-# @functools.lru_cache(maxsize=3)
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     """Do general wrangling of the known datasets.
 
@@ -386,3 +387,31 @@ def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[
         config["datatypes"] = [config["datatypes"]]
 
     return config
+
+
+def save_dataset_listing(df: pd.DataFrame) -> None:
+    df["DatasetID"] = df["name"].copy()
+    df = df.rename(
+        columns={
+            "nb_subjects": "NumMatchingSubjects",
+            "datatypes": "AvailableImageModalites",
+            "raw": "PortalURI",
+            "name": "DatasetName",
+        }
+    )
+    output_df = df[
+        [
+            "DatasetID",
+            "PortalURI",
+            "NumMatchingSubjects",
+            "AvailableImageModalites",
+            "sessions",
+            "tasks",
+            "fmriprep",
+            "mriqc",
+        ]
+    ].copy()
+
+    output_file = Path.cwd() / "datasets_results.tsv"
+    output_df.to_csv(output_file, sep="\t", index=False)
+    cc_log.info(f"Dataset listing saved to: {output_file}")

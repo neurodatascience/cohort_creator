@@ -15,42 +15,48 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Operating System :: MacOS",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"
 ]
-dependencies = ["pandas", "rich", "datalad", "pybids", "rich_argparse"]
+dependencies = [
+    "dash",
+    "datalad",
+    'datalad-fuse',
+    "kaleido",
+    "matplotlib",
+    "mne",
+    'nibabel',
+    "pandas",
+    "pybids",
+    "plotly",
+    "pyyaml",
+    "requests",
+    "rich",
+    "rich_argparse"
+]
 description = "Creates a neuroimaging cohort by aggregating data across datasets."
 dynamic = ["version"]
 license = {text = "MIT"}
 maintainers = [{name = "Rémi Gau", email = "remi.gau@gmail.com"}]
 name = "cohort_creator"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 [project.optional-dependencies]
-browse = ["plotly", "dash"]
 dev = [
-    "cohort_creator[browse,doc,test]",
-    "requests",
-    "pyyaml",
-    "kaleido",
+    "cohort_creator[doc,test]",
     "gender_guesser",
-    "pre-commit",
     "pandas-stubs",
-    'nibabel',
-    'datalad-fuse',
-    "mne"
+    "pre-commit"
 ]
 doc = [
     "furo",
     "myst-parser",
     "numpydoc",
     "sphinx",
-    "sphinx-copybutton",
-    "sphinx-argparse"
+    "sphinx-argparse",
+    "sphinx-copybutton"
 ]
 docs = ["cohort_creator[doc]"]
 test = ["pytest", "pytest-cov"]
@@ -120,7 +126,7 @@ ignore_errors = true
 module = ['tests.*']
 
 [tool.pytest.ini_options]
-addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator"
+addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator --cov-report=html"
 # filterwarnings = ["error"]
 # log_cli_level = "warning"
 minversion = "6.0.0"

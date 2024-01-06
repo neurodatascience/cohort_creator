@@ -2,19 +2,9 @@
 from __future__ import annotations
 
 import pandas as pd
-
-try:
-    from dash import Dash
-except ImportError as e:
-    raise RuntimeError(
-        "Dash must installed for this to work.\n"
-        "Install the cohort creator "
-        "with its development dependencies:\n\n"
-        "pip install 'cohort_creator[dev]'"
-    ) from e
-
 import plotly.express as px
 from dash import callback
+from dash import Dash
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -96,9 +86,9 @@ def update_datatype_histogram(value: int) -> figure:
     return datatypes_histogram(df)
 
 
-def main() -> None:
+def browse() -> None:
     app.run(debug=True)
 
 
 if __name__ == "__main__":
-    main()
+    browse()

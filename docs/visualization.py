@@ -12,10 +12,12 @@ from cohort_creator._plotting import plot_dataset_size_vs_time
 from cohort_creator._plotting import scatter_subject_vs
 from cohort_creator.data.utils import filter_data
 from cohort_creator.data.utils import known_datasets_df
+from cohort_creator.data.utils import save_dataset_listing
 from cohort_creator.data.utils import wrangle_data
 
 
 # filter_config = {"is_openneuro": None, "task": "rest", "physio": True, "datatypes": ["func"]}
+# filter_config = {"is_openneuro": None, "datatypes": ["meg"]}
 filter_config = None
 
 
@@ -78,28 +80,7 @@ def main() -> None:
     fig = histogram_tasks(df)
     fig.write_image(output_dir / "tasks.png", scale=2, width=1000)
 
-    df["DatasetID"] = df["name"].copy()
-    df = df.rename(
-        columns={
-            "nb_subjects": "NumMatchingSubjects",
-            "datatypes": "AvailableImageModalites",
-            "raw": "PortalURI",
-            "name": "DatasetName",
-        }
-    )
-    output_df = df[
-        [
-            "DatasetID",
-            "PortalURI",
-            "NumMatchingSubjects",
-            "AvailableImageModalites",
-            "sessions",
-            "tasks",
-            "fmriprep",
-            "mriqc",
-        ]
-    ].copy()
-    output_df.to_csv("tmp.tsv", sep="\t", index=False)
+    save_dataset_listing(df)
 
 
 if __name__ == "__main__":
