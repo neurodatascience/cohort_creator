@@ -118,9 +118,9 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     - ``nb_tasks``: :obj:`int` Total number of unique tasks in the dataset.
     - ``useful_participants_tsv``: :obj:`bool`
     - ``has_physio``: :obj:`bool` ``True`` if the dataset contains any ``*_physio.tsv.gz`` files.
-    - ``fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
-    - ``freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
-    - ``mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
+    - ``has_fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
+    - ``has_freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
+    - ``has_mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
     - ``is_openneuro``: :obj:`bool` ``True`` if the dataset is hosted on openneuro.
     - ``source``: Specifies the source of the dataset.
     - ``mean_size``: size per subject in kilobytes
@@ -281,6 +281,7 @@ DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
     "fmriprep": None,
     "mriqc": None,
     "physio": None,
+    "participants": None,
     "task": "",
     "datatypes": KNOWN_DATATYPES,
 }
@@ -337,6 +338,8 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
     config = _check_config(config)
 
+    print(config)
+
     mask_openneuro = ALL_TRUE
     if config["is_openneuro"] is not None:
         mask_openneuro = df["is_openneuro"] == config["is_openneuro"]
@@ -353,21 +356,36 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
     mask_fmriprep = ALL_TRUE
     if config["fmriprep"] is not None:
-        mask_fmriprep = df["fmriprep"] == config["fmriprep"]
+        mask_fmriprep = df["has_fmriprep"] == config["fmriprep"]
 
     mask_mriqc = ALL_TRUE
     if config["mriqc"] is not None:
-        mask_mriqc = df["mriqc"] == config["mriqc"]
+        mask_mriqc = df["has_mriqc"] == config["mriqc"]
+
+    mask_participants = ALL_TRUE
+    if config["participants"] is not None:
+        mask_participants = df["useful_participants_tsv"] == config["participants"]
 
     mask_datatypes = df["datatypes"].apply(
         lambda x: len(set(x).intersection(config["datatypes"])) > 0
     )
 
     all_filters = pd.concat(
-        (mask_openneuro, mask_task, mask_fmriprep, mask_mriqc, mask_physio, mask_datatypes), axis=1
+        (
+            mask_openneuro,
+            mask_task,
+            mask_physio,
+            mask_fmriprep,
+            mask_mriqc,
+            mask_participants,
+            mask_datatypes,
+        ),
+        axis=1,
     ).all(axis=1)
 
-    return df[all_filters]
+    filtered_df = df[all_filters]
+
+    return filtered_df
 
 
 def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[str]]:
@@ -381,12 +399,25 @@ def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[
         if key not in config:
             config[key] = value
 
+    for key, value in config.items():
+        config[key] = booleanify(value)
+
     if isinstance(config["datatypes"], bool):
         config["datatypes"] = KNOWN_DATATYPES
     if isinstance(config["datatypes"], str):
         config["datatypes"] = [config["datatypes"]]
 
     return config
+
+
+def booleanify(value: bool | str | list[str] | None) -> bool | str | list[str] | None:
+    if value == "both":
+        return None
+    elif value == "true":
+        return True
+    elif value == "false":
+        return False
+    return value
 
 
 def save_dataset_listing(df: pd.DataFrame) -> None:
