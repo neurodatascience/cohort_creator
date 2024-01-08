@@ -3,7 +3,7 @@ tmp
 cohort_creator/_version.py
 *.docx
 tmp.tsv
-dataset_results.tsv
+datasets_results.tsv
 docs/source/data/*-results.csv
 OpenNeuroDatasets.tsv
 OpenNeuroDerivatives.tsv

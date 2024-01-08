@@ -123,7 +123,6 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     - ``has_fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
     - ``has_freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
     - ``has_mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
-    - ``is_openneuro``: :obj:`bool` ``True`` if the dataset is hosted on openneuro.
     - ``source``: Specifies the source of the dataset.
     - ``mean_size``: size per subject in kilobytes
     - datatype: one column for each BIDS known datatype with ``True`` if this dataset contains that datatype.
@@ -297,35 +296,16 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     config : Any, default=None
         Should be a :obj:`dict` with any of the following keys.
 
-    - ``fmriprep`` : None | bool
-    - ``mriqc`` : None | bool
-    - ``physio`` : None | bool
-    - ``task``: str
-    - ``datatypes`` : any of the BIDS datatypes
+    - ``"fmriprep"`` : None | bool
+    - ``"mriqc"`` : None | bool
+    - ``"physio"`` : None | bool
+    - ``"task"``: str
+    - ``"datatypes"`` : list[str] of any of the BIDS datatypes
+    - ``"datatypes_and_or"`` : "OR" | "AND" if any or all of the datatypes must be present
+    - ``"sources"`` : list[str] source of the dataset (openneuro, abide...)
+    - ``"sources_and_or"`` : "OR" | "AND" if any or all of the sources must be present
 
-    If ``None`` is passed will default to::
-
-        {
-            "fmriprep": None,
-            "mriqc": None,
-            "physio": None,
-            "task": "",
-            "datatypes": [
-                "anat",
-                "dwi",
-                "func",
-                "perf",
-                "fmap",
-                "beh",
-                "meg",
-                "eeg",
-                "ieeg",
-                "pet",
-                "micr",
-                "nirs",
-                "motion",
-            ]
-        }
+    If ``None`` is passed will default to the DEFAULT_CONFIG.
 
     Returns
     -------
