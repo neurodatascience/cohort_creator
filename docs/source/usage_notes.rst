@@ -11,8 +11,8 @@ Command-Line Arguments
    :func: global_parser
 
 
-Examples
---------
+You can use the ``cohort_creator browse`` command to create a ``dataset-results.tsv``
+to use for the next steps.
 
 install
 ^^^^^^^
@@ -84,3 +84,18 @@ all
          --datatype anat func \
          --space T1w MNI152NLin2009cAsym \
          --verbosity 3
+
+Python API
+----------
+
+.. code-block:: python
+
+   from cohort_creator.data.utils import filter_data
+   from cohort_creator.data.utils import known_datasets_df
+   from cohort_creator.data.utils import save_dataset_listing
+   from cohort_creator.data.utils import wrangle_data
+
+   filter_config = {"task": "back", "datatypes": ["func"]}
+   df = wrangle_data(known_datasets_df())
+   df = filter_data(df, config=filter_config)
+   save_dataset_listing(df)

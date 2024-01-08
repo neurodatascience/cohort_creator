@@ -1,3 +1,4 @@
 -   [ ] read header from .nii and not just .nii.gz
 -   [ ] check that URL raw dataset does not give a 404
 -   [ ] detect duplicates
+-   [ ] organize installing dependencies so that things like MNE and nibabel do not need to be installed as they are only used for updating the listing

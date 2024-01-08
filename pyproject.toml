@@ -21,6 +21,7 @@ classifiers = [
 ]
 dependencies = [
     "dash",
+    "dash-bootstrap-components",
     "datalad",
     'datalad-fuse',
     "kaleido",
@@ -107,6 +108,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+    "dash_bootstrap_components.*",
     "datalad.*",
     "rich",
     "rich.logging",

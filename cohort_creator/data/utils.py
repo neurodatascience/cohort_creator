@@ -13,21 +13,23 @@ from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
-KNOWN_DATATYPES = [
-    "anat",
-    "dwi",
-    "func",
-    "perf",
-    "fmap",
-    "beh",
-    "meg",
-    "eeg",
-    "ieeg",
-    "pet",
-    "micr",
-    "nirs",
-    "motion",
-]
+KNOWN_DATATYPES = sorted(
+    [
+        "anat",
+        "dwi",
+        "func",
+        "perf",
+        "fmap",
+        "beh",
+        "meg",
+        "eeg",
+        "ieeg",
+        "pet",
+        "micr",
+        "nirs",
+        "motion",
+    ]
+)
 
 
 @functools.lru_cache(maxsize=1)
@@ -118,10 +120,9 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     - ``nb_tasks``: :obj:`int` Total number of unique tasks in the dataset.
     - ``useful_participants_tsv``: :obj:`bool`
     - ``has_physio``: :obj:`bool` ``True`` if the dataset contains any ``*_physio.tsv.gz`` files.
-    - ``fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
-    - ``freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
-    - ``mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
-    - ``is_openneuro``: :obj:`bool` ``True`` if the dataset is hosted on openneuro.
+    - ``has_fmriprep``: :obj:`bool`` ``True`` if the dataset has knwow fmriprep preprocessed derivatives.
+    - ``has_freesurfer``: :obj:`bool` ``True`` if the dataset has knwow freesurfer preprocessed derivatives.
+    - ``has_mriqc``: :obj:`bool` ``True`` if the dataset has knwow mriqc derivatives.
     - ``source``: Specifies the source of the dataset.
     - ``mean_size``: size per subject in kilobytes
     - datatype: one column for each BIDS known datatype with ``True`` if this dataset contains that datatype.
@@ -147,10 +148,6 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         df[f"has_{der}"] = df[der].apply(lambda x: bool(x))
 
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
-
-    df["is_openneuro"] = df["raw"].apply(
-        lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
-    )
 
     df["source"] = _get_source_study(df)
 
@@ -261,7 +258,7 @@ def _detect_duplicate_datasets(df: pd.DataFrame) -> None:
 def _get_source_study(df: pd.DataFrame) -> list[str]:
     source = []
     for row in df.iterrows():
-        if row[1]["is_openneuro"]:
+        if row[1]["name"].startswith("ds"):
             source.append("openneuro")
         elif row[1]["name"].startswith("ABIDE2"):
             source.append("abide 2")
@@ -277,12 +274,15 @@ def _get_source_study(df: pd.DataFrame) -> list[str]:
 
 
 DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
-    "is_openneuro": None,
     "fmriprep": None,
     "mriqc": None,
     "physio": None,
+    "participants": None,
     "task": "",
     "datatypes": KNOWN_DATATYPES,
+    "datatypes_and_or": "OR",
+    "sources": None,
+    "sources_and_or": "OR",
 }
 
 
@@ -296,37 +296,16 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     config : Any, default=None
         Should be a :obj:`dict` with any of the following keys.
 
-    - ``is_openneuro`` : None | bool
-    - ``fmriprep`` : None | bool
-    - ``mriqc`` : None | bool
-    - ``physio`` : None | bool
-    - ``task``: str
-    - ``datatypes`` : any of the BIDS datatypes
+    - ``"fmriprep"`` : None | bool
+    - ``"mriqc"`` : None | bool
+    - ``"physio"`` : None | bool
+    - ``"task"``: str
+    - ``"datatypes"`` : list[str] of any of the BIDS datatypes
+    - ``"datatypes_and_or"`` : "OR" | "AND" if any or all of the datatypes must be present
+    - ``"sources"`` : list[str] source of the dataset (openneuro, abide...)
+    - ``"sources_and_or"`` : "OR" | "AND" if any or all of the sources must be present
 
-    If ``None`` is passed will default to::
-
-        {
-            "is_openneuro": None,
-            "fmriprep": None,
-            "mriqc": None,
-            "physio": None,
-            "task": "",
-            "datatypes": [
-                "anat",
-                "dwi",
-                "func",
-                "perf",
-                "fmap",
-                "beh",
-                "meg",
-                "eeg",
-                "ieeg",
-                "pet",
-                "micr",
-                "nirs",
-                "motion",
-            ]
-        }
+    If ``None`` is passed will default to the DEFAULT_CONFIG.
 
     Returns
     -------
@@ -337,9 +316,13 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
     config = _check_config(config)
 
-    mask_openneuro = ALL_TRUE
-    if config["is_openneuro"] is not None:
-        mask_openneuro = df["is_openneuro"] == config["is_openneuro"]
+    mask_sources = ALL_TRUE
+    if config["sources"] is not None:
+        mask_sources = df["source"].apply(lambda x: len({x}.intersection(config["sources"])) > 0)
+        if config["sources_and_or"] == "AND":
+            mask_sources = df["source"].apply(
+                lambda x: len({x}.intersection(config["sources"])) == len(config["sources"])
+            )
 
     # better filtering should make sure
     # that the one of the requested datatypes has the task of interest
@@ -353,21 +336,40 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
     mask_fmriprep = ALL_TRUE
     if config["fmriprep"] is not None:
-        mask_fmriprep = df["fmriprep"] == config["fmriprep"]
+        mask_fmriprep = df["has_fmriprep"] == config["fmriprep"]
 
     mask_mriqc = ALL_TRUE
     if config["mriqc"] is not None:
-        mask_mriqc = df["mriqc"] == config["mriqc"]
+        mask_mriqc = df["has_mriqc"] == config["mriqc"]
+
+    mask_participants = ALL_TRUE
+    if config["participants"] is not None:
+        mask_participants = df["useful_participants_tsv"] == config["participants"]
 
     mask_datatypes = df["datatypes"].apply(
         lambda x: len(set(x).intersection(config["datatypes"])) > 0
     )
+    if config["datatypes_and_or"] == "AND":
+        mask_datatypes = df["datatypes"].apply(
+            lambda x: len(set(x).intersection(config["datatypes"])) == len(config["datatypes"])
+        )
 
     all_filters = pd.concat(
-        (mask_openneuro, mask_task, mask_fmriprep, mask_mriqc, mask_physio, mask_datatypes), axis=1
+        (
+            mask_task,
+            mask_physio,
+            mask_fmriprep,
+            mask_mriqc,
+            mask_participants,
+            mask_datatypes,
+            mask_sources,
+        ),
+        axis=1,
     ).all(axis=1)
 
-    return df[all_filters]
+    filtered_df = df[all_filters]
+
+    return filtered_df
 
 
 def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[str]]:
@@ -381,12 +383,28 @@ def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[
         if key not in config:
             config[key] = value
 
+    for key, value in config.items():
+        config[key] = booleanify(value)
+
     if isinstance(config["datatypes"], bool):
         config["datatypes"] = KNOWN_DATATYPES
     if isinstance(config["datatypes"], str):
         config["datatypes"] = [config["datatypes"]]
 
+    if isinstance(config["sources"], str):
+        config["sources"] = [config["sources"]]
+
     return config
+
+
+def booleanify(value: bool | str | list[str] | None) -> bool | str | list[str] | None:
+    if value == "both":
+        return None
+    elif value == "true":
+        return True
+    elif value == "false":
+        return False
+    return value
 
 
 def save_dataset_listing(df: pd.DataFrame) -> None:
