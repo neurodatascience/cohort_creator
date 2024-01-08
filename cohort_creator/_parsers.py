@@ -165,14 +165,9 @@ It will also create a dataset-results.tsv with the filtered list of datasets."""
         formatter_class=parser.formatter_class,
     )
     update_parser.add_argument(
-        "--reset",
-        action="store_true",
-        help="Will replace the internal listing of the cohort_creator once the update is done.",
-    )
-    update_parser.add_argument(
         "--debug",
         action="store_true",
-        help="Only runs the update for a subset of datasets. Set reset to False.",
+        help="Only runs the update for a few subset of datasets.",
     )
     update_parser.add_argument(
         "--verbosity",

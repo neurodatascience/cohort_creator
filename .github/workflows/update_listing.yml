@@ -41,7 +41,7 @@ jobs:
                 git config --global --add user.email 42@H2G2.com
 
         -   name: Update datasets
-            run: cohort_creator update --reset
+            run: cohort_creator update
 
         -   name: Create Pull Request
             uses: peter-evans/create-pull-request@v5
