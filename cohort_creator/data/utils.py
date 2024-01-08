@@ -13,21 +13,23 @@ from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
-KNOWN_DATATYPES = [
-    "anat",
-    "dwi",
-    "func",
-    "perf",
-    "fmap",
-    "beh",
-    "meg",
-    "eeg",
-    "ieeg",
-    "pet",
-    "micr",
-    "nirs",
-    "motion",
-]
+KNOWN_DATATYPES = sorted(
+    [
+        "anat",
+        "dwi",
+        "func",
+        "perf",
+        "fmap",
+        "beh",
+        "meg",
+        "eeg",
+        "ieeg",
+        "pet",
+        "micr",
+        "nirs",
+        "motion",
+    ]
+)
 
 
 @functools.lru_cache(maxsize=1)
@@ -148,10 +150,6 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
 
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))
 
-    df["is_openneuro"] = df["raw"].apply(
-        lambda x: bool(x.startswith("https://github.com/OpenNeuroDatasets"))
-    )
-
     df["source"] = _get_source_study(df)
 
     # standardize size
@@ -261,7 +259,7 @@ def _detect_duplicate_datasets(df: pd.DataFrame) -> None:
 def _get_source_study(df: pd.DataFrame) -> list[str]:
     source = []
     for row in df.iterrows():
-        if row[1]["is_openneuro"]:
+        if row[1]["name"].startswith("ds"):
             source.append("openneuro")
         elif row[1]["name"].startswith("ABIDE2"):
             source.append("abide 2")
@@ -277,13 +275,15 @@ def _get_source_study(df: pd.DataFrame) -> list[str]:
 
 
 DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
-    "is_openneuro": None,
     "fmriprep": None,
     "mriqc": None,
     "physio": None,
     "participants": None,
     "task": "",
     "datatypes": KNOWN_DATATYPES,
+    "datatypes_and_or": "OR",
+    "sources": None,
+    "sources_and_or": "OR",
 }
 
 
@@ -297,7 +297,6 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     config : Any, default=None
         Should be a :obj:`dict` with any of the following keys.
 
-    - ``is_openneuro`` : None | bool
     - ``fmriprep`` : None | bool
     - ``mriqc`` : None | bool
     - ``physio`` : None | bool
@@ -307,7 +306,6 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     If ``None`` is passed will default to::
 
         {
-            "is_openneuro": None,
             "fmriprep": None,
             "mriqc": None,
             "physio": None,
@@ -338,11 +336,13 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
     config = _check_config(config)
 
-    print(config)
-
-    mask_openneuro = ALL_TRUE
-    if config["is_openneuro"] is not None:
-        mask_openneuro = df["is_openneuro"] == config["is_openneuro"]
+    mask_sources = ALL_TRUE
+    if config["sources"] is not None:
+        mask_sources = df["source"].apply(lambda x: len({x}.intersection(config["sources"])) > 0)
+        if config["sources_and_or"] == "AND":
+            mask_sources = df["source"].apply(
+                lambda x: len({x}.intersection(config["sources"])) == len(config["sources"])
+            )
 
     # better filtering should make sure
     # that the one of the requested datatypes has the task of interest
@@ -369,16 +369,20 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     mask_datatypes = df["datatypes"].apply(
         lambda x: len(set(x).intersection(config["datatypes"])) > 0
     )
+    if config["datatypes_and_or"] == "AND":
+        mask_datatypes = df["datatypes"].apply(
+            lambda x: len(set(x).intersection(config["datatypes"])) == len(config["datatypes"])
+        )
 
     all_filters = pd.concat(
         (
-            mask_openneuro,
             mask_task,
             mask_physio,
             mask_fmriprep,
             mask_mriqc,
             mask_participants,
             mask_datatypes,
+            mask_sources,
         ),
         axis=1,
     ).all(axis=1)
@@ -406,6 +410,9 @@ def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[
         config["datatypes"] = KNOWN_DATATYPES
     if isinstance(config["datatypes"], str):
         config["datatypes"] = [config["datatypes"]]
+
+    if isinstance(config["sources"], str):
+        config["sources"] = [config["sources"]]
 
     return config
 

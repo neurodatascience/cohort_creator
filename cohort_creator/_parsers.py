@@ -137,7 +137,9 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
 
     browse_parser = subparsers.add_parser(
         "browse",
-        help="Launch a dash app in the browser to visualize the listing of known datasets.",
+        help="""Launch a dash app in the browser
+to browse, visualize and filter the listing of known datasets.
+It will also create a dataset-results.tsv with the filtered list of datasets.""",
         formatter_class=parser.formatter_class,
     )
     browse_parser.add_argument(
@@ -150,6 +152,11 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         default=2,
         type=int,
         nargs=1,
+    )
+    browse_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Runs the Dash app in debug mode.",
     )
 
     update_parser = subparsers.add_parser(

@@ -67,7 +67,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     set_verbosity(verbosity)
 
     if args.command in ["browse"]:
-        browse()
+        debug = getattr(args, "debug", False)
+        browse(debug=debug)
         return
 
     if args.command in ["update"]:

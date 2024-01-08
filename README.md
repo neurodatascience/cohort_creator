@@ -70,12 +70,6 @@ Other dependencies are listed in the pyproject.toml file.
 pip install cohort_creator
 ```
 
-### Installation to browse or update the known datasets
-
-```bash
-pip install 'cohort_creator[dev]'
-```
-
 ### Installation from source
 
 ```bash
@@ -106,35 +100,3 @@ over correctly if they are not in the root of the dataset or the same folder as
 the data file.
 
 <!-- **FIX** use pybids / ancpbids for data indexing and querying. -->
-
-<!-- ## Demo
-
-To get from openneuro-derivatives for all T1w
-
--   the MRIQC output for each file
--   the corresponding T1W file
-
-run the following command from within the cohort_creator folder:
-
-```bash
-cohort_creator install \
-  --dataset_listing inputs/datasets_with_mriqc.tsv \
-  --participant_listing inputs/participants_with_mriqc.tsv \
-  --output_dir outputs \
-  --dataset_types raw mriqc \
-  --verbosity 3
-
-cohort_creator get \
-  --dataset_listing inputs/datasets_with_mriqc.tsv \
-  --participant_listing inputs/participants_with_mriqc.tsv \
-  --output_dir outputs \
-  --dataset_types raw mriqc \
-  --verbosity 3
-
-cohort_creator copy \
-  --dataset_listing inputs/datasets_with_mriqc.tsv \
-  --participant_listing inputs/participants_with_mriqc.tsv \
-  --output_dir outputs \
-  --dataset_types raw mriqc \
-  --verbosity 3
-``` -->

@@ -29,7 +29,7 @@ def main() -> None:
     df = filter_data(df, config=filter_config)
 
     fig = plot_dataset_size_vs_time(df)
-    fig.show()
+    fig.write_image(output_dir / "size_vs_time.png", scale=2, width=1000)
 
     fig = scatter_subject_vs(df, y="nb_sessions", size=None, color="source")
     fig.write_image(output_dir / "subject_vs_sessions.png", scale=2, width=1000)
@@ -43,7 +43,6 @@ def main() -> None:
     df_duration = df[df["total_duration"] > 0]
     fig = scatter_subject_vs(df_duration, y="total_duration", size=None, color="source", log_y=True)
     fig.write_image(output_dir / "subject_vs_total_duration.png", scale=2, width=1000)
-    fig.show()
 
     fig = scatter_subject_vs(
         filter_data(df, {"is_openneuro": True}), y="mean_size", size=None, color="has_mriqc"

@@ -15,6 +15,7 @@ LABELS = {
     "mean_size": "data per participants (bytes)",
     "nb_tasks": "number of tasks",
     "nb_datatypes": "number of datatypes",
+    "total_duration": "'scan time' per participants (hours)",
 }
 
 
@@ -53,27 +54,9 @@ def histogram_tasks(df: pd.Dataframe) -> figure:
 
     count = new_df.tasks.value_counts()
     order = [i[0] for i in count.items()]
-    return px.histogram(new_df, x="tasks", category_orders=dict(tasks=order))
-
-
-def plot_against_time(df: pd.DataFrame, y: str | list[str], cumulative: bool) -> figure:
-    df = df.sort_values(by=["created_on"])
-
-    if isinstance(y, str):
-        y = [y]
-
-    if cumulative:
-        tmp = []
-        for col in y:
-            cumsum = df[col].cumsum()
-            col = f"cumsum_{col}"
-            df[col] = cumsum
-            tmp.append(col)
-        y = tmp
-
-    fig = px.line(df, x="created_on", y=y)
-
-    return fig
+    return px.histogram(
+        new_df, x="tasks", category_orders=dict(tasks=order), title="tasks distribution"
+    )
 
 
 def plot_dataset_size_vs_time(df: pd.DataFrame) -> figure:
@@ -98,9 +81,9 @@ def plot_dataset_size_vs_time(df: pd.DataFrame) -> figure:
             ),
             secondary_y=secondary_y,
         )
-    fig.update_layout(title="Continuous, variable value error bars", hovermode="x")
-    fig.update_yaxes(title_text="cumulative data size", secondary_y=False, nticks=10)
-    fig.update_yaxes(title_text="cumulative data size", secondary_y=False, nticks=10)
+    fig.update_layout(title="Cumulative BIDS data across time", hovermode="x")
+    fig.update_yaxes(title_text="data size [bytes]", secondary_y=False, nticks=10)
+    fig.update_yaxes(title_text="number of subjects", secondary_y=True, nticks=10)
     fig.update_xaxes(title_text="time")
 
     return fig
