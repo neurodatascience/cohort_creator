@@ -23,19 +23,14 @@ datalad install ///openneuro --recursive -J 12
 ```
 
 You can help the code track those folders
-by modifying `local_paths.datalad` the `config.yml`
+by modifying `local_paths.datalad` the `cohort_creator/data/config.yml`
 
-Additional datasets that are not in the datalad superdatasets
-can be installed using `install_missing_datasets.py`.
-
-For the non-openneuro datasets, you can use the `install_extra_datasets.sh` script.
+For the non-openneuro datasets, you can use the `tools/install_extra_datasets.sh` script.
 
 ## Updating the list of datasets known to cohort_creator
 
-This can be done by running `update_openneuro.py`.
-
 If the listing must be regenerated from scratch (in case old entries need to be updated)
-use `list_openneuro.py`.
+use `tools/list_openneuro.py`.
 
 ## Gihub API Tokens
 
@@ -45,4 +40,4 @@ The github api has a rate limit of the number of requests per hour.
 
 To increase this limit you can create a github api token,
 save it to a text file (not in the repository)
-and add the path to it in the `config.yml` file.
+and add the path to it in the `cohort_creator/data/config.yml` file.

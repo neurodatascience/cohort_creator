@@ -331,8 +331,14 @@ def list_datasets_in_dir(
         print()
         cc_log.info(f"{dataset_pth.name}")
 
-        if get_nb_subjects(dataset_pth) == 0:
+        response = requests.get(get_raw_url(dataset_pth))
+        if response.status_code != 200:
+            cc_log.warning(f"error {response.status_code} for dataset {dataset_pth}")
             continue
+        if get_nb_subjects(dataset_pth) == 0:
+            cc_log.warning(f"No subject in dataset {dataset_pth}")
+            continue
+
         i += 1
         if debug and i > 10:
             break
@@ -351,16 +357,20 @@ def list_datasets_in_dir(
     return datasets
 
 
+def get_raw_url(dataset_pth: Path) -> str:
+    dataset_name = dataset_pth.name
+    if dataset_name.startswith("ds"):
+        return f"{URL_OPENNEURO}{dataset_name}"
+    else:
+        return api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
+
+
 def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
     dataset_name = dataset_pth.name
 
     dataset = new_dataset(f"{study_prefix}{dataset_name}")
 
-    if dataset_name.startswith("ds"):
-        raw_url = f"{URL_OPENNEURO}{dataset_name}"
-    else:
-        raw_url = api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
-    dataset["raw"] = raw_url
+    dataset["raw"] = get_raw_url(dataset_pth)
 
     dataset["created_on"] = created_on(dataset_pth)
 
