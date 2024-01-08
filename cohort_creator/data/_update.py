@@ -84,11 +84,16 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
             cc_log.info(f"  data already present at {data_pth}")
             continue
         else:
+            source = f"https://github.com/{OPENNEURO}/{dataset}"
+            response = requests.get(source)
+            if response.status_code != 200:
+                cc_log.warning(f"error {response.status_code} for dataset {source}")
+                continue
             cc_log.info(f"installing: {data_pth}")
             try:
                 api.install(
                     path=data_pth,
-                    source=f"https://github.com/{OPENNEURO}/{dataset}",
+                    source=source,
                     recursive=False,
                 )
             except IncompleteResultsError:
@@ -165,7 +170,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
 
     output_file = Path.cwd() / "openneuro.tsv"
     if reset:
-        output_file = input_file
+        output_file = _openneuro_listing_tsv()
     cc_log.info(f"Saving to {output_file}")
     datasets_df.to_csv(output_file, index=False, sep="\t")
 
