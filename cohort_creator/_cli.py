@@ -72,11 +72,8 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         return
 
     if args.command in ["update"]:
-        reset = getattr(args, "reset", False)
         debug = getattr(args, "debug", True)
-        if debug:
-            reset = False
-        update(reset=reset, debug=debug)
+        update(debug=debug)
         return
 
     output_dir = Path(args.output_dir[0]).resolve()

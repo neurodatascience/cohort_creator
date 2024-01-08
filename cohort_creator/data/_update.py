@@ -80,24 +80,26 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
 
     for dataset in unknown_datasets:
         data_pth = output_dir / dataset
+
         if data_pth.exists():
             cc_log.info(f"  data already present at {data_pth}")
             continue
-        else:
-            source = f"https://github.com/{OPENNEURO}/{dataset}"
-            response = requests.get(source)
-            if response.status_code != 200:
-                cc_log.warning(f"error {response.status_code} for dataset {source}")
-                continue
-            cc_log.info(f"installing: {data_pth}")
-            try:
-                api.install(
-                    path=data_pth,
-                    source=source,
-                    recursive=False,
-                )
-            except IncompleteResultsError:
-                cc_log.error(f" could not install: {data_pth}")
+
+        source = f"https://github.com/{OPENNEURO}/{dataset}.git"
+        response = requests.get(source)
+        if response.status_code != 200:
+            cc_log.warning(f"error {response.status_code} for dataset {source}")
+            continue
+
+        cc_log.info(f"installing: {data_pth}")
+        try:
+            api.install(
+                path=data_pth,
+                source=source,
+                recursive=False,
+            )
+        except IncompleteResultsError:
+            cc_log.error(f" could not install: {data_pth}")
 
 
 def list_openneuro_raw(use_superdataset: bool) -> set[str]:
@@ -142,8 +144,9 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
 
     Parameters
     ----------
-    reset : bool
-        if ``True``, will overwrite the tsv file with the current openneuro datasets
+    debug : bool
+        If ``False``, will overwrite the tsv file with the current openneuro datasets.
+        If ``True`` will save output in current directory and only index a few datasets.
     """
     datasets = _load_known_datasets(_openneuro_listing_tsv())
     datasets.replace({pd.NA: "n/a"}, inplace=True)
@@ -168,9 +171,9 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
 
     datasets_df["created_on"] = datasets_df["created_on"].apply(lambda x: pd.to_datetime(x))
 
-    output_file = Path.cwd() / "openneuro.tsv"
-    if reset:
-        output_file = _openneuro_listing_tsv()
+    output_file = _openneuro_listing_tsv()
+    if debug:
+        output_file = Path.cwd() / "openneuro.tsv"
     cc_log.info(f"Saving to {output_file}")
     datasets_df.to_csv(output_file, index=False, sep="\t")
 
@@ -311,6 +314,28 @@ def list_datasets_in_dir(
     study_prefix: str = "",
     include: None | list[str] = None,
 ) -> dict[str, list[Any]]:
+    """List datasets in a directory.
+
+    Parameters
+    ----------
+    datasets : dict[str, list[Any]]
+        _description_
+    path : Path
+        _description_
+    debug : bool
+        If ``True`` will only go through a few datasets before returning.
+    dataset_name_prefix : str, optional
+        _description_, by default "ds"
+    study_prefix : str, optional
+        _description_, by default ""
+    include : None | list[str], optional
+        _description_, by default None
+
+    Returns
+    -------
+    dict[str, list[Any]]
+        _description_
+    """
     print()
     cc_log.info(f"Listing datasets in {path}")
 
