@@ -33,8 +33,16 @@ from cohort_creator._utils import load_participant_listing
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import set_name
 from cohort_creator._utils import set_version
-from cohort_creator._utils import validate_dataset_types
+from cohort_creator._utils import validate_dataset_types, return_dataset_id
 
+@pytest.mark.parametrize("extension", ["", ".git"])
+@pytest.mark.parametrize("PortalURI", 
+                         ["https://github.com/OpenNeuroDatasets/ds000208",
+                          "https://github.com/OpenNeuroDatasets-JSONLD/ds000208"])
+def test_return_dataset_id(PortalURI, extension):
+    datasets = pd.DataFrame({"DatasetID": ["ds000208"],	"PortalURI": [f"{PortalURI}{extension}"]})
+    dataset_id = return_dataset_id(datasets=datasets, dataset_name= "ds000208")
+    assert dataset_id == "ds000208"
 
 def test_create_tsv_participant_session_in_datasets(bids_examples, tmp_path):
     tsv_file = create_tsv_participant_session_in_datasets(

@@ -161,8 +161,8 @@ def get_participant_ids(
 
 
 def return_dataset_id(datasets: pd.DataFrame, dataset_name: str) -> str:
-    dataset_uri = return_dataset_uri(dataset_name)
-    mask = datasets["PortalURI"] == dataset_uri
+    dataset_uri = return_dataset_uri_regex(dataset_name)
+    mask = datasets.PortalURI.str.contains(dataset_uri, regex=True)
     return datasets[mask]["DatasetID"].values[0]
 
 
@@ -590,8 +590,8 @@ def return_datasets_nodes(participant_listing: pd.DataFrame) -> list[str]:
     return list(participant_listing["DatasetID"].unique())
 
 
-def return_dataset_uri(dataset_name: str) -> str:
-    return f"https://github.com/OpenNeuroDatasets-JSONLD/{dataset_name}.git"
+def return_dataset_uri_regex(dataset_name: str) -> str:
+    return f"^https://github.com/OpenNeuroDatasets(?:-JSONLD)?/{dataset_name}(?:.git)?$"
 
 
 def list_participants_in_dataset(data_pth: Path) -> list[str]:
