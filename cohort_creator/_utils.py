@@ -599,7 +599,7 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
 
 
 def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
-    openneuro = known_datasets_df()
-    mask = openneuro.name == dataset_name
-    url = openneuro[mask][dataset_type].values[0]
+    datasets = known_datasets_df()
+    mask = datasets.name == dataset_name
+    url = datasets[mask][dataset_type].values[0]
     return False if pd.isna(url) else url

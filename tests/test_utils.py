@@ -74,6 +74,9 @@ def test_get_dataset_url():
     assert get_dataset_url("ds000113", "mriqc") is False
     assert isinstance(get_dataset_url("ds000001", "mriqc"), str)
 
+# def test_get_dataset_url_subfolder():
+#     expected = "https://github.com/OpenNeuroDatasets/ds002158"
+#     assert get_dataset_url("ds002158", "fmriprep") == expected
 
 def test_get_pipeline_version(bids_examples):
     assert get_pipeline_version(bids_examples / "ds000001-fmriprep") == "20.2.0rc0"
