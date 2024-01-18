@@ -6,14 +6,24 @@ Rerun to update values of "old" datasets.
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from cohort_creator.data._update import init_dataset
 from cohort_creator.data._update import list_datasets_in_dir
+from cohort_creator.logger import cc_logger
 
 DEBUG = False
+UPDATE_MERGE = False
+
+cc_log = cc_logger()
+
+cc_log.setLevel("DEBUG")
+
+logging.getLogger("datalad").setLevel(logging.WARNING)
+logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
 def main() -> None:
@@ -22,11 +32,21 @@ def main() -> None:
     base_path = Path(__file__).parent / "tmp"
 
     datasets = list_datasets_in_dir(
-        datasets, base_path / "abide", debug=DEBUG, dataset_name_prefix="", study_prefix="ABIDE_"
+        datasets,
+        base_path / "abide",
+        debug=DEBUG,
+        dataset_name_prefix="",
+        study_prefix="ABIDE_",
+        update_merge=UPDATE_MERGE,
     )
 
     datasets = list_datasets_in_dir(
-        datasets, base_path / "abide2", debug=DEBUG, dataset_name_prefix="", study_prefix="ABIDE2_"
+        datasets,
+        base_path / "abide2",
+        debug=DEBUG,
+        dataset_name_prefix="",
+        study_prefix="ABIDE2_",
+        update_merge=UPDATE_MERGE,
     )
 
     datasets = list_datasets_in_dir(
@@ -35,10 +55,16 @@ def main() -> None:
         debug=DEBUG,
         dataset_name_prefix="",
         study_prefix="ADHD200_",
+        update_merge=UPDATE_MERGE,
     )
 
     datasets = list_datasets_in_dir(
-        datasets, base_path / "corr", debug=DEBUG, dataset_name_prefix="", study_prefix="CORR_"
+        datasets,
+        base_path / "corr",
+        debug=DEBUG,
+        dataset_name_prefix="",
+        study_prefix="CORR_",
+        update_merge=UPDATE_MERGE,
     )
 
     datasets = list_datasets_in_dir(
@@ -56,6 +82,7 @@ def main() -> None:
             "shinobi",
             "shinobi_training",
         ],
+        update_merge=UPDATE_MERGE,
     )
 
     datasets_df = pd.DataFrame.from_dict(datasets)

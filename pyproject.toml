@@ -81,7 +81,7 @@ line-length = 100
 safe = true
 
 [tool.codespell]
-skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,cohort_creator/data/openneuro.tsv"
+skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,openneuro.tsv,locations.tsv"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "cohort_creator/_version.py"
@@ -108,19 +108,20 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+    "bids.*",
+    "cohort_creator._version",
+    "dash.*",
     "dash_bootstrap_components.*",
     "datalad.*",
+    "geopy.*",
+    "matplotlib",
+    "mne.*",
+    "pandas",
+    "plotly.*",
+    "pytest",
     "rich",
     "rich.logging",
-    "pandas",
-    "pytest",
-    "cohort_creator._version",
-    "bids.*",
-    "rich_argparse",
-    "plotly.*",
-    "matplotlib",
-    "dash.*",
-    "mne.*"
+    "rich_argparse"
 ]
 
 [[tool.mypy.overrides]]

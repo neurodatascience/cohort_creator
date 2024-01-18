@@ -433,3 +433,29 @@ def save_dataset_listing(df: pd.DataFrame) -> None:
     output_file = Path.cwd() / "datasets_results.tsv"
     output_df.to_csv(output_file, sep="\t", index=False)
     cc_log.info(f"Dataset listing saved to: {output_file}")
+
+
+def _count_extensions(df: pd.DataFrame, datatype: str) -> pd.DataFrame:
+    if datatype == "eeg":
+        file_formats = {"bdf": 0, "edf": 0, "eeg": 0, "set": 0}
+    elif datatype == "ieeg":
+        file_formats = {"nwb": 0, "edf": 0, "eeg": 0, "set": 0, "mefd": 0}
+    elif datatype == "meg":
+        file_formats = {".ds": 0, "": 0, ".fif": 0, ".con": 0, ".kdf": 0, ".raw.mhd": 0}
+
+    datatype_df = df[df[datatype]]
+
+    for row in datatype_df.iterrows():
+        for key, value in row[1][f"{datatype}_file_formats"].items():
+            if value > 0:
+                file_formats[key] += 1
+
+    for key, value in file_formats.items():
+        file_formats[key] = value / len(datatype_df) * 100
+
+    data: dict[str, list[str | float]] = {"extension": [], "count": []}
+    for key, value in file_formats.items():
+        data["extension"].append(key)
+        data["count"].append(value)
+
+    return pd.DataFrame(data)
