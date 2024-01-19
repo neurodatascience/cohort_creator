@@ -21,6 +21,7 @@ from cohort_creator._utils import copy_top_files
 from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import create_tsv_participant_session_in_datasets
 from cohort_creator._utils import dataset_path
+from cohort_creator._utils import derivative_in_subfolder
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_filters
@@ -79,6 +80,7 @@ def install_datasets(
         _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=output_dir)
 
     if generate_participant_listing:
+        cc_log.info(f" Getting pybids layout of the following datasets: {dataset_}")
         dataset_paths = [dataset_path(sourcedata(output_dir), dataset_) for dataset_ in datasets]
         create_tsv_participant_session_in_datasets(
             dataset_paths=dataset_paths, output_dir=sourcedata(output_dir)
@@ -87,24 +89,30 @@ def install_datasets(
 
 def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> None:
     if not is_known_dataset(dataset_name):
-        cc_log.warning(f"  {dataset_name} not found in openneuro")
+        cc_log.warning(f"  {dataset_name} not found in list of known datasets")
         return None
 
     for dataset_type_ in dataset_types:
-        if not get_dataset_url(dataset_name, dataset_type_):
-            cc_log.debug(f"      no {dataset_type_} for {dataset_name}")
+        uri = get_dataset_url(dataset_name, dataset_type_)
+
+        if not uri:
+            cc_log.debug(f"  no {dataset_type_} for {dataset_name}")
             continue
+
+        original_datatype = dataset_type_
+
+        if dataset_type_ != "raw" and derivative_in_subfolder(dataset_name, dataset_type_):
+            uri = uri.split("/tree")[0]
+            dataset_type_ = "raw"
 
         derivative = None if dataset_type_ == "raw" else dataset_type_
         data_pth = dataset_path(sourcedata(output_dir), dataset_name, derivative=derivative)
 
         if data_pth.exists():
-            cc_log.debug(f"  {dataset_type_} data already present at {data_pth}")
+            cc_log.debug(f"  {original_datatype} data already present at {data_pth}")
         else:
-            cc_log.info(f"    installing {dataset_type_} data at: {data_pth}")
-            if uri := get_dataset_url(dataset_name, dataset_type_):
-                print(output_dir)
-                api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
+            cc_log.info(f"   installing {original_datatype} data at: {data_pth}")
+            api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
 
 
 def get_data(
@@ -113,12 +121,12 @@ def get_data(
     participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: str | list[str],
+    task: str,
     space: str,
     jobs: int,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
-    """Get the data for specified participants / datatypes / space \
-    from preinstalled datalad datasets / dataset_types.
+    """Get the data for specified inputs from preinstalled datasets.
 
     Parameters
     ----------
@@ -137,6 +145,9 @@ def get_data(
     space : str
         Space of the data to get (only applies when dataset_types requested includes fmriprep).
 
+    task : str
+        Task of the data to get (only applies when datatypes requested support task entities).
+
     jobs : int
         Number of jobs to use for parallelization during datalad get operation.
 
@@ -153,32 +164,37 @@ def get_data(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        # if no participants_ids then we grab all the participants
-        # from the raw dataset
-        if participants is not None:
-            participants_ids = get_participant_ids(
-                datasets=datasets, participants=participants, dataset_name=dataset_
-            )
-            if not participants_ids:
-                cc_log.warning(f"  no participants in dataset {dataset_}")
-                continue
-            cc_log.info(f"  getting data for: {participants_ids}")
-
-        else:
-            data_pth = dataset_path(sourcedata(output_dir), dataset_)
-            participants_ids = list_participants_in_dataset(data_pth)
-            cc_log.info(f"  getting data for all participants in dataset {dataset_}")
+        participants_ids = return_participants_ids(
+            output_dir=output_dir,
+            datasets=datasets,
+            participants=participants,
+            dataset_name=dataset_,
+        )
+        if participants_ids is None:
+            continue
 
         for dataset_type_ in dataset_types:
-            if not get_dataset_url(dataset_, dataset_type_):
+            uri = get_dataset_url(dataset_, dataset_type_)
+
+            if not uri:
                 cc_log.debug(f"      no {dataset_type_} for {dataset_}")
                 continue
             cc_log.info(f"  {dataset_type_}")
+
+            original_datatype = dataset_type_
+
+            if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
+                dataset_type_ = "raw"
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
             data_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
+
+            derivative_subfolder = ""
+            if dataset_type_ != original_datatype:
+                derivative_subfolder = uri.split("tree/main/")[1]
+            data_pth = data_pth / derivative_subfolder
 
             for subject in participants_ids:
                 if not is_subject_in_dataset(subject, data_pth):
@@ -194,8 +210,9 @@ def get_data(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
+                    task=task,
                     space=space,
-                    dataset_type=dataset_type_,
+                    dataset_type=original_datatype,
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
                     jobs=jobs,
@@ -203,10 +220,37 @@ def get_data(
                 )
 
 
+def return_participants_ids(
+    output_dir: Path,
+    datasets: pd.DataFrame,
+    participants: pd.DataFrame | None,
+    dataset_name: str,
+    base_msg: str = "getting data for",
+) -> list[str] | None:
+    # if no participants_ids then we grab all the participants
+    # from the raw dataset
+    if participants is not None:
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_name
+        )
+        if not participants_ids:
+            cc_log.warning(f"  no participants in dataset {dataset_name}")
+            return None
+        cc_log.info(f"  {base_msg}: {participants_ids}")
+
+    else:
+        data_pth = dataset_path(sourcedata(output_dir), dataset_name)
+        participants_ids = list_participants_in_dataset(data_pth)
+        cc_log.info(f"  {base_msg} all participants in dataset {dataset_name}")
+
+    return participants_ids
+
+
 def _get_data_this_subject(
     subject: str,
     sessions: list[str] | list[None],
     datatypes: list[str],
+    task: str,
     space: str,
     dataset_type: str,
     data_pth: Path,
@@ -225,10 +269,11 @@ def _get_data_this_subject(
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
+            task=task,
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
+            cc_log.warning(no_files_found_msg(data_pth, subject, datatype_, filters))
             continue
         cc_log.debug(f"    {subject} - getting files:\n     {files}")
         try:
@@ -243,6 +288,7 @@ def construct_cohort(
     participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: list[str],
+    task: str,
     space: str,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
     skip_group_mriqc: bool = False,
@@ -263,6 +309,9 @@ def construct_cohort(
     datatypes : list[str]
         Can contain any of: ``"anat'``, ``"func"``
 
+    task : str
+        Task of the data to get (only applies when datatypes requested support task entities).
+
     space : str
         Space of the data to get (only applies when dataset_types requested includes fmriprep).
 
@@ -281,29 +330,38 @@ def construct_cohort(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        # if no participants_ids then we grab all the participants
-        # from the raw dataset
-        if participants is not None:
-            participants_ids = get_participant_ids(
-                datasets=datasets, participants=participants, dataset_name=dataset_
-            )
-            if not participants_ids:
-                cc_log.warning(f"  no participants in dataset {dataset_}")
-                continue
-            cc_log.info(f"  creating cohort with: {participants_ids}")
-        else:
-            data_pth = dataset_path(sourcedata(output_dir), dataset_)
-            participants_ids = list_participants_in_dataset(data_pth)
-            cc_log.info(f"  creating cohort with all participants in dataset {dataset_}")
+        participants_ids = return_participants_ids(
+            output_dir=output_dir,
+            datasets=datasets,
+            participants=participants,
+            dataset_name=dataset_,
+            base_msg="creating cohort with",
+        )
+        if participants_ids is None:
+            continue
+
+        data_pth = dataset_path(sourcedata(output_dir), dataset_)
 
         for dataset_type_ in dataset_types:
-            if not get_dataset_url(dataset_, dataset_type_):
+            uri = get_dataset_url(dataset_, dataset_type_)
+
+            if not uri:
                 cc_log.debug(f"      no {dataset_type_} for {dataset_}")
                 continue
             cc_log.info(f"  {dataset_type_}")
 
+            original_datatype = dataset_type_
+
+            if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
+                dataset_type_ = "raw"
+
             derivative = None if dataset_type_ == "raw" else dataset_type_
             src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
+
+            derivative_subfolder = ""
+            if dataset_type_ != original_datatype:
+                derivative_subfolder = uri.split("tree/main/")[1]
+            src_pth = src_pth / derivative_subfolder
 
             target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
@@ -325,7 +383,8 @@ def construct_cohort(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
-                    dataset_type=dataset_type_,
+                    dataset_type=original_datatype,
+                    task=task,
                     space=space,
                     src_pth=src_pth,
                     target_pth=target_pth,
@@ -351,6 +410,7 @@ def _copy_this_subject(
     sessions: list[str] | list[None],
     datatypes: list[str],
     dataset_type: str,
+    task: str,
     space: str,
     src_pth: Path,
     target_pth: Path,
@@ -367,24 +427,30 @@ def _copy_this_subject(
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
+            task=task,
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
+            cc_log.warning(no_files_found_msg(src_pth, subject, datatype_, filters))
             continue
 
         cc_log.debug(f"    {subject} - copying files:\n     {files}")
+
+        dataset_root = src_pth
+        if "derivatives" in str(dataset_root):
+            dataset_root = Path(str(dataset_root).split("/derivatives")[0])
+
         for f in files:
             sub_dirs = Path(f).parents
             (target_pth / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
             if (target_pth / f).exists():
-                cc_log.debug(f"      file '{f}' already present")
+                cc_log.debug(f"      file already present:\n       '{f}'")
                 continue
             try:
-                shutil.copy(src=src_pth / f, dst=target_pth / f, follow_symlinks=True)
+                shutil.copy(src=dataset_root / f, dst=target_pth / f, follow_symlinks=True)
                 # TODO deal with permission
             except FileNotFoundError:
-                cc_log.error(f"      Could not find file '{f}'")
+                cc_log.error(f"      Could not find file '{f}' in {dataset_root}")
 
 
 def _generate_bagel_for_cohort(

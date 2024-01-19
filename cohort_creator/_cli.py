@@ -39,8 +39,9 @@ def set_verbosity(verbosity: int | list[int]) -> None:
     elif verbosity == 3:
         cc_log.setLevel("DEBUG")
 
-    logging.getLogger("datalad").setLevel(logging.WARNING)
-    logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
+    if verbosity < 3:
+        logging.getLogger("datalad").setLevel(logging.WARNING)
+        logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
 def _get_participant_listing_from_args(args: argparse.Namespace) -> pd.DataFrame | None:
@@ -54,6 +55,7 @@ def create_yoda(output_dir: Path) -> None:
     if not output_dir.exists():
         api.create(path=output_dir, cfg_proc="yoda")
     if not (output_dir / ".datalad").exists():
+        cc_log.info(f"Creating yoda dataset for output in: {output_dir}")
         api.create(path=output_dir, cfg_proc="yoda", force=True)
 
 
@@ -61,7 +63,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
     parser = global_parser(formatter_class=RichHelpFormatter)
 
-    args, _ = parser.parse_known_args(argv[1:])
+    args, unknowns = parser.parse_known_args(argv[1:])
+    if unknowns:
+        cc_log.error(f"The following arguments are unknown: {unknowns}")
+        exit(1)
 
     verbosity = args.verbosity
     set_verbosity(verbosity)
@@ -69,12 +74,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     if args.command in ["browse"]:
         debug = getattr(args, "debug", False)
         browse(debug=debug)
-        return
+        exit(0)
 
     if args.command in ["update"]:
         debug = getattr(args, "debug", True)
         update(debug=debug)
-        return
+        exit(0)
 
     output_dir = Path(args.output_dir[0]).resolve()
 
@@ -90,10 +95,19 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         (output_dir / "sourcedata").mkdir(exist_ok=True, parents=True)
         _execute_install(dataset_listing, args, output_dir)
     if args.command == "install":
-        return None
+        exit(0)
 
     datatypes = args.datatypes
+
     space = args.space
+    if isinstance(space, list):
+        # TODO handle case when several spaces are passed
+        space = space[0]
+
+    task = args.task
+    if isinstance(task, list):
+        # TODO handle case when several tasks are passed
+        task = task[0]
 
     bids_filter = _return_bids_filter(args=args)
 
@@ -108,11 +122,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             dataset_types=dataset_types,
             datatypes=datatypes,
             space=space,
+            task=task,
             jobs=jobs,
             bids_filter=bids_filter,
         )
     if args.command == "get":
-        return None
+        exit(0)
 
     if args.command in ["copy", "all"]:
         skip_group_mriqc = bool(args.skip_group_mriqc)
@@ -122,11 +137,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             participants=participant_listing,
             dataset_types=dataset_types,
             datatypes=datatypes,
+            task=task,
             space=space,
             bids_filter=bids_filter,
             skip_group_mriqc=skip_group_mriqc,
         )
-        return None
+        exit(0)
 
 
 def _execute_install(

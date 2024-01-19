@@ -15,6 +15,7 @@ from cohort_creator._utils import check_participant_listing
 from cohort_creator._utils import check_tsv_content
 from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import create_tsv_participant_session_in_datasets
+from cohort_creator._utils import derivative_in_subfolder
 from cohort_creator._utils import get_anat_files
 from cohort_creator._utils import get_bids_filter
 from cohort_creator._utils import get_dataset_url
@@ -71,8 +72,21 @@ def test_create_tsv_participant_session_in_datasets(bids_examples, tmp_path):
 
 
 def test_get_dataset_url():
-    assert get_dataset_url("ds000113", "mriqc") is False
+    assert get_dataset_url("ds000113", "mriqc") == ""
     assert isinstance(get_dataset_url("ds000001", "mriqc"), str)
+
+
+@pytest.mark.parametrize(
+    "dataset_name, dataset_type, expected",
+    [
+        ("ds000001", "mriqc", False),
+        ("ds000001", "fmriprep", False),
+        ("ds002158", "fmriprep", True),
+    ],
+)
+def test_derivative_in_subfolder(dataset_name, dataset_type, expected):
+    result = derivative_in_subfolder(dataset_name=dataset_name, dataset_type=dataset_type)
+    assert result == expected
 
 
 def test_get_pipeline_version(bids_examples):
