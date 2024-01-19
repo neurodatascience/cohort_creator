@@ -126,7 +126,7 @@ demo_func_and_anat: demo_install
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
-		--space T1w MNI152NLin2009cAsym \
+		--space MNI152NLin2009cAsym \
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
@@ -134,7 +134,7 @@ demo_func_and_anat: demo_install
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
-		--space T1w MNI152NLin2009cAsym \
+		--space MNI152NLin2009cAsym \
 		--verbosity 3
 
 ## DOC

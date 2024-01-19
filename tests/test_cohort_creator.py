@@ -23,7 +23,7 @@ def test_install_datasets(output_dir, caplog):
         output_dir=output_dir,
         dataset_types=["raw", "mriqc", "fmriprep"],
     )
-    assert "foo not found in openneuro" in caplog.text
+    assert "foo not found in list of known" in caplog.text
     assert (sourcedata(output_dir) / "ds000001").exists()
     assert (sourcedata(output_dir) / "ds000001-mriqc").exists()
     assert (sourcedata(output_dir) / "ds000001-fmriprep").exists()

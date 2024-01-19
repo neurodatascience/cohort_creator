@@ -612,7 +612,7 @@ def get_dataset_url(dataset_name: str, dataset_type: str) -> str:
     datasets = known_datasets_df()
     mask = datasets.name == dataset_name
     url = datasets[mask][dataset_type].values[0]
-    return "" if pd.isna(url) else url
+    return "" if pd.isna(url) or not url else url
 
 
 def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
