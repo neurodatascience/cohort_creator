@@ -1,7 +1,4 @@
 [![Test](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml/badge.svg)](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml)
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/neurodatascience/cohort_creator/main.svg)](https://results.pre-commit.ci/latest/github/neurodatascience/cohort_creator/main)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![https://github.com/psf/black](https://img.shields.io/badge/code%20style-black-000000.svg)
@@ -10,7 +7,9 @@
 [![codecov](https://codecov.io/gh/neurodatascience/cohort_creator/branch/main/graph/badge.svg?token=PMQYH0DIPX)](https://codecov.io/gh/neurodatascience/cohort_creator)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8313304.svg)](https://doi.org/10.5281/zenodo.8313304)
 [![python versions](https://img.shields.io/pypi/pyversions/cohort_creator.svg)](https://pypi.org/project/cohort_creator/)
-
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 # Cohort creator
 
 > **TL;DR**
