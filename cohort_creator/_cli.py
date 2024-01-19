@@ -137,6 +137,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             participants=participant_listing,
             dataset_types=dataset_types,
             datatypes=datatypes,
+            task=task,
             space=space,
             bids_filter=bids_filter,
             skip_group_mriqc=skip_group_mriqc,

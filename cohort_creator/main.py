@@ -284,6 +284,7 @@ def construct_cohort(
     participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: list[str],
+    task: str,
     space: str,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
     skip_group_mriqc: bool = False,
@@ -303,6 +304,9 @@ def construct_cohort(
 
     datatypes : list[str]
         Can contain any of: ``"anat'``, ``"func"``
+
+    task : str
+        Task of the data to get (only applies when datatypes requested support task entities).
 
     space : str
         Space of the data to get (only applies when dataset_types requested includes fmriprep).
@@ -338,13 +342,25 @@ def construct_cohort(
             cc_log.info(f"  creating cohort with all participants in dataset {dataset_}")
 
         for dataset_type_ in dataset_types:
-            if not get_dataset_url(dataset_, dataset_type_):
+            uri = get_dataset_url(dataset_, dataset_type_)
+
+            if not uri:
                 cc_log.debug(f"      no {dataset_type_} for {dataset_}")
                 continue
             cc_log.info(f"  {dataset_type_}")
 
+            original_datatype = dataset_type_
+
+            if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
+                dataset_type_ = "raw"
+
             derivative = None if dataset_type_ == "raw" else dataset_type_
             src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
+
+            derivative_subfolder = ""
+            if dataset_type_ != original_datatype:
+                derivative_subfolder = uri.split("tree/main/")[1]
+            src_pth = src_pth / derivative_subfolder
 
             target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
@@ -366,7 +382,8 @@ def construct_cohort(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
-                    dataset_type=dataset_type_,
+                    dataset_type=original_datatype,
+                    task=task,
                     space=space,
                     src_pth=src_pth,
                     target_pth=target_pth,
@@ -392,6 +409,7 @@ def _copy_this_subject(
     sessions: list[str] | list[None],
     datatypes: list[str],
     dataset_type: str,
+    task: str,
     space: str,
     src_pth: Path,
     target_pth: Path,
@@ -408,6 +426,7 @@ def _copy_this_subject(
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
+            task=task,
             space=space,
         )
         if not files:
@@ -415,17 +434,22 @@ def _copy_this_subject(
             continue
 
         cc_log.debug(f"    {subject} - copying files:\n     {files}")
+
+        dataset_root = src_pth
+        if "derivatives" in str(dataset_root):
+            dataset_root = Path(str(dataset_root).split("/derivatives")[0])
+
         for f in files:
             sub_dirs = Path(f).parents
             (target_pth / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
             if (target_pth / f).exists():
-                cc_log.debug(f"      file '{f}' already present")
+                cc_log.debug(f"      file already present:\n       '{f}'")
                 continue
             try:
-                shutil.copy(src=src_pth / f, dst=target_pth / f, follow_symlinks=True)
+                shutil.copy(src=dataset_root / f, dst=target_pth / f, follow_symlinks=True)
                 # TODO deal with permission
             except FileNotFoundError:
-                cc_log.error(f"      Could not find file '{f}'")
+                cc_log.error(f"      Could not find file '{f}' in {dataset_root}")
 
 
 def _generate_bagel_for_cohort(

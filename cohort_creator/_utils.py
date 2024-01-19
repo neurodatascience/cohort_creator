@@ -119,7 +119,7 @@ def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> Non
     for top_file_ in top_files:
         for f in src_pth.glob(top_file_):
             if (target_pth / f.name).exists():
-                cc_log.debug(f"      file '{(target_pth / f.name)}' already present")
+                cc_log.debug(f"      file already present:\n       '{(target_pth / f.name)}'")
                 continue
             try:
                 shutil.copy(src=f, dst=target_pth, follow_symlinks=True)
