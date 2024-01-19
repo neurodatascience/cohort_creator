@@ -65,6 +65,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
         jobs=2,
     )
     get_data(
@@ -74,6 +75,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
         jobs=2,
     )
     construct_cohort(
@@ -83,6 +85,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
     )
     construct_cohort(
         output_dir=output_dir,
@@ -91,4 +94,5 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
     )
