@@ -114,7 +114,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/michellewang"><img src="https://avatars.githubusercontent.com/u/29051929?v=4?s=100" width="100px;" alt="Michelle Wang"/><br /><sub><b>Michelle Wang</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3Amichellewang" title="Bug reports">🐛</a> <a href="#ideas-michellewang" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/michellewang"><img src="https://avatars.githubusercontent.com/u/29051929?v=4?s=100" width="100px;" alt="Michelle Wang"/><br /><sub><b>Michelle Wang</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3Amichellewang" title="Bug reports">🐛</a> <a href="#ideas-michellewang" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-michellewang" title="User Testing">📓</a></td>
     </tr>
   </tbody>
 </table>
