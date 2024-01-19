@@ -1,6 +1,6 @@
 [![Test](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml/badge.svg)](https://github.com/neurodatascience/cohort_creator/actions/workflows/test.yml)
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/neurodatascience/cohort_creator/main.svg)](https://results.pre-commit.ci/latest/github/neurodatascience/cohort_creator/main)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -115,6 +115,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/michellewang"><img src="https://avatars.githubusercontent.com/u/29051929?v=4?s=100" width="100px;" alt="Michelle Wang"/><br /><sub><b>Michelle Wang</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3Amichellewang" title="Bug reports">🐛</a> <a href="#ideas-michellewang" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-michellewang" title="User Testing">📓</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://remi-gau.github.io/"><img src="https://avatars.githubusercontent.com/u/6961185?v=4?s=100" width="100px;" alt="Remi Gau"/><br /><sub><b>Remi Gau</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Tests">⚠️</a> <a href="#maintenance-Remi-Gau" title="Maintenance">🚧</a> <a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Documentation">📖</a> <a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3ARemi-Gau" title="Bug reports">🐛</a> <a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
