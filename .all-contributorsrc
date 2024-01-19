@@ -17,6 +17,19 @@
         "ideas",
         "userTesting"
       ]
+    },
+    {
+      "login": "Remi-Gau",
+      "name": "Remi Gau",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6961185?v=4",
+      "profile": "https://remi-gau.github.io/",
+      "contributions": [
+        "test",
+        "maintenance",
+        "doc",
+        "bug",
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
