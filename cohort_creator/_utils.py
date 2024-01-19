@@ -598,8 +598,19 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
     return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
 
 
-def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
+def get_dataset_url(dataset_name: str, dataset_type: str) -> str:
     datasets = known_datasets_df()
     mask = datasets.name == dataset_name
     url = datasets[mask][dataset_type].values[0]
-    return False if pd.isna(url) else url
+    return "" if pd.isna(url) else url
+
+
+def derivative_in_subfolder(dataset_name: str, dataset_type: str):
+    """Check if frmiprep or mriqc data is in a subfolder of the raw data."""
+    uri_raw = get_dataset_url(dataset_name, dataset_type="raw")
+    uri = get_dataset_url(dataset_name, dataset_type)
+    if "/tree" in uri:
+        uri = uri.split("/tree")[0]
+        if uri_raw.startswith(uri):
+            return True
+    return False

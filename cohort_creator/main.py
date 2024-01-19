@@ -33,7 +33,7 @@ from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
-from cohort_creator._utils import return_target_pth
+from cohort_creator._utils import return_target_pth, derivative_in_subfolder
 from cohort_creator._utils import sourcedata
 from cohort_creator.bagelify import bagelify
 from cohort_creator.bagelify import new_bagel
@@ -91,18 +91,18 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
         return None
 
     for dataset_type_ in dataset_types:
-        if not get_dataset_url(dataset_name, dataset_type_):
-            cc_log.debug(f"      no {dataset_type_} for {dataset_name}")
+
+        uri = get_dataset_url(dataset_name, dataset_type_)
+
+        if not uri:
+            cc_log.debug(f"  no {dataset_type_} for {dataset_name}")
             continue
 
         original_datatype = dataset_type_
 
-        uri_raw = get_dataset_url(dataset_name, dataset_type="raw")
-        uri = get_dataset_url(dataset_name, dataset_type_)
-        if dataset_type_ != "raw" and isinstance(uri, str) and "/tree" in uri:
-                uri = uri.split("/tree")[0]
-                if uri_raw.startswith(uri):
-                    dataset_type_ = "raw"
+        if dataset_type_ != "raw" and derivative_in_subfolder(dataset_name, dataset_type_):
+            uri = uri.split("/tree")[0]
+            dataset_type_ = "raw"
 
         derivative = None if dataset_type_ == "raw" else dataset_type_
         data_pth = dataset_path(sourcedata(output_dir), dataset_name, derivative=derivative)
@@ -110,9 +110,8 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
         if data_pth.exists():
             cc_log.debug(f"  {original_datatype} data already present at {data_pth}")
         else:
-            cc_log.info(f"    installing {original_datatype} data at: {data_pth}")
-            if uri:
-                api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
+            cc_log.info(f"   installing {original_datatype} data at: {data_pth}")
+            api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
 
 
 def get_data(

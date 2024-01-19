@@ -8,3 +8,7 @@ ds000200	sub-2008	n/a	n/a			n/a	1	[T1,bold]
 ds001226	sub-CON03	53	Female	CON	ses-preop	ds001226/sub-CON03/ses-preop	1	[T1,dwi,bold]
 ds001226	sub-CON03	53	Female	CON	ses-postop	ds001226/sub-CON03/ses-postop	1	[T1,dwi,bold]
 ds001226	sub-CON07	48	Female	CON	ses-preop	ds001226/sub-CON07/ses-preop	1	[T1,dwi,bold]
+ds002158	sub-21				ses-001	ds002158/sub-21/ses-001/
+ds002158	sub-22				ses-001	ds002158/sub-22/ses-001/
+ds002158	sub-24				ses-001	ds002158/sub-24/ses-001/
+ds002158	sub-26				ses-001	ds002158/sub-26/ses-001/
