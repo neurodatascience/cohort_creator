@@ -80,6 +80,7 @@ def install_datasets(
         _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=output_dir)
 
     if generate_participant_listing:
+        cc_log.info(f" Getting pybids layout of the following datasets: {dataset_}")
         dataset_paths = [dataset_path(sourcedata(output_dir), dataset_) for dataset_ in datasets]
         create_tsv_participant_session_in_datasets(
             dataset_paths=dataset_paths, output_dir=sourcedata(output_dir)
@@ -88,7 +89,7 @@ def install_datasets(
 
 def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> None:
     if not is_known_dataset(dataset_name):
-        cc_log.warning(f"  {dataset_name} not found in openneuro")
+        cc_log.warning(f"  {dataset_name} not found in list of known datasets")
         return None
 
     for dataset_type_ in dataset_types:
@@ -160,32 +161,37 @@ def get_data(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        # if no participants_ids then we grab all the participants
-        # from the raw dataset
-        if participants is not None:
-            participants_ids = get_participant_ids(
-                datasets=datasets, participants=participants, dataset_name=dataset_
-            )
-            if not participants_ids:
-                cc_log.warning(f"  no participants in dataset {dataset_}")
-                continue
-            cc_log.info(f"  getting data for: {participants_ids}")
-
-        else:
-            data_pth = dataset_path(sourcedata(output_dir), dataset_)
-            participants_ids = list_participants_in_dataset(data_pth)
-            cc_log.info(f"  getting data for all participants in dataset {dataset_}")
+        participants_ids = return_participants_ids(
+            output_dir=output_dir,
+            datasets=datasets,
+            participants=participants,
+            dataset_name=dataset_,
+        )
+        if participants_ids is None:
+            continue
 
         for dataset_type_ in dataset_types:
-            if not get_dataset_url(dataset_, dataset_type_):
+            uri = get_dataset_url(dataset_, dataset_type_)
+
+            if not uri:
                 cc_log.debug(f"      no {dataset_type_} for {dataset_}")
                 continue
             cc_log.info(f"  {dataset_type_}")
+
+            original_datatype = dataset_type_
+
+            if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
+                dataset_type_ = "raw"
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
             data_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
 
             dl_dataset = api.Dataset(data_pth)
+
+            derivative_subfolder = ""
+            if dataset_type_ != original_datatype:
+                derivative_subfolder = uri.split("tree/main/")[1]
+            data_pth = data_pth / derivative_subfolder
 
             for subject in participants_ids:
                 if not is_subject_in_dataset(subject, data_pth):
@@ -202,12 +208,34 @@ def get_data(
                     sessions=sessions,
                     datatypes=datatypes,
                     space=space,
-                    dataset_type=dataset_type_,
+                    dataset_type=original_datatype,
                     data_pth=data_pth,
                     dl_dataset=dl_dataset,
                     jobs=jobs,
                     bids_filter=bids_filter,
                 )
+
+
+def return_participants_ids(
+    output_dir: Path, datasets: pd.DataFrame, participants: pd.DataFrame | None, dataset_name: str
+) -> list[str] | None:
+    # if no participants_ids then we grab all the participants
+    # from the raw dataset
+    if participants is not None:
+        participants_ids = get_participant_ids(
+            datasets=datasets, participants=participants, dataset_name=dataset_name
+        )
+        if not participants_ids:
+            cc_log.warning(f"  no participants in dataset {dataset_name}")
+            return None
+        cc_log.info(f"  getting data for: {participants_ids}")
+
+    else:
+        data_pth = dataset_path(sourcedata(output_dir), dataset_name)
+        participants_ids = list_participants_in_dataset(data_pth)
+        cc_log.info(f"  getting data for all participants in dataset {dataset_name}")
+
+    return participants_ids
 
 
 def _get_data_this_subject(
@@ -235,7 +263,7 @@ def _get_data_this_subject(
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
+            cc_log.warning(no_files_found_msg(data_pth, subject, datatype_, filters))
             continue
         cc_log.debug(f"    {subject} - getting files:\n     {files}")
         try:
@@ -377,7 +405,7 @@ def _copy_this_subject(
             space=space,
         )
         if not files:
-            cc_log.warning(no_files_found_msg(subject, datatype_, filters))
+            cc_log.warning(no_files_found_msg(src_pth, subject, datatype_, filters))
             continue
 
         cc_log.debug(f"    {subject} - copying files:\n     {files}")

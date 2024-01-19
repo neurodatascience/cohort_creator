@@ -88,7 +88,7 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
         source = f"https://github.com/{OPENNEURO}/{dataset}.git"
         response = requests.get(source)
         if response.status_code != 200:
-            cc_log.warning(f"error {response.status_code} for dataset {source}")
+            cc_log.error(f"error {response.status_code} for dataset {source}")
             continue
 
         cc_log.info(f"installing: {data_pth}")
@@ -363,10 +363,10 @@ def list_datasets_in_dir(
 
         response = requests.get(get_raw_url(dataset_pth))
         if response.status_code != 200:
-            cc_log.warning(f"error {response.status_code} for dataset {dataset_pth}")
+            cc_log.error(f"error {response.status_code} for dataset {dataset_pth}")
             continue
         if get_nb_subjects(dataset_pth) == 0:
-            cc_log.warning(f"No subject in dataset {dataset_pth}")
+            cc_log.warning(f"No participants in dataset {dataset_pth}")
             continue
 
         i += 1

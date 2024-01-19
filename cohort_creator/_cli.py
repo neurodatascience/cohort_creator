@@ -39,8 +39,9 @@ def set_verbosity(verbosity: int | list[int]) -> None:
     elif verbosity == 3:
         cc_log.setLevel("DEBUG")
 
-    logging.getLogger("datalad").setLevel(logging.WARNING)
-    logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
+    if verbosity < 3:
+        logging.getLogger("datalad").setLevel(logging.WARNING)
+        logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
 def _get_participant_listing_from_args(args: argparse.Namespace) -> pd.DataFrame | None:
@@ -61,7 +62,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
     parser = global_parser(formatter_class=RichHelpFormatter)
 
-    args, _ = parser.parse_known_args(argv[1:])
+    args, unknowns = parser.parse_known_args(argv[1:])
+    if unknowns:
+        cc_log.error(f"The following arguments are unknown: {unknowns}")
+        exit(1)
 
     verbosity = args.verbosity
     set_verbosity(verbosity)
@@ -93,7 +97,11 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         return None
 
     datatypes = args.datatypes
+
     space = args.space
+    if isinstance(space, list):
+        # TODO handle case when several spaces are passed
+        space = space[0]
 
     bids_filter = _return_bids_filter(args=args)
 

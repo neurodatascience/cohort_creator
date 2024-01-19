@@ -193,11 +193,13 @@ def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
 
 
 def no_files_found_msg(
+    data_pth: Path,
     subject: str,
     datatype: str,
     filters: dict[str, dict[str, str]],
 ) -> str:
     return f"""    no files found for:
+     - path: {data_pth}
      - subject: {subject}
      - datatype: {datatype}
      - filters: {filters}"""
@@ -524,6 +526,10 @@ def list_all_files_with_filter(
             cc_log.warning(f"Path '{datatype_pth}' does not exist")
             continue
 
+        dataset_root = str(data_pth)
+        if "derivatives" in dataset_root:
+            dataset_root = dataset_root.split("/derivatives")[0]
+
         for key in filters:
             filter_ = augment_filter(
                 dataset_type=dataset_type,
@@ -535,7 +541,9 @@ def list_all_files_with_filter(
             glob_pattern = create_glob_pattern_from_filter(
                 dataset_type=dataset_type, filter=filter_
             )
-            files.extend([str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)])
+            files.extend(
+                [str(f.relative_to(dataset_root)) for f in datatype_pth.glob(glob_pattern)]
+            )
             if filter_.get("ext") != "json":
                 tmp = filter_.copy()
                 tmp["ext"] = "json"
@@ -543,7 +551,7 @@ def list_all_files_with_filter(
                     dataset_type=dataset_type, filter=tmp
                 )
                 files.extend(
-                    [str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)]
+                    [str(f.relative_to(dataset_root)) for f in datatype_pth.glob(glob_pattern)]
                 )
 
     return sorted(files)
@@ -562,10 +570,12 @@ def augment_filter(
         filter_["task"] = "*"
     if "run" not in filter_:
         filter_["run"] = "*"
-    if dataset_type not in {"raw", "mriqc"}:
-        filter_["space"] = "*" if key not in {"confounds"} and space else space or "*"
+    if dataset_type in {"fmriprep"}:
+        filter_["space"] = "*" if key in {"confounds"} and space else space or "*"
         if "desc" not in filter_:
             filter_["desc"] = "*"
+    print(key)
+    print(filter_)
     return filter_
 
 
