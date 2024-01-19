@@ -221,7 +221,11 @@ def get_data(
 
 
 def return_participants_ids(
-    output_dir: Path, datasets: pd.DataFrame, participants: pd.DataFrame | None, dataset_name: str
+    output_dir: Path,
+    datasets: pd.DataFrame,
+    participants: pd.DataFrame | None,
+    dataset_name: str,
+    base_msg: str = "getting data for",
 ) -> list[str] | None:
     # if no participants_ids then we grab all the participants
     # from the raw dataset
@@ -232,12 +236,12 @@ def return_participants_ids(
         if not participants_ids:
             cc_log.warning(f"  no participants in dataset {dataset_name}")
             return None
-        cc_log.info(f"  getting data for: {participants_ids}")
+        cc_log.info(f"  {base_msg}: {participants_ids}")
 
     else:
         data_pth = dataset_path(sourcedata(output_dir), dataset_name)
         participants_ids = list_participants_in_dataset(data_pth)
-        cc_log.info(f"  getting data for all participants in dataset {dataset_name}")
+        cc_log.info(f"  {base_msg} all participants in dataset {dataset_name}")
 
     return participants_ids
 
@@ -326,20 +330,17 @@ def construct_cohort(
     for dataset_ in dataset_names:
         cc_log.info(f" {dataset_}")
 
-        # if no participants_ids then we grab all the participants
-        # from the raw dataset
-        if participants is not None:
-            participants_ids = get_participant_ids(
-                datasets=datasets, participants=participants, dataset_name=dataset_
-            )
-            if not participants_ids:
-                cc_log.warning(f"  no participants in dataset {dataset_}")
-                continue
-            cc_log.info(f"  creating cohort with: {participants_ids}")
-        else:
-            data_pth = dataset_path(sourcedata(output_dir), dataset_)
-            participants_ids = list_participants_in_dataset(data_pth)
-            cc_log.info(f"  creating cohort with all participants in dataset {dataset_}")
+        participants_ids = return_participants_ids(
+            output_dir=output_dir,
+            datasets=datasets,
+            participants=participants,
+            dataset_name=dataset_,
+            base_msg="creating cohort with",
+        )
+        if participants_ids is None:
+            continue
+
+        data_pth = dataset_path(sourcedata(output_dir), dataset_)
 
         for dataset_type_ in dataset_types:
             uri = get_dataset_url(dataset_, dataset_type_)

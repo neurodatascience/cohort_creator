@@ -74,12 +74,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     if args.command in ["browse"]:
         debug = getattr(args, "debug", False)
         browse(debug=debug)
-        return
+        exit(0)
 
     if args.command in ["update"]:
         debug = getattr(args, "debug", True)
         update(debug=debug)
-        return
+        exit(0)
 
     output_dir = Path(args.output_dir[0]).resolve()
 
@@ -95,7 +95,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         (output_dir / "sourcedata").mkdir(exist_ok=True, parents=True)
         _execute_install(dataset_listing, args, output_dir)
     if args.command == "install":
-        return None
+        exit(0)
 
     datatypes = args.datatypes
 
@@ -127,7 +127,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             bids_filter=bids_filter,
         )
     if args.command == "get":
-        return None
+        exit(0)
 
     if args.command in ["copy", "all"]:
         skip_group_mriqc = bool(args.skip_group_mriqc)
@@ -142,7 +142,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             bids_filter=bids_filter,
             skip_group_mriqc=skip_group_mriqc,
         )
-        return None
+        exit(0)
 
 
 def _execute_install(
