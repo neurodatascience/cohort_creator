@@ -121,12 +121,12 @@ def get_data(
     participants: pd.DataFrame | None,
     dataset_types: list[str],
     datatypes: str | list[str],
+    task: str,
     space: str,
     jobs: int,
     bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
 ) -> None:
-    """Get the data for specified participants / datatypes / space \
-    from preinstalled datalad datasets / dataset_types.
+    """Get the data for specified inputs from preinstalled datasets.
 
     Parameters
     ----------
@@ -144,6 +144,9 @@ def get_data(
 
     space : str
         Space of the data to get (only applies when dataset_types requested includes fmriprep).
+
+    task : str
+        Task of the data to get (only applies when datatypes requested support task entities).
 
     jobs : int
         Number of jobs to use for parallelization during datalad get operation.
@@ -207,6 +210,7 @@ def get_data(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
+                    task=task,
                     space=space,
                     dataset_type=original_datatype,
                     data_pth=data_pth,
@@ -242,6 +246,7 @@ def _get_data_this_subject(
     subject: str,
     sessions: list[str] | list[None],
     datatypes: list[str],
+    task: str,
     space: str,
     dataset_type: str,
     data_pth: Path,
@@ -260,6 +265,7 @@ def _get_data_this_subject(
             subject=subject,
             sessions=sessions,
             datatype=datatype_,
+            task=task,
             space=space,
         )
         if not files:

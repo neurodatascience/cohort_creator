@@ -55,6 +55,7 @@ def create_yoda(output_dir: Path) -> None:
     if not output_dir.exists():
         api.create(path=output_dir, cfg_proc="yoda")
     if not (output_dir / ".datalad").exists():
+        cc_log.info(f"Creating yoda dataset for output in: {output_dir}")
         api.create(path=output_dir, cfg_proc="yoda", force=True)
 
 
@@ -103,6 +104,11 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         # TODO handle case when several spaces are passed
         space = space[0]
 
+    task = args.task
+    if isinstance(task, list):
+        # TODO handle case when several tasks are passed
+        task = task[0]
+
     bids_filter = _return_bids_filter(args=args)
 
     if args.command in ["get", "all"]:
@@ -116,6 +122,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             dataset_types=dataset_types,
             datatypes=datatypes,
             space=space,
+            task=task,
             jobs=jobs,
             bids_filter=bids_filter,
         )

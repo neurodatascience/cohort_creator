@@ -11,7 +11,7 @@ exclude =
     tests/data/bids-examples
 docstring-convention = numpy
 max-line-length = 100
-max_complexity = 11
+max_complexity = 12
 max_function_length = 150
 ignore = D101, D103, I, W503
 per-file-ignores =

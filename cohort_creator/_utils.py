@@ -510,6 +510,7 @@ def list_all_files_with_filter(
     subject: str,
     sessions: list[str] | list[None],
     datatype: str,
+    task: str | None = None,
     space: str | None = None,
 ) -> list[str]:
     """List all data files of a datatype for all sessions of a subject in a dataset."""
@@ -536,6 +537,7 @@ def list_all_files_with_filter(
                 filters=filters,
                 key=key,
                 session=session_,
+                task=task,
                 space=space,
             )
             glob_pattern = create_glob_pattern_from_filter(
@@ -562,20 +564,21 @@ def augment_filter(
     filters: dict[str, dict[str, str]],
     key: str,
     session: str | None = None,
+    task: str | None = None,
     space: str | None = None,
 ) -> dict[str, str]:
     filter_ = filters[key]
     filter_["ses"] = session or "*"
     if "task" not in filter_:
         filter_["task"] = "*"
+    if key in {"bold", "confounds", "events"} and task:
+        filter_["task"] = task
     if "run" not in filter_:
         filter_["run"] = "*"
     if dataset_type in {"fmriprep"}:
         filter_["space"] = "*" if key in {"confounds"} and space else space or "*"
         if "desc" not in filter_:
             filter_["desc"] = "*"
-    print(key)
-    print(filter_)
     return filter_
 
 
