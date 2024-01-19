@@ -21,6 +21,7 @@ from cohort_creator._utils import copy_top_files
 from cohort_creator._utils import create_ds_description
 from cohort_creator._utils import create_tsv_participant_session_in_datasets
 from cohort_creator._utils import dataset_path
+from cohort_creator._utils import derivative_in_subfolder
 from cohort_creator._utils import filter_excluded_participants
 from cohort_creator._utils import get_dataset_url
 from cohort_creator._utils import get_filters
@@ -33,7 +34,7 @@ from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
-from cohort_creator._utils import return_target_pth, derivative_in_subfolder
+from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import sourcedata
 from cohort_creator.bagelify import bagelify
 from cohort_creator.bagelify import new_bagel
@@ -91,7 +92,6 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
         return None
 
     for dataset_type_ in dataset_types:
-
         uri = get_dataset_url(dataset_name, dataset_type_)
 
         if not uri:

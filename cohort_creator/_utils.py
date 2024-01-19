@@ -605,7 +605,7 @@ def get_dataset_url(dataset_name: str, dataset_type: str) -> str:
     return "" if pd.isna(url) else url
 
 
-def derivative_in_subfolder(dataset_name: str, dataset_type: str):
+def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
     """Check if frmiprep or mriqc data is in a subfolder of the raw data."""
     uri_raw = get_dataset_url(dataset_name, dataset_type="raw")
     uri = get_dataset_url(dataset_name, dataset_type)
