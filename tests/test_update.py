@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import numpy as np
+
 from cohort_creator.data._update import count_meg_file_formats
 from cohort_creator.data._update import count_stim_files
 from cohort_creator.data._update import created_on
 from cohort_creator.data._update import get_authors
 from cohort_creator.data._update import get_dataset_size
+from cohort_creator.data._update import get_duration
 from cohort_creator.data._update import get_info_dataset
 from cohort_creator.data._update import get_institutions
 from cohort_creator.data._update import get_license
@@ -118,8 +121,29 @@ def test_get_info_dataset_smoke(ds004276):
     get_info_dataset(ds004276, "")
 
 
-# def test_get_duration(ds001339):
-#     sessions = list_sessions(ds001339)
-#     datatypes = list_datatypes(ds001339, sessions=sessions)
-#     tasks = list_tasks(ds001339, sessions=sessions)
-#     assert get_duration(ds001339, datatypes, tasks) == {"func": {"iaps": [0,0,0,0,0]}}
+def test_get_duration(ds001339):
+    sessions = list_sessions(ds001339)
+    datatypes = list_datatypes(ds001339, sessions=sessions)
+    tasks = list_tasks(ds001339, sessions=sessions)
+    assert get_duration(ds001339, datatypes, tasks) == {
+        "func": {"iaps": [(0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan)]}
+    }
+
+
+def test_get_duration_ds000002(ds000002):
+    sessions = list_sessions(ds000002)
+    datatypes = list_datatypes(ds000002, sessions=sessions)
+    tasks = list_tasks(ds000002, sessions=sessions)
+    durations = get_duration(ds000002, datatypes, tasks)
+    assert list(durations["func"].keys()) == [
+        "deterministicclassification",
+        "mixedeventrelatedprobe",
+        "probabilisticclassification",
+    ]
+    assert durations == {
+        "func": {
+            "deterministicclassification": [(180, 2.0), (180, 2.0)],
+            "mixedeventrelatedprobe": [(237, 2.0), (237, 2.0)],
+            "probabilisticclassification": [(180, 2.0), (180, 2.0)],
+        }
+    }

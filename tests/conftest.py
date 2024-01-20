@@ -35,3 +35,8 @@ def ds004276():
 @pytest.fixture
 def ds001339():
     return _install_dataset("ds001339")
+
+
+@pytest.fixture
+def ds000002():
+    return _install_dataset("ds000002")
