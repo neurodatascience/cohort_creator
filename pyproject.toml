@@ -119,8 +119,7 @@ module = [
     "pandas",
     "plotly.*",
     "pytest",
-    "rich",
-    "rich.logging",
+    "rich.*",
     "rich_argparse"
 ]
 
