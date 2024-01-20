@@ -23,7 +23,7 @@ def test_install_datasets(output_dir, caplog):
         output_dir=output_dir,
         dataset_types=["raw", "mriqc", "fmriprep"],
     )
-    assert "foo not found in openneuro" in caplog.text
+    assert "foo not found in list of known" in caplog.text
     assert (sourcedata(output_dir) / "ds000001").exists()
     assert (sourcedata(output_dir) / "ds000001-mriqc").exists()
     assert (sourcedata(output_dir) / "ds000001-fmriprep").exists()
@@ -65,6 +65,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
         jobs=2,
     )
     get_data(
@@ -74,6 +75,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
         jobs=2,
     )
     construct_cohort(
@@ -83,6 +85,7 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
     )
     construct_cohort(
         output_dir=output_dir,
@@ -91,4 +94,5 @@ def test_construct_cohort(output_dir):
         dataset_types=dataset_types,
         datatypes=datatypes,
         space="not_used_for_raw",
+        task="*",
     )

@@ -7,7 +7,9 @@
 [![codecov](https://codecov.io/gh/neurodatascience/cohort_creator/branch/main/graph/badge.svg?token=PMQYH0DIPX)](https://codecov.io/gh/neurodatascience/cohort_creator)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8313304.svg)](https://doi.org/10.5281/zenodo.8313304)
 [![python versions](https://img.shields.io/pypi/pyversions/cohort_creator.svg)](https://pypi.org/project/cohort_creator/)
-
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 # Cohort creator
 
 > **TL;DR**
@@ -100,3 +102,26 @@ over correctly if they are not in the root of the dataset or the same folder as
 the data file.
 
 <!-- **FIX** use pybids / ancpbids for data indexing and querying. -->
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/michellewang"><img src="https://avatars.githubusercontent.com/u/29051929?v=4?s=100" width="100px;" alt="Michelle Wang"/><br /><sub><b>Michelle Wang</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3Amichellewang" title="Bug reports">🐛</a> <a href="#ideas-michellewang" title="Ideas, Planning, & Feedback">🤔</a> <a href="#userTesting-michellewang" title="User Testing">📓</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://remi-gau.github.io/"><img src="https://avatars.githubusercontent.com/u/6961185?v=4?s=100" width="100px;" alt="Remi Gau"/><br /><sub><b>Remi Gau</b></sub></a><br /><a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Tests">⚠️</a> <a href="#maintenance-Remi-Gau" title="Maintenance">🚧</a> <a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Documentation">📖</a> <a href="https://github.com/neurodatascience/cohort_creator/issues?q=author%3ARemi-Gau" title="Bug reports">🐛</a> <a href="https://github.com/neurodatascience/cohort_creator/commits?author=Remi-Gau" title="Code">💻</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

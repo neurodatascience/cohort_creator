@@ -119,7 +119,7 @@ def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> Non
     for top_file_ in top_files:
         for f in src_pth.glob(top_file_):
             if (target_pth / f.name).exists():
-                cc_log.debug(f"      file '{(target_pth / f.name)}' already present")
+                cc_log.debug(f"      file already present:\n       '{(target_pth / f.name)}'")
                 continue
             try:
                 shutil.copy(src=f, dst=target_pth, follow_symlinks=True)
@@ -161,8 +161,8 @@ def get_participant_ids(
 
 
 def return_dataset_id(datasets: pd.DataFrame, dataset_name: str) -> str:
-    dataset_uri = return_dataset_uri(dataset_name)
-    mask = datasets["PortalURI"] == dataset_uri
+    dataset_uri = return_dataset_uri_regex(dataset_name)
+    mask = datasets.PortalURI.str.contains(dataset_uri, regex=True)
     return datasets[mask]["DatasetID"].values[0]
 
 
@@ -193,11 +193,13 @@ def is_subject_in_dataset(subject: str, dataset_pth: Path) -> bool:
 
 
 def no_files_found_msg(
+    data_pth: Path,
     subject: str,
     datatype: str,
     filters: dict[str, dict[str, str]],
 ) -> str:
     return f"""    no files found for:
+     - path: {data_pth}
      - subject: {subject}
      - datatype: {datatype}
      - filters: {filters}"""
@@ -508,6 +510,7 @@ def list_all_files_with_filter(
     subject: str,
     sessions: list[str] | list[None],
     datatype: str,
+    task: str | None = None,
     space: str | None = None,
 ) -> list[str]:
     """List all data files of a datatype for all sessions of a subject in a dataset."""
@@ -524,18 +527,25 @@ def list_all_files_with_filter(
             cc_log.warning(f"Path '{datatype_pth}' does not exist")
             continue
 
+        dataset_root = str(data_pth)
+        if "derivatives" in dataset_root:
+            dataset_root = dataset_root.split("/derivatives")[0]
+
         for key in filters:
             filter_ = augment_filter(
                 dataset_type=dataset_type,
                 filters=filters,
                 key=key,
                 session=session_,
+                task=task,
                 space=space,
             )
             glob_pattern = create_glob_pattern_from_filter(
                 dataset_type=dataset_type, filter=filter_
             )
-            files.extend([str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)])
+            files.extend(
+                [str(f.relative_to(dataset_root)) for f in datatype_pth.glob(glob_pattern)]
+            )
             if filter_.get("ext") != "json":
                 tmp = filter_.copy()
                 tmp["ext"] = "json"
@@ -543,7 +553,7 @@ def list_all_files_with_filter(
                     dataset_type=dataset_type, filter=tmp
                 )
                 files.extend(
-                    [str(f.relative_to(data_pth)) for f in datatype_pth.glob(glob_pattern)]
+                    [str(f.relative_to(dataset_root)) for f in datatype_pth.glob(glob_pattern)]
                 )
 
     return sorted(files)
@@ -554,16 +564,19 @@ def augment_filter(
     filters: dict[str, dict[str, str]],
     key: str,
     session: str | None = None,
+    task: str | None = None,
     space: str | None = None,
 ) -> dict[str, str]:
     filter_ = filters[key]
     filter_["ses"] = session or "*"
     if "task" not in filter_:
         filter_["task"] = "*"
+    if key in {"bold", "confounds", "events"} and task:
+        filter_["task"] = task
     if "run" not in filter_:
         filter_["run"] = "*"
-    if dataset_type not in {"raw", "mriqc"}:
-        filter_["space"] = "*" if key not in {"confounds"} and space else space or "*"
+    if dataset_type in {"fmriprep"}:
+        filter_["space"] = "*" if key in {"confounds"} and space else space or "*"
         if "desc" not in filter_:
             filter_["desc"] = "*"
     return filter_
@@ -590,16 +603,27 @@ def return_datasets_nodes(participant_listing: pd.DataFrame) -> list[str]:
     return list(participant_listing["DatasetID"].unique())
 
 
-def return_dataset_uri(dataset_name: str) -> str:
-    return f"https://github.com/OpenNeuroDatasets-JSONLD/{dataset_name}.git"
+def return_dataset_uri_regex(dataset_name: str) -> str:
+    return f"^https://github.com/OpenNeuroDatasets(?:-JSONLD)?/{dataset_name}(?:.git)?$"
 
 
 def list_participants_in_dataset(data_pth: Path) -> list[str]:
     return sorted([x.name for x in data_pth.iterdir() if x.is_dir() and x.name.startswith("sub-")])
 
 
-def get_dataset_url(dataset_name: str, dataset_type: str) -> bool:
-    openneuro = known_datasets_df()
-    mask = openneuro.name == dataset_name
-    url = openneuro[mask][dataset_type].values[0]
-    return False if pd.isna(url) else url
+def get_dataset_url(dataset_name: str, dataset_type: str) -> str:
+    datasets = known_datasets_df()
+    mask = datasets.name == dataset_name
+    url = datasets[mask][dataset_type].values[0]
+    return "" if pd.isna(url) or not url else url
+
+
+def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
+    """Check if frmiprep or mriqc data is in a subfolder of the raw data."""
+    uri_raw = get_dataset_url(dataset_name, dataset_type="raw")
+    uri = get_dataset_url(dataset_name, dataset_type)
+    if "/tree" in uri:
+        uri = uri.split("/tree")[0]
+        if uri_raw.startswith(uri):
+            return True
+    return False

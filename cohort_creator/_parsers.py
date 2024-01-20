@@ -116,6 +116,16 @@ def add_specialized_args(parser: ArgumentParser) -> ArgumentParser:
         nargs=1,
     )
     parser.add_argument(
+        "--task",
+        help="""
+        Task of the input data. Only applies when `datatypes` has task entity.
+        """,
+        required=False,
+        default="*",
+        type=str,
+        nargs=1,
+    )
+    parser.add_argument(
         "--bids_filter_file",
         help=f"""
         Path to a JSON file describing custom BIDS input filters.

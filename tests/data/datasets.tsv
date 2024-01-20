@@ -1,5 +1,6 @@
 DatasetID	PortalURI
-ds000001	https://github.com/OpenNeuroDatasets-JSONLD/ds000001.git
+ds000001	https://github.com/OpenNeuroDatasets/ds000001.git
 ds000002	https://github.com/OpenNeuroDatasets-JSONLD/ds000002.git
-ds000200	https://github.com/OpenNeuroDatasets-JSONLD/ds000200.git
-ds001226	https://github.com/OpenNeuroDatasets-JSONLD/ds001226.git
+ds000200	https://github.com/OpenNeuroDatasets/ds000200
+ds001226	https://github.com/OpenNeuroDatasets-JSONLD/ds001226
+ds002799	https://github.com/OpenNeuroDatasets/ds002799
