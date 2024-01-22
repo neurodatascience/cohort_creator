@@ -10,16 +10,16 @@ from geopy.geocoders import Nominatim
 from geopy.location import Location
 from rich import print
 
-# from cohort_creator.data.utils import known_datasets_df
-# from cohort_creator.data.utils import wrangle_data
+from cohort_creator.data.utils import known_datasets_df
+from cohort_creator.data.utils import wrangle_data
 
 DEBUG = False
 
 
 def main() -> None:
-    # df = wrangle_data(known_datasets_df())
+    df = wrangle_data(known_datasets_df())
 
-    # _get_all_locations(df)
+    _get_all_locations(df)
 
     locations = pd.read_csv(Path("locations.tsv"), sep="\t")
 
@@ -32,7 +32,6 @@ def main() -> None:
         size="count",
     )
     fig.show()
-
 
 class INSTITUTION(TypedDict):
     name: None | str

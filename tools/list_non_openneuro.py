@@ -20,7 +20,7 @@ UPDATE_MERGE = False
 
 cc_log = cc_logger()
 
-cc_log.setLevel("DEBUG")
+cc_log.setLevel("INFO")
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
