@@ -17,6 +17,14 @@ from cohort_creator._version import __version__
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.logger import cc_logger
 
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,TaskProgressColumn,TimeRemainingColumn,MofNCompleteColumn
+)
+
 # import gender_guesser.detector as gender
 
 cc_log = cc_logger()
@@ -627,3 +635,15 @@ def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
         if uri_raw.startswith(uri):
             return True
     return False
+
+
+def progress_bar(text, color="green"):
+    return Progress(
+    TextColumn(f"[{color}]{text}"),
+    SpinnerColumn("dots"),
+    TimeElapsedColumn(),
+    BarColumn(),
+    MofNCompleteColumn(),
+    TaskProgressColumn(),
+    TimeRemainingColumn(),
+)

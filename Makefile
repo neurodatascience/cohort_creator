@@ -122,6 +122,7 @@ demo_func: demo_install
 
 demo_func_and_anat: demo_install
 	cohort_creator get \
+		-d tests/data/datasets.tsv \
 		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
@@ -130,6 +131,7 @@ demo_func_and_anat: demo_install
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
+		-d tests/data/datasets.tsv \
 		-p tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \

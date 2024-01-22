@@ -26,6 +26,7 @@ from cohort_creator.data.utils import _load_known_datasets
 from cohort_creator.data.utils import _openneuro_listing_tsv
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.data.utils import KNOWN_DATATYPES
+from cohort_creator._utils import progress_bar
 from cohort_creator.logger import cc_logger
 
 DATASET_TYPE = dict[
@@ -348,7 +349,7 @@ def list_datasets_in_dir(
     dict[str, list[Any]]
         _description_
     """
-    MIN_NB_DATASETS = 30
+    MIN_NB_DATASETS = 5
     print()
     cc_log.info(f"Listing datasets in {path}")
 
@@ -369,8 +370,8 @@ def list_datasets_in_dir(
 
     derivatives = known_derivatives()
 
-    with Progress() as progress:
-        task = progress.add_task("[green]Updating...", total=len(raw_datasets))
+    with progress_bar(text="Updating") as progress:
+        task = progress.add_task(description="updating", total=len(raw_datasets))
 
         i = 0
         for dataset_pth in raw_datasets:
@@ -689,18 +690,23 @@ def get_duration(
 
     for target_datatype in ["func", "pet", "ieeg", "eeg"]:
         if target_datatype in datatypes:
-            if target_datatype == "pet":
-                files = dataset_pth.glob(f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
-                duration_all_datatypes[target_datatype] = get_duration_for_datatype(
-                    dataset_pth, files
-                )
             if tasks is None:
                 tasks = []
+                if target_datatype == "pet":
+                    files = dataset_pth.glob(f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
+                    duration_all_datatypes[target_datatype] = get_duration_for_datatype(
+                        dataset_pth, files
+                    )
+                    return duration_all_datatypes
             for task_ in tasks:
                 if target_datatype == "func":
                     files = dataset_pth.glob(
                         f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
                     )
+                if target_datatype == "pet":
+                    files = dataset_pth.glob(
+                        f"{first_sub}/**/func/{first_sub}*task-{task_}*_pet.nii*"
+                    )                    
                 elif target_datatype in ["eeg", "ieeg"]:
                     files = dataset_pth.glob(
                         f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"

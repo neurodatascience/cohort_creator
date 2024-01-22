@@ -113,15 +113,18 @@ def test_get_references_and_links_non_empty(ds001339):
     ]
 
 
-def test_get_dataset_size(ds004276):
+def test_get_dataset_size(install_dataset):
+    ds004276 = install_dataset('ds004276')
     assert get_dataset_size(ds004276) == "11.6 GB"
 
 
-def test_get_info_dataset_smoke(ds004276):
+def test_get_info_dataset_smoke(install_dataset):
+    ds004276 = install_dataset('ds004276')
     get_info_dataset(ds004276, "")
 
 
-def test_get_duration(ds001339):
+def test_get_duration(install_dataset):
+    ds001339 = install_dataset('ds001339')
     sessions = list_sessions(ds001339)
     datatypes = list_datatypes(ds001339, sessions=sessions)
     tasks = list_tasks(ds001339, sessions=sessions)
@@ -130,7 +133,8 @@ def test_get_duration(ds001339):
     }
 
 
-def test_get_duration_ds000002(ds000002):
+def test_get_duration_ds000002(install_dataset):
+    ds000002 = install_dataset("ds000002")
     sessions = list_sessions(ds000002)
     datatypes = list_datatypes(ds000002, sessions=sessions)
     tasks = list_tasks(ds000002, sessions=sessions)
@@ -147,3 +151,11 @@ def test_get_duration_ds000002(ds000002):
             "probabilisticclassification": [(180, 2.0), (180, 2.0)],
         }
     }
+
+
+def test_get_duration_ds002041(install_dataset):
+    ds002041 = install_dataset("ds002041")
+    sessions = list_sessions(ds002041)
+    datatypes = list_datatypes(ds002041, sessions=sessions)
+    tasks = list_tasks(ds002041, sessions=sessions)
+    get_duration(ds002041, datatypes, tasks)

@@ -15,7 +15,7 @@ from datalad import api
 from datalad.support.exceptions import (
     IncompleteResultsError,
 )
-from rich.progress import Progress
+from cohort_creator._utils import progress_bar
 
 from cohort_creator._utils import add_study_tsv
 from cohort_creator._utils import copy_top_files
@@ -74,9 +74,8 @@ def install_datasets(
         If True, will generate a participant listing for all datasets.
 
     """
-    cc_log.info("Installing datasets")
-    with Progress(transient=True) as progress:
-        task = progress.add_task("[red]Installing...", total=len(datasets))
+    with progress_bar(text = "Installing datasets") as progress:
+        task = progress.add_task(description="install", total=len(datasets))
 
         for dataset_ in datasets:
             cc_log.info(f" {dataset_}")
@@ -171,9 +170,8 @@ def get_data(
         dataset_listing=datasets, participant_listing=participants
     )
 
-    with Progress(transient=True) as progress:
-        task = progress.add_task("[red]Getting data...", total=len(dataset_names))
-
+    with progress_bar(text = "Getting data") as progress:
+        task = progress.add_task(description="get", total=len(dataset_names))
 
         for dataset_ in dataset_names:
             cc_log.info(f" {dataset_}")
