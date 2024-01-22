@@ -114,17 +114,17 @@ def test_get_references_and_links_non_empty(ds001339):
 
 
 def test_get_dataset_size(install_dataset):
-    ds004276 = install_dataset('ds004276')
+    ds004276 = install_dataset("ds004276")
     assert get_dataset_size(ds004276) == "11.6 GB"
 
 
 def test_get_info_dataset_smoke(install_dataset):
-    ds004276 = install_dataset('ds004276')
+    ds004276 = install_dataset("ds004276")
     get_info_dataset(ds004276, "")
 
 
 def test_get_duration(install_dataset):
-    ds001339 = install_dataset('ds001339')
+    ds001339 = install_dataset("ds001339")
     sessions = list_sessions(ds001339)
     datatypes = list_datatypes(ds001339, sessions=sessions)
     tasks = list_tasks(ds001339, sessions=sessions)

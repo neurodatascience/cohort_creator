@@ -58,6 +58,7 @@ def create_yoda(output_dir: Path) -> None:
         cc_log.info(f"Creating yoda dataset for output in: {output_dir}")
         api.create(path=output_dir, cfg_proc="yoda", force=True, result_renderer="disabled")
 
+
 def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
     parser = global_parser(formatter_class=RichHelpFormatter)

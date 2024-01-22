@@ -12,18 +12,18 @@ import numpy as np
 import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
+from rich.progress import BarColumn
+from rich.progress import MofNCompleteColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TaskProgressColumn
+from rich.progress import TextColumn
+from rich.progress import TimeElapsedColumn
+from rich.progress import TimeRemainingColumn
 
 from cohort_creator._version import __version__
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.logger import cc_logger
-
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,TaskProgressColumn,TimeRemainingColumn,MofNCompleteColumn
-)
 
 # import gender_guesser.detector as gender
 
@@ -637,13 +637,13 @@ def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
     return False
 
 
-def progress_bar(text, color="green"):
+def progress_bar(text, color="green") -> Progress:
     return Progress(
-    TextColumn(f"[{color}]{text}"),
-    SpinnerColumn("dots"),
-    TimeElapsedColumn(),
-    BarColumn(),
-    MofNCompleteColumn(),
-    TaskProgressColumn(),
-    TimeRemainingColumn(),
-)
+        TextColumn(f"[{color}]{text}"),
+        SpinnerColumn("dots"),
+        TimeElapsedColumn(),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    )

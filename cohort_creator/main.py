@@ -15,7 +15,6 @@ from datalad import api
 from datalad.support.exceptions import (
     IncompleteResultsError,
 )
-from cohort_creator._utils import progress_bar
 
 from cohort_creator._utils import add_study_tsv
 from cohort_creator._utils import copy_top_files
@@ -35,6 +34,7 @@ from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
+from cohort_creator._utils import progress_bar
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import sourcedata
 from cohort_creator.bagelify import bagelify
@@ -74,7 +74,7 @@ def install_datasets(
         If True, will generate a participant listing for all datasets.
 
     """
-    with progress_bar(text = "Installing datasets") as progress:
+    with progress_bar(text="Installing datasets") as progress:
         task = progress.add_task(description="install", total=len(datasets))
 
         for dataset_ in datasets:
@@ -170,7 +170,7 @@ def get_data(
         dataset_listing=datasets, participant_listing=participants
     )
 
-    with progress_bar(text = "Getting data") as progress:
+    with progress_bar(text="Getting data") as progress:
         task = progress.add_task(description="get", total=len(dataset_names))
 
         for dataset_ in dataset_names:

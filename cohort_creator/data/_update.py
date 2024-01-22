@@ -21,12 +21,12 @@ from mne.io.brainvision.brainvision import _get_hdr_info
 from rich.progress import Progress
 
 from cohort_creator._utils import list_participants_in_dataset
+from cohort_creator._utils import progress_bar
 from cohort_creator.data.utils import _data_dir
 from cohort_creator.data.utils import _load_known_datasets
 from cohort_creator.data.utils import _openneuro_listing_tsv
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.data.utils import KNOWN_DATATYPES
-from cohort_creator._utils import progress_bar
 from cohort_creator.logger import cc_logger
 
 DATASET_TYPE = dict[
@@ -706,7 +706,7 @@ def get_duration(
                 if target_datatype == "pet":
                     files = dataset_pth.glob(
                         f"{first_sub}/**/func/{first_sub}*task-{task_}*_pet.nii*"
-                    )                    
+                    )
                 elif target_datatype in ["eeg", "ieeg"]:
                     files = dataset_pth.glob(
                         f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"
