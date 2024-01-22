@@ -23,7 +23,7 @@ and this project adheres to
 
 ### Added
 
--   [ENH] Add non-openneuro datasets (ABIDE, CORR, ADHD200, Neuromod...). #124 @Remi-Gau
+-   [ENH] Add non-openneuro datasets (ABIDE, CORR, ADHD200, Neuromod...). (#124 @Remi-Gau)
 -   [ENH] Add Dash app to help browse and visualizse all known datasets.
 -   [ENH] Improved listing of knonwn datasets to include:
     - "scan duration"
@@ -36,6 +36,8 @@ and this project adheres to
 ### Fixed
 
 -   [FIX] Improve datasets listing for datasets with a mix of session level folders absent or present (for example: `sub-01/meg` and `sub-emptyroom/ses-20221212/meg`)
+-   [FIX] Make datasets URI more generic. (#169 @Remi-Gau)
+-   [FIX] handle datasets with fMRIPrep data in subfolders. (#173 @Remi-Gau)
 
 ## 0.2.0 - 2023-09-03
 

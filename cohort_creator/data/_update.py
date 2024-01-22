@@ -423,6 +423,9 @@ def _check_dataset(dataset_pth: Path) -> bool:
         except requests.exceptions.InvalidSchema:
             cc_log.error(f"No connection adapters were found for: {raw_url}")
             return False
+        except requests.exceptions.ConnectionError:
+            cc_log.error(f"Failed to establish a new connection for: {raw_url}")
+            return False           
         if response.status_code != 200:
             cc_log.error(f"error {response.status_code} for dataset {dataset_pth}")
             return False
