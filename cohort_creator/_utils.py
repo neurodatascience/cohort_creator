@@ -637,7 +637,7 @@ def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:
     return False
 
 
-def progress_bar(text, color="green") -> Progress:
+def progress_bar(text: str, color: str = "green") -> Progress:
     return Progress(
         TextColumn(f"[{color}]{text}"),
         SpinnerColumn("dots"),
