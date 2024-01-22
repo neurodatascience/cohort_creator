@@ -33,6 +33,7 @@ def main() -> None:
     )
     fig.show()
 
+
 class INSTITUTION(TypedDict):
     name: None | str
     count: int

@@ -425,7 +425,7 @@ def _check_dataset(dataset_pth: Path) -> bool:
             return False
         except requests.exceptions.ConnectionError:
             cc_log.error(f"Failed to establish a new connection for: {raw_url}")
-            return False           
+            return False
         if response.status_code != 200:
             cc_log.error(f"error {response.status_code} for dataset {dataset_pth}")
             return False

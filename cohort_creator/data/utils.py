@@ -4,7 +4,8 @@ from __future__ import annotations
 import functools
 from ast import literal_eval
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -60,7 +61,9 @@ def _openneuro_listing_tsv() -> Path:
 def _non_openneuro_listing_tsv() -> Path:
     return _data_dir() / "non_openneuro.tsv"
 
+
 from rich import print
+
 
 def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
     df = pd.read_csv(
@@ -89,16 +92,17 @@ def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
 
     return df
 
-def _convert_duration(x: str) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
-    x = literal_eval(x.replace("nan", 'None'))
-    for datatype, value in x.items():
 
+def _convert_duration(
+    x: str,
+) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+    x = literal_eval(x.replace("nan", "None"))
+    for datatype, value in x.items():
         if isinstance(value, list):
             value = [np.nan if None in run else np.prod(run) for run in value]
             x[datatype] = value
 
         if isinstance(value, dict):
-
             for task, runs in value.items():
                 runs = [np.nan if None in run else np.prod(run) for run in runs]
                 x[datatype][task] = runs
