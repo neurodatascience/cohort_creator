@@ -26,6 +26,7 @@ for sds in "$PWD"/tmp/*; do
 done
 
 # TODO get neuromod derivatives ?
+cd ../..
 datalad install -s https://github.com/courtois-neuromod/cneuromod.git ./tmp/cneuromod
 cd ./tmp/cneuromod && datalad -f '{path}' subdatasets | xargs -n 1 -P 2 datalad install
 cd ../..

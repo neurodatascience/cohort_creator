@@ -34,13 +34,13 @@ from cohort_creator._utils import list_all_files_with_filter
 from cohort_creator._utils import list_participants_in_dataset
 from cohort_creator._utils import list_sessions_in_participant
 from cohort_creator._utils import no_files_found_msg
+from cohort_creator._utils import progress_bar
 from cohort_creator._utils import return_target_pth
 from cohort_creator._utils import sourcedata
 from cohort_creator.bagelify import bagelify
 from cohort_creator.bagelify import new_bagel
 from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
-
 
 cc_log = cc_logger()
 
@@ -74,10 +74,13 @@ def install_datasets(
         If True, will generate a participant listing for all datasets.
 
     """
-    cc_log.info("Installing datasets")
-    for dataset_ in datasets:
-        cc_log.info(f" {dataset_}")
-        _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=output_dir)
+    with progress_bar(text="Installing datasets") as progress:
+        task = progress.add_task(description="install", total=len(datasets))
+
+        for dataset_ in datasets:
+            cc_log.info(f" {dataset_}")
+            _install(dataset_name=dataset_, dataset_types=dataset_types, output_dir=output_dir)
+            progress.update(task, advance=1)
 
     if generate_participant_listing:
         cc_log.info(f" Getting pybids layout of the following datasets: {dataset_}")
@@ -111,8 +114,14 @@ def _install(dataset_name: str, dataset_types: list[str], output_dir: Path) -> N
         if data_pth.exists():
             cc_log.debug(f"  {original_datatype} data already present at {data_pth}")
         else:
-            cc_log.info(f"   installing {original_datatype} data at: {data_pth}")
-            api.install(path=data_pth, source=uri, dataset=api.Dataset(output_dir))
+            cc_log.info(f"    installing {original_datatype} data at: {data_pth}")
+            if uri := get_dataset_url(dataset_name, dataset_type_):
+                api.install(
+                    path=data_pth,
+                    source=uri,
+                    dataset=api.Dataset(output_dir),
+                    result_renderer="disabled",
+                )
 
 
 def get_data(
@@ -161,63 +170,68 @@ def get_data(
         dataset_listing=datasets, participant_listing=participants
     )
 
-    for dataset_ in dataset_names:
-        cc_log.info(f" {dataset_}")
+    with progress_bar(text="Getting data") as progress:
+        task = progress.add_task(description="get", total=len(dataset_names))
 
-        participants_ids = return_participants_ids(
-            output_dir=output_dir,
-            datasets=datasets,
-            participants=participants,
-            dataset_name=dataset_,
-        )
-        if participants_ids is None:
-            continue
+        for dataset_ in dataset_names:
+            cc_log.info(f" {dataset_}")
 
-        for dataset_type_ in dataset_types:
-            uri = get_dataset_url(dataset_, dataset_type_)
-
-            if not uri:
-                cc_log.debug(f"      no {dataset_type_} for {dataset_}")
+            participants_ids = return_participants_ids(
+                output_dir=output_dir,
+                datasets=datasets,
+                participants=participants,
+                dataset_name=dataset_,
+            )
+            if participants_ids is None:
                 continue
-            cc_log.info(f"  {dataset_type_}")
 
-            original_datatype = dataset_type_
+            for dataset_type_ in dataset_types:
+                uri = get_dataset_url(dataset_, dataset_type_)
 
-            if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
-                dataset_type_ = "raw"
-
-            derivative = None if dataset_type_ == "raw" else dataset_type_
-            data_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
-
-            dl_dataset = api.Dataset(data_pth)
-
-            derivative_subfolder = ""
-            if dataset_type_ != original_datatype:
-                derivative_subfolder = uri.split("tree/main/")[1]
-            data_pth = data_pth / derivative_subfolder
-
-            for subject in participants_ids:
-                if not is_subject_in_dataset(subject, data_pth):
-                    cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
+                if not uri:
+                    cc_log.debug(f"      no {dataset_type_} for {dataset_}")
                     continue
+                cc_log.info(f"  {dataset_type_}")
 
-                if participants is not None:
-                    sessions = get_sessions(participants, dataset_, subject)
-                else:
-                    sessions = list_sessions_in_participant(data_pth / subject)
+                original_datatype = dataset_type_
 
-                _get_data_this_subject(
-                    subject=subject,
-                    sessions=sessions,
-                    datatypes=datatypes,
-                    task=task,
-                    space=space,
-                    dataset_type=original_datatype,
-                    data_pth=data_pth,
-                    dl_dataset=dl_dataset,
-                    jobs=jobs,
-                    bids_filter=bids_filter,
-                )
+                if dataset_type_ != "raw" and derivative_in_subfolder(dataset_, dataset_type_):
+                    dataset_type_ = "raw"
+
+                derivative = None if dataset_type_ == "raw" else dataset_type_
+                data_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
+
+                dl_dataset = api.Dataset(data_pth)
+
+                derivative_subfolder = ""
+                if dataset_type_ != original_datatype:
+                    derivative_subfolder = uri.split("tree/main/")[1]
+                data_pth = data_pth / derivative_subfolder
+
+                for subject in participants_ids:
+                    if not is_subject_in_dataset(subject, data_pth):
+                        cc_log.debug(f"  no participant {subject} in dataset {dataset_}")
+                        continue
+
+                    if participants is not None:
+                        sessions = get_sessions(participants, dataset_, subject)
+                    else:
+                        sessions = list_sessions_in_participant(data_pth / subject)
+
+                    _get_data_this_subject(
+                        subject=subject,
+                        sessions=sessions,
+                        datatypes=datatypes,
+                        task=task,
+                        space=space,
+                        dataset_type=original_datatype,
+                        data_pth=data_pth,
+                        dl_dataset=dl_dataset,
+                        jobs=jobs,
+                        bids_filter=bids_filter,
+                    )
+
+            progress.update(task, advance=1)
 
 
 def return_participants_ids(
@@ -277,7 +291,7 @@ def _get_data_this_subject(
             continue
         cc_log.debug(f"    {subject} - getting files:\n     {files}")
         try:
-            dl_dataset.get(path=files, jobs=jobs)
+            dl_dataset.get(path=files, jobs=jobs, result_renderer="disabled")
         except IncompleteResultsError:
             cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
@@ -479,7 +493,7 @@ def _generate_bagel_for_cohort(
     cc_log.info(
         f"""Check what subjects have derivatives ready
 by uploading {output_dir / "bagel.csv"} to
-https://dash.neurobagel.org/
+https://digest.neurobagel.org/
 """
     )
 

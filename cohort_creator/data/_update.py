@@ -8,16 +8,20 @@ import subprocess
 from pathlib import Path
 from typing import Any
 from typing import Generator
+from typing import Iterable
 from warnings import warn
 
+import numpy as np
 import pandas as pd
 import requests
 import yaml
 from datalad import api
 from datalad.support.exceptions import IncompleteResultsError
 from mne.io.brainvision.brainvision import _get_hdr_info
+from rich.progress import Progress
 
 from cohort_creator._utils import list_participants_in_dataset
+from cohort_creator._utils import progress_bar
 from cohort_creator.data.utils import _data_dir
 from cohort_creator.data.utils import _load_known_datasets
 from cohort_creator.data.utils import _openneuro_listing_tsv
@@ -32,7 +36,7 @@ DATASET_TYPE = dict[
     | bool
     | list[str]
     | list[int]
-    | dict[str, list[float] | dict[str, list[float]]]
+    | dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]
     | dict[str, int],
 ]
 
@@ -78,28 +82,34 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
         output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
     output_dir.mkdir(exist_ok=True)
 
-    for dataset in unknown_datasets:
-        data_pth = output_dir / dataset
+    with Progress() as progress:
+        task = progress.add_task("[green]Installing...", total=len(unknown_datasets))
 
-        if data_pth.exists():
-            cc_log.info(f"  data already present at {data_pth}")
-            continue
+        for dataset in unknown_datasets:
+            data_pth = output_dir / dataset
 
-        source = f"https://github.com/{OPENNEURO}/{dataset}.git"
-        response = requests.get(source)
-        if response.status_code != 200:
-            cc_log.error(f"error {response.status_code} for dataset {source}")
-            continue
+            if data_pth.exists():
+                cc_log.info(f"  data already present at {data_pth}")
+                progress.update(task, advance=1)
+                continue
 
-        cc_log.info(f"installing: {data_pth}")
-        try:
-            api.install(
-                path=data_pth,
-                source=source,
-                recursive=False,
-            )
-        except IncompleteResultsError:
-            cc_log.error(f" could not install: {data_pth}")
+            source = f"https://github.com/{OPENNEURO}/{dataset}.git"
+            response = requests.get(source)
+            if response.status_code != 200:
+                cc_log.warning(f"error {response.status_code} for dataset {source}")
+                progress.update(task, advance=1)
+                continue
+
+            cc_log.info(f"installing: {data_pth}")
+            try:
+                api.install(
+                    path=data_pth,
+                    source=source,
+                    recursive=False,
+                )
+            except IncompleteResultsError:
+                cc_log.error(f" could not install: {data_pth}")
+            progress.update(task, advance=1)
 
 
 def list_openneuro_raw(use_superdataset: bool) -> set[str]:
@@ -313,6 +323,7 @@ def list_datasets_in_dir(
     dataset_name_prefix: str = "ds",
     study_prefix: str = "",
     include: None | list[str] = None,
+    update_merge: bool = False,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -330,12 +341,15 @@ def list_datasets_in_dir(
         _description_, by default ""
     include : None | list[str], optional
         _description_, by default None
+    update_merge: bool, default = False
+        Pull latest version of each dataset before collecting its metadata
 
     Returns
     -------
     dict[str, list[Any]]
         _description_
     """
+    MIN_NB_DATASETS = 5
     print()
     cc_log.info(f"Listing datasets in {path}")
 
@@ -356,35 +370,81 @@ def list_datasets_in_dir(
 
     derivatives = known_derivatives()
 
-    i = 0
-    for dataset_pth in raw_datasets:
-        print()
-        cc_log.info(f"{dataset_pth.name}")
+    with progress_bar(text="Updating") as progress:
+        task = progress.add_task(description="updating", total=len(raw_datasets))
 
-        response = requests.get(get_raw_url(dataset_pth))
-        if response.status_code != 200:
-            cc_log.error(f"error {response.status_code} for dataset {dataset_pth}")
-            continue
-        if get_nb_subjects(dataset_pth) == 0:
-            cc_log.warning(f"No participants in dataset {dataset_pth}")
-            continue
+        i = 0
+        for dataset_pth in raw_datasets:
+            print()
+            cc_log.info(f"{dataset_pth.name}")
 
-        i += 1
-        if debug and i > 10:
-            break
+            if not _check_dataset(dataset_pth):
+                progress.update(task, advance=1)
+                continue
+            i += 1
+            if debug and i > MIN_NB_DATASETS:
+                break
 
-        dataset = get_info_dataset(dataset_pth, study_prefix)
+            # update dataset to make sure we get the latest version
+            ds = api.Dataset(dataset_pth)
+            if update_merge:
+                ds.update(how="merge")
+            try:
+                ds.get(dataset_pth / "dataset_description.json")
+            except IncompleteResultsError:
+                cc_log.warning("Could not get dataset_description.json or is missing.")
 
-        dataset = add_derivatives(dataset, dataset_pth, derivatives)
+            # for openneuro datasets try to eanabe annex remote on S3
+            # to allow using datalad fsspec
+            # if dataset_pth.name.startswith('ds'):
+            enable_S3_remote(dataset_pth)
 
-        if dataset["name"] in datasets["name"]:
-            # raise ValueError(f"dataset {dataset['name']} already in datasets")
-            cc_log.warning(f"dataset {dataset['name']} already in datasets")
+            dataset = get_info_dataset(dataset_pth, study_prefix)
 
-        for keys in datasets:
-            datasets[keys].append(dataset[keys])
+            dataset = add_derivatives(dataset, dataset_pth, derivatives)
+
+            if dataset["name"] in datasets["name"]:
+                # raise ValueError(f"dataset {dataset['name']} already in datasets")
+                cc_log.warning(f"dataset {dataset['name']} already in datasets")
+
+            for keys in datasets:
+                datasets[keys].append(dataset[keys])
+
+            progress.update(task, advance=1)
 
     return datasets
+
+
+def _check_dataset(dataset_pth: Path) -> bool:
+    raw_url = get_raw_url(dataset_pth)
+    if not raw_url.startswith("git@"):
+        try:
+            response = requests.get(raw_url)
+        except requests.exceptions.InvalidSchema:
+            cc_log.error(f"No connection adapters were found for: {raw_url}")
+            return False
+        except requests.exceptions.ConnectionError:
+            cc_log.error(f"Failed to establish a new connection for: {raw_url}")
+            return False
+        if response.status_code != 200:
+            cc_log.error(f"error {response.status_code} for dataset {dataset_pth}")
+            return False
+    if get_nb_subjects(dataset_pth) == 0:
+        cc_log.warning(f"No subject in dataset {dataset_pth}")
+        return False
+    return True
+
+
+def enable_S3_remote(dataset_pth: Path) -> None:
+    # try using
+    # http://docs.datalad.org/en/stable/generated/datalad.support.annexrepo.html#datalad.support.annexrepo.AnnexRepo
+    enable_remote_cmd = f"cd {dataset_pth} && git annex enableremote s3-PUBLIC public=yes"
+    cc_log.debug(enable_remote_cmd)
+    try:
+        subprocess.run(enable_remote_cmd, shell=True, capture_output=True, text=True)
+        cc_log.info(" S3 remote enabled")
+    except TypeError:
+        cc_log.debug(" Could not enable S3 remote")
 
 
 def get_raw_url(dataset_pth: Path) -> str:
@@ -442,9 +502,7 @@ def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
     dataset["nb_meeg_channels"] = get_number_meeg_channels(dataset_pth, datatypes)
 
     dataset["authors"] = get_authors(dataset_pth)
-
     dataset["license"] = get_license(dataset_pth)
-
     dataset["references_and_links"] = get_references_and_links(dataset_pth)
 
     dataset["institutions"] = get_institutions(dataset_pth)
@@ -510,26 +568,34 @@ def list_tasks(bids_pth: Path, sessions: list[str]) -> list[str]:
     return sorted(tasks)
 
 
-def get_scan_duration(dataset_pth: Path, filepath: Path) -> float | None:
+def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     """Get only header of a nifti file and compute its acquisition time."""
     if "nii" in filepath.suffix or "gz" in filepath.suffix:
         script_path = _data_dir() / "read_nb_vols"
+
         cmd = f"   datalad fsspec-head -d {dataset_pth} -c 1024 {filepath.relative_to(dataset_pth)} | python {script_path}"
         cc_log.debug(cmd)
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
         if not result.stderr:
-            return float(result.stdout.replace("\n", ""))
+            tmp = result.stdout.replace("\n", "").split(" ")
+            n_samples: int = int(tmp[0])
+            repetition_time: float = float(tmp[1])
+            return (n_samples, repetition_time)
+
         cc_log.error(f"   Could not get duration for: {filepath.relative_to(dataset_pth)}")
         cc_log.debug(result.stderr)
-        return None
+        return (0, np.nan)
+
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
         if n_samples and info and info["sfreq"]:
-            return n_samples / info["sfreq"]
-    return None
+            return (n_samples, info["sfreq"])
+
+    return (0, np.nan)
 
 
-def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], None | int]:
+def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], int]:
     ds = api.Dataset(dataset_pth)
     try:
         ds.get(filepath)
@@ -552,10 +618,10 @@ def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str,
         return info, n_samples
     except IncompleteResultsError:
         warn(f"IncompleteResultsError for {filepath}", stacklevel=2)
-        return None, None
+        return None, 0
     except FileNotFoundError:
         warn(f"FileNotFoundError for {filepath}", stacklevel=2)
-        return None, None
+        return None, 0
 
 
 def created_on(dataset_pth: Path) -> str:
@@ -616,49 +682,58 @@ def get_number_meeg_channels(dataset_pth: Path, datatypes: list[str]) -> list[in
 
 def get_duration(
     dataset_pth: Path, datatypes: list[str], tasks: list[str] | None
-) -> dict[str, list[float] | dict[str, list[float]]]:
+) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
     first_sub = list_participants_in_dataset(dataset_pth)[0]
 
     cc_log.info(f" Getting 'scan' duration for {first_sub}")
 
-    duration_all_datatypes: dict[str, list[float] | dict[str, list[float]]] = {}
+    duration_all_datatypes: dict[
+        str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]
+    ] = {}
 
     for target_datatype in ["func", "pet", "ieeg", "eeg"]:
         if target_datatype in datatypes:
-            if target_datatype == "pet":
-                files = dataset_pth.glob(f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
-                duration_all_datatypes[target_datatype] = get_duration_for_datatype(
-                    dataset_pth, files
-                )
             if tasks is None:
                 tasks = []
+                if target_datatype == "pet":
+                    files = dataset_pth.glob(f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
+                    duration_all_datatypes[target_datatype] = get_duration_for_datatype(
+                        dataset_pth, files
+                    )
+                    return duration_all_datatypes
             for task_ in tasks:
                 if target_datatype == "func":
                     files = dataset_pth.glob(
                         f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
                     )
+                if target_datatype == "pet":
+                    files = dataset_pth.glob(
+                        f"{first_sub}/**/func/{first_sub}*task-{task_}*_pet.nii*"
+                    )
                 elif target_datatype in ["eeg", "ieeg"]:
                     files = dataset_pth.glob(
                         f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"
                     )
-                duration_all_datatypes[target_datatype] = {
-                    task_: get_duration_for_datatype(dataset_pth, files)
-                }
+                if target_datatype not in duration_all_datatypes:
+                    duration_all_datatypes[target_datatype] = {}
+                duration_all_datatypes[target_datatype][task_] = get_duration_for_datatype(
+                    dataset_pth, files
+                )
     return duration_all_datatypes
 
 
-def get_duration_for_datatype(dataset_pth: Path, files: Generator[Path, None, None]) -> list[float]:
+def get_duration_for_datatype(
+    dataset_pth: Path, files: Generator[Path, None, None]
+) -> Iterable[tuple[int, float]]:
     scan_duration = []
     for filepath in files:
         cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
-        if duration := get_scan_duration(dataset_pth, filepath):
-            scan_duration.append(duration)
+        scan_duration.append(get_scan_duration(dataset_pth, filepath))
     return scan_duration
 
 
 def get_authors(dataset_pth: Path) -> list[str]:
     if not (dataset_pth / "dataset_description.json").exists():
-        warn("no dataset_description.json")
         return []
     with open(dataset_pth / "dataset_description.json") as f:
         dataset_description = json.load(f)
@@ -667,7 +742,6 @@ def get_authors(dataset_pth: Path) -> list[str]:
 
 def get_license(dataset_pth: Path) -> str:
     if not (dataset_pth / "dataset_description.json").exists():
-        warn("no dataset_description.json")
         return "n/a"
     with open(dataset_pth / "dataset_description.json") as f:
         dataset_description = json.load(f)
@@ -680,7 +754,6 @@ def get_license(dataset_pth: Path) -> str:
 
 def get_references_and_links(dataset_pth: Path) -> list[str]:
     if not (dataset_pth / "dataset_description.json").exists():
-        warn("no dataset_description.json")
         return []
     with open(dataset_pth / "dataset_description.json") as f:
         dataset_description = json.load(f)
@@ -692,27 +765,33 @@ def get_institutions(dataset_pth: Path) -> list[str]:
 
     Assumes that first subject is representative of the dataset.
     """
+    cc_log.info(" Getting institution")
     json_files = list(dataset_pth.glob("*.json"))
     first_subject = list_participants_in_dataset(dataset_pth)[0]
     json_files.extend(list(dataset_pth.glob(f"{first_subject}/**/*.json")))
 
     institutions = []
+    ds = api.Dataset(dataset_pth)
     for json_file in json_files:
         if Path(json_file).name.startswith("."):
             continue
 
+        cc_log.debug(f"  {json_file}")
         try:
+            ds.get(json_file)
             with open(json_file) as f:
                 json_dict = json.load(f)
                 if tmp := construct_institution_string(json_dict).strip(", "):
                     institutions.append(tmp)
 
         except json.decoder.JSONDecodeError:
-            warn(f"Could not parse: {json_file}", stacklevel=2)
+            cc_log.warning(f"Could not parse: {json_file}", stacklevel=2)
         except UnicodeDecodeError:
-            warn(f"Could not parse: {json_file}", stacklevel=2)
+            cc_log.warning(f"Could not parse: {json_file}", stacklevel=2)
         except FileNotFoundError:
-            warn(f"Could not find: {json_file}", stacklevel=2)
+            cc_log.warning(f"Could not find: {json_file}", stacklevel=2)
+        except IncompleteResultsError:
+            cc_log.warning(f"Could not get: {json_file}", stacklevel=2)
 
     return sorted(list({x for x in institutions if x}))
 

@@ -17,4 +17,4 @@ except BadGzipFile:
 except WrapStructError as e:
     raise e
 
-print(header['dim'][4] * header.get_zooms()[3])
+print(header['dim'][4], header.get_zooms()[3])

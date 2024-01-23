@@ -10,6 +10,7 @@ from cohort_creator._plotting import histogram_tasks
 from cohort_creator._plotting import LABELS
 from cohort_creator._plotting import plot_dataset_size_vs_time
 from cohort_creator._plotting import scatter_subject_vs
+from cohort_creator.data.utils import _count_extensions
 from cohort_creator.data.utils import filter_data
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.data.utils import save_dataset_listing
@@ -78,6 +79,21 @@ def main() -> None:
 
     fig = histogram_tasks(df)
     fig.write_image(output_dir / "tasks.png", scale=2, width=1000)
+
+    count = _count_extensions(df, "eeg")
+    fig = px.histogram(count, x="extension", y="count", title="EEG file formats")
+    fig.update_yaxes(title_text=f"percentage of datasets (out of {len(df[df['eeg']])})")
+    fig.write_image(output_dir / "eeg_file_formats.png", scale=2, width=1000)
+
+    count = _count_extensions(df, "ieeg")
+    fig = px.histogram(count, x="extension", y="count", title="iEEG file formats")
+    fig.update_yaxes(title_text=f"percentage of datasets (out of {len(df[df['ieeg']])})")
+    fig.write_image(output_dir / "ieeg_file_formats.png", scale=2, width=1000)
+
+    count = _count_extensions(df, "meg")
+    fig = px.histogram(count, x="extension", y="count", title="MEG file formats")
+    fig.update_yaxes(title_text=f"percentage of datasets (out of {len(df[df['meg']])})")
+    fig.write_image(output_dir / "meg_file_formats.png", scale=2, width=1000)
 
     save_dataset_listing(df)
 

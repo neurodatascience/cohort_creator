@@ -5,6 +5,7 @@ import functools
 from ast import literal_eval
 from pathlib import Path
 from typing import Any
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -61,6 +62,9 @@ def _non_openneuro_listing_tsv() -> Path:
     return _data_dir() / "non_openneuro.tsv"
 
 
+from rich import print
+
+
 def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
     df = pd.read_csv(
         tsv_file,
@@ -79,13 +83,31 @@ def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
             "eeg_file_formats": literal_eval,
             "ieeg_file_formats": literal_eval,
             "meg_file_formats": literal_eval,
-            "duration": literal_eval,
             "references_and_links": pd.eval,
         },
         parse_dates=["created_on"],
     )
 
+    df["duration"] = df["duration"].apply(_convert_duration)
+
     return df
+
+
+def _convert_duration(
+    x: str,
+) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+    x = literal_eval(x.replace("nan", "None"))
+    for datatype, value in x.items():
+        if isinstance(value, list):
+            value = [np.nan if None in run else np.prod(run) for run in value]
+            x[datatype] = value
+
+        if isinstance(value, dict):
+            for task, runs in value.items():
+                runs = [np.nan if None in run else np.prod(run) for run in runs]
+                x[datatype][task] = runs
+
+    return x
 
 
 def is_known_dataset(dataset_name: str) -> bool:
@@ -433,3 +455,29 @@ def save_dataset_listing(df: pd.DataFrame) -> None:
     output_file = Path.cwd() / "datasets_results.tsv"
     output_df.to_csv(output_file, sep="\t", index=False)
     cc_log.info(f"Dataset listing saved to: {output_file}")
+
+
+def _count_extensions(df: pd.DataFrame, datatype: str) -> pd.DataFrame:
+    if datatype == "eeg":
+        file_formats = {"bdf": 0, "edf": 0, "eeg": 0, "set": 0}
+    elif datatype == "ieeg":
+        file_formats = {"nwb": 0, "edf": 0, "eeg": 0, "set": 0, "mefd": 0}
+    elif datatype == "meg":
+        file_formats = {".ds": 0, "": 0, ".fif": 0, ".con": 0, ".kdf": 0, ".raw.mhd": 0}
+
+    datatype_df = df[df[datatype]]
+
+    for row in datatype_df.iterrows():
+        for key, value in row[1][f"{datatype}_file_formats"].items():
+            if value > 0:
+                file_formats[key] += 1
+
+    for key, value in file_formats.items():
+        file_formats[key] = value / len(datatype_df) * 100
+
+    data: dict[str, list[str | float]] = {"extension": [], "count": []}
+    for key, value in file_formats.items():
+        data["extension"].append(key)
+        data["count"].append(value)
+
+    return pd.DataFrame(data)

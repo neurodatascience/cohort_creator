@@ -53,10 +53,10 @@ def _get_participant_listing_from_args(args: argparse.Namespace) -> pd.DataFrame
 
 def create_yoda(output_dir: Path) -> None:
     if not output_dir.exists():
-        api.create(path=output_dir, cfg_proc="yoda")
+        api.create(path=output_dir, cfg_proc="yoda", result_renderer="disabled")
     if not (output_dir / ".datalad").exists():
         cc_log.info(f"Creating yoda dataset for output in: {output_dir}")
-        api.create(path=output_dir, cfg_proc="yoda", force=True)
+        api.create(path=output_dir, cfg_proc="yoda", force=True, result_renderer="disabled")
 
 
 def cli(argv: Sequence[str] = sys.argv) -> None:

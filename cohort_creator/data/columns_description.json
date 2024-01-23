@@ -117,9 +117,9 @@
             "Assumptions": "Based on the JSON sidecars of the first participant only."
         },
         "duration": {
-            "Description": "Duration in seconds of each run for the first participant of the dataset. Listing is done by datatypes and where possible split further by task.",
-            "Format": "dict[str: list[float] | dict[str, list[float]]]",
-            "Assumptions": "Examping to the whole dataset assumes that all participants followed the same protocol as the first subject."
+            "Description": "Duration with tuples of (number of time points, sampling frequencies) for each run. Listing is done by datatypes and where possible split further by task.",
+            "Format": "dict[str: list[tuple[int, float]] | dict[str, list[tuple[int, float]]]]",
+            "Assumptions": "Assumes that all participants followed the same protocol as the first subject."
         },
         "references_and_links": {
             "Description": "List of the authors as reported in the dataset_description",
