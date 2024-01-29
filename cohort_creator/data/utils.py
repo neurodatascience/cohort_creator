@@ -1,4 +1,5 @@
 """Utilities for data handling."""
+
 from __future__ import annotations
 
 import functools
@@ -177,9 +178,11 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     # convert to kilobytes
     for unit, exponent in zip(["TB", "GB", "MB", "KB"], [12, 9, 6, 3]):
         df["size"] = df["size"].apply(
-            lambda x: float(x.split(" ")[0]) * 10**exponent
-            if isinstance(x, str) and x.endswith(unit)
-            else x
+            lambda x: (
+                float(x.split(" ")[0]) * 10**exponent
+                if isinstance(x, str) and x.endswith(unit)
+                else x
+            )
         )
     df["mean_size"] = df["size"] / df["nb_subjects"]
 

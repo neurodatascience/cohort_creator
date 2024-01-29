@@ -3,6 +3,7 @@
 Then copy the data to a new directory structure to create a "cohort".
 
 """
+
 from __future__ import annotations
 
 import itertools

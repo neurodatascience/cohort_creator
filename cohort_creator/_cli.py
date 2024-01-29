@@ -1,4 +1,5 @@
 """Command line interface for cohort_creator."""
+
 from __future__ import annotations
 
 import argparse
