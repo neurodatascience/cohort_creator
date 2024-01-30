@@ -7,6 +7,7 @@ Required inuput:
   that can be obtained by running an empty query in
   https://query.neurobagel.org/
 """
+
 from __future__ import annotations
 
 from pathlib import Path

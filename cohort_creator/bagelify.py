@@ -1,4 +1,5 @@
 """Create bagel file to get an idea what participants have been processed by what pipeline."""
+
 from __future__ import annotations
 
 from datetime import datetime

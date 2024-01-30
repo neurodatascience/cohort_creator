@@ -1,4 +1,5 @@
 """Convert tsv to csv for rendering in docs."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,4 +1,5 @@
 """Test bagel related module."""
+
 from __future__ import annotations
 
 from cohort_creator.bagelify import bagelify

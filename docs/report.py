@@ -1,4 +1,5 @@
 """Print a small report about the datasets that got covered."""
+
 from __future__ import annotations
 
 from io import TextIOWrapper
