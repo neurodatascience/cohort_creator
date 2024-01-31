@@ -81,7 +81,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         update(debug=debug)
         exit(0)
 
-    output_dir = Path(args.output_dir[0]).resolve()
+    output_dir = Path(args.output_dir[0]).absolute()
 
     dataset_types = args.dataset_types
     validate_dataset_types(dataset_types)

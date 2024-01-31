@@ -92,8 +92,9 @@ def load_dataset_listing(dataset_listing: list[str]) -> pd.DataFrame:
     elif len(dataset_listing) == 1:
         dataset = dataset_listing[0]
         if not Path(dataset).exists():
+            cc_log.warning(f"The file {dataset} does not exist. Asumming a dataset name.")
             return pd.DataFrame({"DatasetID": [dataset]})
-        dataset_tsv = Path(dataset).resolve()
+        dataset_tsv = Path(dataset).absolute()
         return check_tsv_content(dataset_tsv)
 
 
