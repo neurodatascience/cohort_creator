@@ -2,23 +2,25 @@ from __future__ import annotations
 
 import numpy as np
 
-from cohort_creator.data._update import count_meg_file_formats
-from cohort_creator.data._update import count_stim_files
-from cohort_creator.data._update import created_on
-from cohort_creator.data._update import get_authors
-from cohort_creator.data._update import get_dataset_size
-from cohort_creator.data._update import get_duration
-from cohort_creator.data._update import get_info_dataset
-from cohort_creator.data._update import get_institutions
-from cohort_creator.data._update import get_license
-from cohort_creator.data._update import get_nb_subjects
-from cohort_creator.data._update import get_references_and_links
-from cohort_creator.data._update import has_participant_tsv
-from cohort_creator.data._update import list_data_files
-from cohort_creator.data._update import list_datatypes
-from cohort_creator.data._update import list_participants_tsv_columns
-from cohort_creator.data._update import list_sessions
-from cohort_creator.data._update import list_tasks
+from cohort_creator.data._update import (
+    count_meg_file_formats,
+    count_stim_files,
+    created_on,
+    get_authors,
+    get_dataset_size,
+    get_duration,
+    get_info_dataset,
+    get_institutions,
+    get_license,
+    get_nb_subjects,
+    get_references_and_links,
+    has_participant_tsv,
+    list_data_files,
+    list_datatypes,
+    list_participants_tsv_columns,
+    list_sessions,
+    list_tasks,
+)
 
 # from cohort_creator.data._update import get_duration
 

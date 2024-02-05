@@ -7,10 +7,7 @@ from pathlib import Path
 
 from bids import BIDSLayout
 
-from cohort_creator._utils import get_anat_files
-from cohort_creator._utils import get_func_files
-from cohort_creator._utils import set_name
-from cohort_creator._utils import set_version
+from cohort_creator._utils import get_anat_files, get_func_files, set_name, set_version
 
 
 def bagelify(

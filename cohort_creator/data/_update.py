@@ -6,9 +6,7 @@ import logging
 import os
 import subprocess
 from pathlib import Path
-from typing import Any
-from typing import Generator
-from typing import Iterable
+from typing import Any, Generator, Iterable
 from warnings import warn
 
 import numpy as np
@@ -20,13 +18,14 @@ from datalad.support.exceptions import IncompleteResultsError
 from mne.io.brainvision.brainvision import _get_hdr_info
 from rich.progress import Progress
 
-from cohort_creator._utils import list_participants_in_dataset
-from cohort_creator._utils import progress_bar
-from cohort_creator.data.utils import _data_dir
-from cohort_creator.data.utils import _load_known_datasets
-from cohort_creator.data.utils import _openneuro_listing_tsv
-from cohort_creator.data.utils import known_datasets_df
-from cohort_creator.data.utils import KNOWN_DATATYPES
+from cohort_creator._utils import list_participants_in_dataset, progress_bar
+from cohort_creator.data.utils import (
+    KNOWN_DATATYPES,
+    _data_dir,
+    _load_known_datasets,
+    _openneuro_listing_tsv,
+    known_datasets_df,
+)
 from cohort_creator.logger import cc_logger
 
 DATASET_TYPE = dict[

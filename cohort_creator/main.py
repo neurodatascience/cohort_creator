@@ -13,33 +13,32 @@ from pathlib import Path
 
 import pandas as pd
 from datalad import api
-from datalad.support.exceptions import (
-    IncompleteResultsError,
-)
+from datalad.support.exceptions import IncompleteResultsError
 
-from cohort_creator._utils import add_study_tsv
-from cohort_creator._utils import copy_top_files
-from cohort_creator._utils import create_ds_description
-from cohort_creator._utils import create_tsv_participant_session_in_datasets
-from cohort_creator._utils import dataset_path
-from cohort_creator._utils import derivative_in_subfolder
-from cohort_creator._utils import filter_excluded_participants
-from cohort_creator._utils import get_dataset_url
-from cohort_creator._utils import get_filters
-from cohort_creator._utils import get_list_datasets_to_install
-from cohort_creator._utils import get_participant_ids
-from cohort_creator._utils import get_pipeline_version
-from cohort_creator._utils import get_sessions
-from cohort_creator._utils import is_subject_in_dataset
-from cohort_creator._utils import list_all_files_with_filter
-from cohort_creator._utils import list_participants_in_dataset
-from cohort_creator._utils import list_sessions_in_participant
-from cohort_creator._utils import no_files_found_msg
-from cohort_creator._utils import progress_bar
-from cohort_creator._utils import return_target_pth
-from cohort_creator._utils import sourcedata
-from cohort_creator.bagelify import bagelify
-from cohort_creator.bagelify import new_bagel
+from cohort_creator._utils import (
+    add_study_tsv,
+    copy_top_files,
+    create_ds_description,
+    create_tsv_participant_session_in_datasets,
+    dataset_path,
+    derivative_in_subfolder,
+    filter_excluded_participants,
+    get_dataset_url,
+    get_filters,
+    get_list_datasets_to_install,
+    get_participant_ids,
+    get_pipeline_version,
+    get_sessions,
+    is_subject_in_dataset,
+    list_all_files_with_filter,
+    list_participants_in_dataset,
+    list_sessions_in_participant,
+    no_files_found_msg,
+    progress_bar,
+    return_target_pth,
+    sourcedata,
+)
+from cohort_creator.bagelify import bagelify, new_bagel
 from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
 

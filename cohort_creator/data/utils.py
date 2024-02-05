@@ -5,8 +5,7 @@ from __future__ import annotations
 import functools
 from ast import literal_eval
 from pathlib import Path
-from typing import Any
-from typing import Iterable
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
@@ -61,9 +60,6 @@ def _openneuro_listing_tsv() -> Path:
 
 def _non_openneuro_listing_tsv() -> Path:
     return _data_dir() / "non_openneuro.tsv"
-
-
-from rich import print
 
 
 def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:

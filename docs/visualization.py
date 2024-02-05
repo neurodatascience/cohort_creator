@@ -6,17 +6,20 @@ from pathlib import Path
 
 import plotly.express as px
 
-from cohort_creator._plotting import datatypes_histogram
-from cohort_creator._plotting import histogram_tasks
-from cohort_creator._plotting import LABELS
-from cohort_creator._plotting import plot_dataset_size_vs_time
-from cohort_creator._plotting import scatter_subject_vs
-from cohort_creator.data.utils import _count_extensions
-from cohort_creator.data.utils import filter_data
-from cohort_creator.data.utils import known_datasets_df
-from cohort_creator.data.utils import save_dataset_listing
-from cohort_creator.data.utils import wrangle_data
-
+from cohort_creator._plotting import (
+    LABELS,
+    datatypes_histogram,
+    histogram_tasks,
+    plot_dataset_size_vs_time,
+    scatter_subject_vs,
+)
+from cohort_creator.data.utils import (
+    _count_extensions,
+    filter_data,
+    known_datasets_df,
+    save_dataset_listing,
+    wrangle_data,
+)
 
 # filter_config = {"is_openneuro": None, "task": "rest", "physio": True, "datatypes": ["func"]}
 # filter_config = {"is_openneuro": None, "datatypes": ["meg"]}

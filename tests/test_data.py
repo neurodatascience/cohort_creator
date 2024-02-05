@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from cohort_creator.data.utils import filter_data
-from cohort_creator.data.utils import is_known_dataset
-from cohort_creator.data.utils import known_datasets_df
-from cohort_creator.data.utils import wrangle_data
+from cohort_creator.data.utils import (
+    filter_data,
+    is_known_dataset,
+    known_datasets_df,
+    wrangle_data,
+)
 
 
 def test_is_known_dataset():
