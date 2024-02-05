@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from cohort_creator.bagelify import bagelify
-from cohort_creator.bagelify import new_bagel
+from cohort_creator.bagelify import bagelify, new_bagel
 
 
 def test_bagelify(bids_examples):

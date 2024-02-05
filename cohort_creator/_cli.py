@@ -14,16 +14,16 @@ from rich_argparse import RichHelpFormatter
 
 from cohort_creator._browse import browse
 from cohort_creator._parsers import global_parser
-from cohort_creator._utils import get_bids_filter
-from cohort_creator._utils import get_list_datasets_to_install
-from cohort_creator._utils import load_dataset_listing
-from cohort_creator._utils import load_participant_listing
-from cohort_creator._utils import validate_dataset_types
+from cohort_creator._utils import (
+    get_bids_filter,
+    get_list_datasets_to_install,
+    load_dataset_listing,
+    load_participant_listing,
+    validate_dataset_types,
+)
 from cohort_creator.data._update import update
 from cohort_creator.logger import cc_logger
-from cohort_creator.main import construct_cohort
-from cohort_creator.main import get_data
-from cohort_creator.main import install_datasets
+from cohort_creator.main import construct_cohort, get_data, install_datasets
 
 cc_log = cc_logger()
 

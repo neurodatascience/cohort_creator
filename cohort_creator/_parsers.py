@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from argparse import ArgumentParser
-from argparse import HelpFormatter
+from argparse import ArgumentParser, HelpFormatter
 
 from ._version import __version__
 

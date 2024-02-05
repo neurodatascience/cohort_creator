@@ -10,33 +10,35 @@ import pandas as pd
 import pytest
 from bids import BIDSLayout
 
-from .conftest import path_test_data
-from .conftest import root_dir
-from cohort_creator._utils import check_participant_listing
-from cohort_creator._utils import check_tsv_content
-from cohort_creator._utils import create_ds_description
-from cohort_creator._utils import create_tsv_participant_session_in_datasets
-from cohort_creator._utils import derivative_in_subfolder
-from cohort_creator._utils import get_anat_files
-from cohort_creator._utils import get_bids_filter
-from cohort_creator._utils import get_dataset_url
-from cohort_creator._utils import get_filters
-from cohort_creator._utils import get_func_files
-from cohort_creator._utils import get_institution
-from cohort_creator._utils import get_list_datasets_to_install
-from cohort_creator._utils import get_participant_ids
-from cohort_creator._utils import get_pipeline_version
-from cohort_creator._utils import get_sessions
-from cohort_creator._utils import is_subject_in_dataset
-from cohort_creator._utils import list_all_files_with_filter
-from cohort_creator._utils import list_participants_in_dataset
-from cohort_creator._utils import load_dataset_listing
-from cohort_creator._utils import load_participant_listing
-from cohort_creator._utils import return_dataset_id
-from cohort_creator._utils import return_target_pth
-from cohort_creator._utils import set_name
-from cohort_creator._utils import set_version
-from cohort_creator._utils import validate_dataset_types
+from cohort_creator._utils import (
+    check_participant_listing,
+    check_tsv_content,
+    create_ds_description,
+    create_tsv_participant_session_in_datasets,
+    derivative_in_subfolder,
+    get_anat_files,
+    get_bids_filter,
+    get_dataset_url,
+    get_filters,
+    get_func_files,
+    get_institution,
+    get_list_datasets_to_install,
+    get_participant_ids,
+    get_pipeline_version,
+    get_sessions,
+    is_subject_in_dataset,
+    list_all_files_with_filter,
+    list_participants_in_dataset,
+    load_dataset_listing,
+    load_participant_listing,
+    return_dataset_id,
+    return_target_pth,
+    set_name,
+    set_version,
+    validate_dataset_types,
+)
+
+from .conftest import path_test_data, root_dir
 
 
 @pytest.mark.parametrize("extension", ["", ".git"])

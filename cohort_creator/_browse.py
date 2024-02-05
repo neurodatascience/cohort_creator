@@ -2,30 +2,27 @@
 
 from __future__ import annotations
 
-from typing import Any
-from typing import Hashable
+from typing import Any, Hashable
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import callback
-from dash import Dash
-from dash import dash_table
-from dash import dcc
-from dash import html
-from dash import Input
-from dash import Output
+from dash import Dash, Input, Output, callback, dash_table, dcc, html
 from matplotlib import figure
 
-from cohort_creator._plotting import datatypes_histogram
-from cohort_creator._plotting import histogram_tasks
-from cohort_creator._plotting import plot_dataset_size_vs_time
-from cohort_creator._plotting import scatter_subject_vs
+from cohort_creator._plotting import (
+    datatypes_histogram,
+    histogram_tasks,
+    plot_dataset_size_vs_time,
+    scatter_subject_vs,
+)
 from cohort_creator._version import version
-from cohort_creator.data.utils import filter_data
-from cohort_creator.data.utils import known_datasets_df
-from cohort_creator.data.utils import KNOWN_DATATYPES
-from cohort_creator.data.utils import save_dataset_listing
-from cohort_creator.data.utils import wrangle_data
+from cohort_creator.data.utils import (
+    KNOWN_DATATYPES,
+    filter_data,
+    known_datasets_df,
+    save_dataset_listing,
+    wrangle_data,
+)
 
 df = wrangle_data(known_datasets_df())
 
