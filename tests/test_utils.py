@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from bids import BIDSLayout
+from datalad import api
 
 from cohort_creator._utils import (
     check_participant_listing,
@@ -449,4 +450,5 @@ def test_list_participants_in_dataset(bids_examples):
 
 def test_nipoppy_template(tmp_path):
     # nipoppy_template(output_dir=Path.cwd(), dataset="foo")
-    nipoppy_template(output_dir=tmp_path, dataset="foo")
+    api.create(tmp_path / "foo")
+    nipoppy_template(output_dir=tmp_path / "foo", dataset="bar")
