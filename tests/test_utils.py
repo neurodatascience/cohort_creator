@@ -31,12 +31,12 @@ from cohort_creator._utils import (
     list_participants_in_dataset,
     load_dataset_listing,
     load_participant_listing,
+    nipoppy_template,
     return_dataset_id,
     return_target_pth,
     set_name,
     set_version,
     validate_dataset_types,
-    nipoppy_template
 )
 
 from .conftest import path_test_data, root_dir
@@ -447,5 +447,6 @@ def test_list_participants_in_dataset(bids_examples):
     assert all(x in ["sub-01", "sub-02"] for x in participants_ids)
 
 
-def test_nipoppy_template():
-    nipoppy_template(output_dir = Path.cwd(), dataset = "foo")
+def test_nipoppy_template(tmp_path):
+    # nipoppy_template(output_dir=Path.cwd(), dataset="foo")
+    nipoppy_template(output_dir=tmp_path, dataset="foo")

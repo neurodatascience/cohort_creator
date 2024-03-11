@@ -33,11 +33,11 @@ from cohort_creator._utils import (
     list_all_files_with_filter,
     list_participants_in_dataset,
     list_sessions_in_participant,
+    nipoppy_template,
     no_files_found_msg,
     progress_bar,
     return_target_pth,
     sourcedata,
-    nipoppy_template
 )
 from cohort_creator.bagelify import bagelify, new_bagel
 from cohort_creator.data.utils import is_known_dataset
@@ -378,8 +378,7 @@ def construct_cohort(
                 derivative_subfolder = uri.split("tree/main/")[1]
             src_pth = src_pth / derivative_subfolder
 
-            target_root_pth = return_target_pth(output_dir, dataset_type="raw").parent
-            nipoppy_template(target_root_pth)
+            nipoppy_template(output_dir=output_dir, dataset=dataset_)
 
             target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
@@ -521,7 +520,11 @@ def _recreate_mriqc_group_reports(
         cc_log.info(f" {dataset_}")
 
         target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)
-        mriqc_dirs = (target_pth / "derivatives").glob("mriqc-*")
+
+        if not (target_pth.parent / "derivatives" / "mriqc").exists():
+            continue
+
+        mriqc_dirs = (target_pth.parent / "derivatives" / "mriqc").iterdir()
 
         if not mriqc_dirs:
             continue

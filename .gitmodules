@@ -2,7 +2,3 @@
 	path = tests/data/bids-examples
 	url = https://github.com/bids-standard/bids-examples.git
 	datalad-url = https://github.com/bids-standard/bids-examples.git
-[submodule "study-foo/code"]
-	path = study-foo/code
-	url = https://github.com/neurodatascience/nipoppy.git
-	datalad-url = https://github.com/neurodatascience/nipoppy.git
