@@ -24,6 +24,8 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+from datalad import api
+
 from cohort_creator._version import __version__
 from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.logger import cc_logger
@@ -379,13 +381,11 @@ def return_target_pth(
     output_dir: Path, dataset_type: str, dataset: str, src_pth: Path | None = None
 ) -> Path:
     study_ID = f"study-{dataset}"
-    folder_name = study_ID
     if dataset_type == "raw":
-        return dataset_path(output_dir, study_ID)
-    folder_name = dataset_type
+        return output_dir / study_ID / "bids"
     if version := get_pipeline_version(src_pth):
-        folder_name = f"{dataset_type}-{version}"
-    return output_dir / study_ID / "derivatives" / folder_name
+        return output_dir / study_ID / "derivatives" / dataset_type / f"{version}"
+    return output_dir / study_ID / "derivatives" / dataset_type
 
 
 def set_name(derivative_path: Path) -> str:
@@ -650,3 +650,35 @@ def progress_bar(text: str, color: str = "green") -> Progress:
         TaskProgressColumn(),
         TimeRemainingColumn(),
     )
+
+
+def nipoppy_template(output_dir: Path, dataset: str):
+    """Set up a directory to accept a nipoppy data structure."""
+    target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset).parent
+
+    dirs_to_create = ["code", "proc", "bids", "derivatives", "tabular", "scratch"]
+    for i in dirs_to_create:
+        (target_pth / i).mkdir(exist_ok=True, parents=True)
+
+    api.install(
+                        path=target_pth / "code" / "nipoppy",
+                        source="https://github.com/neurodatascience/nipoppy.git",
+                        dataset=api.Dataset(output_dir),
+                        result_renderer="disabled",
+                    )
+    
+    src_config_path =  target_pth / "code" / "nipoppy" / "nipoppy" /"sample_global_configs.json"
+    target_config_path =  target_pth / "proc" / "global_configs.json"
+    shutil.copy(src=src_config_path, dst=target_config_path)
+
+    with open(target_config_path, 'r') as f:
+        config = json.load(f)
+
+    config["DATASET_NAME"] = dataset
+    config["DATASET_ROOT"] = str(target_pth)
+    config["BIDS"].pop("heudiconv")
+
+    with open(target_config_path, 'w') as f:
+        json.dump(config, f, indent=4)
+
+

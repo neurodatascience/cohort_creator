@@ -36,6 +36,7 @@ from cohort_creator._utils import (
     set_name,
     set_version,
     validate_dataset_types,
+    nipoppy_template
 )
 
 from .conftest import path_test_data, root_dir
@@ -169,13 +170,13 @@ def test_create_ds_description(tmp_path):
 @pytest.mark.parametrize(
     "dataset_type, dataset, src_pth, expected",
     [
-        ("raw", "foo", None, ["study-foo"]),
+        ("raw", "foo", None, ["study-foo", "bids"]),
         ("fmriprep", "foo", None, ["study-foo", "derivatives", "fmriprep"]),
         (
             "fmriprep",
             "foo",
             path_test_data() / "bids-examples" / "ds000001-fmriprep",
-            ["study-foo", "derivatives", "fmriprep-20.2.0rc0"],
+            ["study-foo", "derivatives", "fmriprep", "20.2.0rc0"],
         ),
     ],
 )
@@ -444,3 +445,7 @@ def test_list_participants_in_dataset(bids_examples):
     participants_ids = list_participants_in_dataset(bids_examples / "ieeg_visual")
 
     assert all(x in ["sub-01", "sub-02"] for x in participants_ids)
+
+
+def test_nipoppy_template():
+    nipoppy_template(output_dir = Path.cwd(), dataset = "foo")

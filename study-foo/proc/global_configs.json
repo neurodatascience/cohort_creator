@@ -1,0 +1,46 @@
+{
+    "DATASET_NAME": "foo",
+    "DATASET_ROOT": "/home/remi/github/origami/cohort_creator/study-foo",
+    "CONTAINER_STORE": "",
+    "SINGULARITY_PATH": "singularity",
+    "TEMPLATEFLOW_DIR": "",
+    "SESSIONS": [
+        "ses-A",
+        "ses-B"
+    ],
+    "VISITS": [
+        "V01",
+        "V02"
+    ],
+    "BIDS": {
+        "validator": {
+            "CONTAINER": "bids_validator.sif",
+            "URL": ""
+        }
+    },
+    "PROC_PIPELINES": {
+        "mriqc": {
+            "VERSION": "23.1.0",
+            "CONTAINER": "mriqc_{}.sif",
+            "URL": ""
+        },
+        "fmriprep": {
+            "VERSION": "20.2.7",
+            "CONTAINER": "fmriprep_{}.sif",
+            "URL": ""
+        },
+        "freesurfer": {
+            "VERSION": "6.0.1",
+            "CONTAINER": "fmriprep_{}.sif",
+            "URL": ""
+        }
+    },
+    "TABULAR": {
+        "data_dictionary": {
+            "PATH": "",
+            "VERSION": "",
+            "URL": ""
+        }
+    },
+    "WORKFLOWS": []
+}

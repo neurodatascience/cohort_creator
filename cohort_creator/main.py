@@ -37,6 +37,7 @@ from cohort_creator._utils import (
     progress_bar,
     return_target_pth,
     sourcedata,
+    nipoppy_template
 )
 from cohort_creator.bagelify import bagelify, new_bagel
 from cohort_creator.data.utils import is_known_dataset
@@ -377,6 +378,9 @@ def construct_cohort(
                 derivative_subfolder = uri.split("tree/main/")[1]
             src_pth = src_pth / derivative_subfolder
 
+            target_root_pth = return_target_pth(output_dir, dataset_type="raw").parent
+            nipoppy_template(target_root_pth)
+
             target_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
             target_pth.mkdir(exist_ok=True, parents=True)
 
@@ -479,7 +483,7 @@ def _generate_bagel_for_cohort(
             continue
         cc_log.info(f"  {dataset_} - {dataset_type_}")
 
-        raw_pth = return_target_pth(output_dir, "raw", dataset_)
+        raw_pth = return_target_pth(output_dir, dataset_type="raw", dataset=dataset_)
 
         src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=dataset_type_)
         derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
