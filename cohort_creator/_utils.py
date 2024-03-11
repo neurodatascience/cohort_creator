@@ -669,7 +669,7 @@ def nipoppy_template(output_dir: Path, dataset: str) -> None:
     )
 
     src_config_path = target_pth / "code" / "nipoppy" / "nipoppy" / "sample_global_configs.json"
-    target_config_path = target_pth / "proc" / "global_configs.json"
+    target_config_path = nipoppy_config_path(output_dir, dataset)
     shutil.copy(src=src_config_path, dst=target_config_path)
 
     with open(target_config_path) as f:
@@ -681,3 +681,10 @@ def nipoppy_template(output_dir: Path, dataset: str) -> None:
 
     with open(target_config_path, "w") as f:
         json.dump(config, f, indent=4)
+
+
+def nipoppy_config_path(output_dir: Path, dataset: str):
+    target_pth = return_target_pth(
+        output_dir=output_dir, dataset_type="raw", dataset=dataset
+    ).parent
+    return target_pth / "proc" / "global_configs.json"
