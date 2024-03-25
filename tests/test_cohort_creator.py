@@ -67,6 +67,7 @@ def test_construct_cohort(output_dir):
         task="*",
         jobs=2,
     )
+    # ensure that repeating the command won't do anything
     get_data(
         output_dir=output_dir,
         datasets=datasets,
@@ -86,6 +87,7 @@ def test_construct_cohort(output_dir):
         space="not_used_for_raw",
         task="*",
     )
+    # ensure that repeating the command won't do anything
     construct_cohort(
         output_dir=output_dir,
         datasets=datasets,
