@@ -27,7 +27,7 @@ def output_dir(tmp_path):
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def install_dataset():
     def _install_dataset(dataset_name: str):
         output_path = Path(__file__).parent / "data" / "tmp" / dataset_name
