@@ -120,23 +120,7 @@ def filter_excluded_participants(pth: Path, participants: list[str] | None) -> N
     participants_df.to_csv(participants_tsv, sep="\t", index=False)
 
 
-def copy_top_files(src_pth: Path, target_pth: Path, datatypes: list[str]) -> None:
-    """Copy top files from BIDS src_pth to BIDS target_pth."""
-    top_files = ["dataset_description.json", "participants.*", "README*"]
-    if "func" in datatypes:
-        top_files.extend(["*task-*_events.tsv", "*task-*_events.json", "*task-*_bold.json"])
-    if "anat" in datatypes:
-        top_files.append("*T1w.json")
 
-    for top_file_ in top_files:
-        for f in src_pth.glob(top_file_):
-            if (target_pth / f.name).exists():
-                cc_log.debug(f"      file already present:\n       '{(target_pth / f.name)}'")
-                continue
-            try:
-                shutil.copy(src=f, dst=target_pth, follow_symlinks=True)
-            except FileNotFoundError:
-                cc_log.error(f"      Could not find file '{f}'")
 
 
 def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:

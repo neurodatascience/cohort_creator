@@ -18,7 +18,6 @@ from datalad.support.exceptions import IncompleteResultsError
 
 from cohort_creator._utils import (
     add_study_tsv,
-    copy_top_files,
     create_ds_description,
     create_tsv_participant_session_in_datasets,
     dataset_path,
@@ -44,6 +43,7 @@ from cohort_creator._utils import (
 from cohort_creator.bagelify import bagelify, new_bagel
 from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
+from cohort_creator.copy_files import copy_top_files
 
 cc_log = cc_logger()
 
@@ -299,15 +299,7 @@ def _get_data_this_subject(
             cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
 
-def copy_files(output_dir: Path,
-    datasets: pd.DataFrame,
-    participants: pd.DataFrame | None,
-    dataset_types: list[str],
-    datatypes: list[str],
-    task: str,
-    space: str,
-    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,):
-    ...
+
 
 def construct_cohort(
     output_dir: Path,

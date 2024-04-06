@@ -452,3 +452,5 @@ def test_nipoppy_template(tmp_path):
     # nipoppy_template(output_dir=Path.cwd(), dataset="foo")
     api.create(tmp_path / "foo")
     nipoppy_template(output_dir=tmp_path / "foo", dataset="bar")
+
+
