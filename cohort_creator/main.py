@@ -7,6 +7,7 @@ Then copy the data to a new directory structure to create a "cohort".
 from __future__ import annotations
 
 import itertools
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -33,6 +34,8 @@ from cohort_creator._utils import (
     list_all_files_with_filter,
     list_participants_in_dataset,
     list_sessions_in_participant,
+    nipoppy_config_path,
+    nipoppy_template,
     no_files_found_msg,
     progress_bar,
     return_target_pth,
@@ -356,6 +359,10 @@ def construct_cohort(
 
         data_pth = dataset_path(sourcedata(output_dir), dataset_)
 
+        nipoppy_template(output_dir=output_dir, dataset=dataset_)
+        with open(nipoppy_config_path(output_dir=output_dir, dataset=dataset_)) as f:
+            nipoppy_config = json.load(f)
+
         for dataset_type_ in dataset_types:
             uri = get_dataset_url(dataset_, dataset_type_)
 
@@ -371,6 +378,10 @@ def construct_cohort(
 
             derivative = None if dataset_type_ == "raw" else dataset_type_
             src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=derivative)
+
+            if dataset_type_ != "raw":
+                version = get_pipeline_version(src_pth)
+                nipoppy_config["PROC_PIPELINES"][dataset_type_]["VERSION"] = version
 
             derivative_subfolder = ""
             if dataset_type_ != original_datatype:
@@ -405,6 +416,19 @@ def construct_cohort(
                     bids_filter=bids_filter,
                 )
 
+                _update_nipoppy_manifest(
+                    datatypes, subject, sessions, dataset_type_, output_dir, dataset_
+                )
+
+        # TODO update proc/invocations for boutiques
+
+        nipoppy_config = _update_nipoppy_config(
+            output_dir=output_dir, nipoppy_config=nipoppy_config, dataset=dataset_
+        )
+
+        with open(nipoppy_config_path(output_dir=output_dir, dataset=dataset_), "w") as f:
+            json.dump(nipoppy_config, f, indent=4)
+
     add_study_tsv(output_dir, dataset_names)
 
     _generate_bagel_for_cohort(
@@ -417,6 +441,43 @@ def construct_cohort(
         _recreate_mriqc_group_reports(
             output_dir=output_dir, dataset_names=dataset_names, dataset_types=dataset_types
         )
+
+
+def _update_nipoppy_config(output_dir: Path, nipoppy_config: dict, dataset: str):
+    """Remove unused pipelines from the nipopy config."""
+    derivatives = (
+        return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset).parent
+        / "derivatives"
+    ).iterdir()
+    derivatives = [x.name for x in derivatives]
+    for to_remove in ["mriqc", "fmriprep"]:
+        if to_remove not in derivatives and to_remove in nipoppy_config["PROC_PIPELINES"]:
+            nipoppy_config["PROC_PIPELINES"].pop(to_remove)
+
+    return nipoppy_config
+
+
+def _update_nipoppy_manifest(datatypes, subject, sessions, dataset_type_, output_dir, dataset_):
+    """Add a record the manifest."""
+    if dataset_type_ != "raw":
+        return
+
+    manifest = {"participant_id": [], "visit": [], "session": [], "datatype": []}
+
+    for ses in sessions:
+        manifest["participant_id"].append(subject)
+        manifest["visit"].append(None)
+        manifest["session"].append(ses)
+        manifest["datatype"].append(datatypes)
+
+    manifest_path = (
+        return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_).parent
+        / "tabular"
+        / "manifest.csv"
+    )
+
+    manifest = pd.DataFrame(manifest)
+    manifest.to_csv(manifest_path, index=False, na_rep="n/a")
 
 
 def _copy_this_subject(
@@ -479,7 +540,7 @@ def _generate_bagel_for_cohort(
             continue
         cc_log.info(f"  {dataset_} - {dataset_type_}")
 
-        raw_pth = return_target_pth(output_dir, "raw", dataset_)
+        raw_pth = return_target_pth(output_dir, dataset_type="raw", dataset=dataset_)
 
         src_pth = dataset_path(sourcedata(output_dir), dataset_, derivative=dataset_type_)
         derivative_pth = return_target_pth(output_dir, dataset_type_, dataset_, src_pth)
@@ -517,7 +578,11 @@ def _recreate_mriqc_group_reports(
         cc_log.info(f" {dataset_}")
 
         target_pth = return_target_pth(output_dir=output_dir, dataset_type="raw", dataset=dataset_)
-        mriqc_dirs = (target_pth / "derivatives").glob("mriqc-*")
+
+        if not (target_pth.parent / "derivatives" / "mriqc").exists():
+            continue
+
+        mriqc_dirs = (target_pth.parent / "derivatives" / "mriqc").iterdir()
 
         if not mriqc_dirs:
             continue

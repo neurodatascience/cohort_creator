@@ -19,6 +19,20 @@ and this project adheres to
 ### Security
 -->
 
+## Unreleased
+
+### Added
+
+### Changed
+
+-   [ENH] Change output layout to match that of [nipoppy](https://github.com/neurodatascience/nipoppy) (#190 @Remi-Gau)
+
+### Deprecated
+
+### Removed
+
+### Security
+
 ## 0.3.0 - 2024-04-06
 
 ### Added
@@ -26,12 +40,12 @@ and this project adheres to
 -   [ENH] Add non-openneuro datasets (ABIDE, CORR, ADHD200, Neuromod...). (#124 @Remi-Gau)
 -   [ENH] Add Dash app to help browse and visualizse all known datasets.
 -   [ENH] Improved listing of knonwn datasets to include:
-    - "scan duration"
-    - presence of `physio.tsv.gz` or `stim.tsv.gz` files
-    - presence of a `stimuli` directory
-    - numbers of the different file formats for EEG, MEG, iEEG
-    - references and links associated to each dataset
-    - dataset license
+    -   "scan duration"
+    -   presence of `physio.tsv.gz` or `stim.tsv.gz` files
+    -   presence of a `stimuli` directory
+    -   numbers of the different file formats for EEG, MEG, iEEG
+    -   references and links associated to each dataset
+    -   dataset license
 
 ### Fixed
 

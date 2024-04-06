@@ -78,7 +78,6 @@ extend-exclude = '''
 )
 '''
 line-length = 100
-safe = true
 
 [tool.codespell]
 skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,**/openneuro.tsv,**/.locations.tsv"
