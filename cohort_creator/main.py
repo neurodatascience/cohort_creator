@@ -299,6 +299,16 @@ def _get_data_this_subject(
             cc_log.error(f"    {subject} - failed to get files:\n     {files}")
 
 
+def copy_files(output_dir: Path,
+    datasets: pd.DataFrame,
+    participants: pd.DataFrame | None,
+    dataset_types: list[str],
+    datatypes: list[str],
+    task: str,
+    space: str,
+    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,):
+    ...
+
 def construct_cohort(
     output_dir: Path,
     datasets: pd.DataFrame,
