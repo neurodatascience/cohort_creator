@@ -19,7 +19,7 @@ and this project adheres to
 ### Security
 -->
 
-## Unreleased
+## 0.3.0 - 2024-04-06
 
 ### Added
 
