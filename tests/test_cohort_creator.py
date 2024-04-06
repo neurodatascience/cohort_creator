@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from cohort_creator._utils import sourcedata
-from cohort_creator.main import construct_cohort, get_data, install_datasets, copy_files
+from cohort_creator.main import construct_cohort, get_data, install_datasets
 
 
 def test_install_datasets(output_dir, caplog):

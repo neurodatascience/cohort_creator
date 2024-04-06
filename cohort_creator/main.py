@@ -41,9 +41,9 @@ from cohort_creator._utils import (
     sourcedata,
 )
 from cohort_creator.bagelify import bagelify, new_bagel
+from cohort_creator.copy_files import copy_top_files
 from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
-from cohort_creator.copy_files import copy_top_files
 
 cc_log = cc_logger()
 
@@ -297,8 +297,6 @@ def _get_data_this_subject(
             dl_dataset.get(path=files, jobs=jobs, result_renderer="disabled")
         except IncompleteResultsError:
             cc_log.error(f"    {subject} - failed to get files:\n     {files}")
-
-
 
 
 def construct_cohort(

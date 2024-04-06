@@ -120,9 +120,6 @@ def filter_excluded_participants(pth: Path, participants: list[str] | None) -> N
     participants_df.to_csv(participants_tsv, sep="\t", index=False)
 
 
-
-
-
 def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:
     tsv_file = Path(tsv_file).resolve()
     if not tsv_file.exists():
