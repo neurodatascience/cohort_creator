@@ -47,10 +47,6 @@ from cohort_creator.logger import cc_logger
 cc_log = cc_logger()
 
 
-def superdataset(pth: Path) -> api.Dataset:
-    return api.Dataset(pth)
-
-
 def install_datasets(
     datasets: list[str],
     output_dir: Path,

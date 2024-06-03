@@ -79,6 +79,6 @@ def copy_this_subject(
                 cc_log.debug(f"      file already present:\n       '{f}'")
                 continue
             try:
-                api.copy_file(path=dataset_root / f, target_dir=target_pth)
+                api.copy_file(path=dataset_root / f, target_dir=target_pth / sub_dirs[0])
             except FileNotFoundError:
                 cc_log.error(f"      Could not find file '{f}' in {dataset_root}")

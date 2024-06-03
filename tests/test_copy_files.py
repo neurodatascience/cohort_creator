@@ -38,5 +38,5 @@ def test_copy_this_subject(output_dir):
     )
 
     assert (
-        output_dir / "study-ds000001" / "bids" / "sub-01" / "anat" / "sub-03_T1w.nii.gz"
+        output_dir / "study-ds000001" / "bids" / "sub-01" / "anat" / "sub-01_T1w.nii.gz"
     ).exists()
