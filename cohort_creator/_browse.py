@@ -130,7 +130,7 @@ app.layout = html.Div(
                 html.Div(
                     [
                         html.H2(children="participants", style={"textAlign": "left"}),
-                        dcc.Markdown(children="Keep only datasets with particpants.tsv."),
+                        dcc.Markdown(children="Keep only datasets with participants.tsv."),
                         dcc.RadioItems(
                             options=["true", "false", "both"],
                             value="both",
