@@ -80,7 +80,7 @@ extend-exclude = '''
 line-length = 100
 
 [tool.codespell]
-skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,**/openneuro.tsv,**/.locations.tsv"
+skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,**/openneuro.tsv,locations.tsv"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "cohort_creator/_version.py"
