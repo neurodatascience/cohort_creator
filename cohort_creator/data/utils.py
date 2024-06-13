@@ -94,15 +94,32 @@ def _convert_duration(
     x: str,
 ) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
     x = literal_eval(x.replace("nan", "None"))
+
+    if not x:
+        return {}
+
     for datatype, value in x.items():
+
         if isinstance(value, list):
             value = [np.nan if None in run else np.prod(run) for run in value]
             x[datatype] = value
 
-        if isinstance(value, dict):
+        elif isinstance(value, dict):
+            run_duration = []
             for task, runs in value.items():
-                runs = [np.nan if None in run else np.prod(run) for run in runs]
-                x[datatype][task] = runs
+                if not value[task]:
+                    x[datatype][task] = None
+                    continue
+                for run in runs:
+                    if not run:
+                        continue
+                    if isinstance(run, (int, float)):
+                        run_duration.append(run)
+                        continue
+                    elif isinstance(run, (tuple)):
+                        if all(x is not None for x in run):
+                            run_duration.append(np.prod(run))
+                x[datatype][task] = run_duration
 
     return x
 
@@ -239,7 +256,7 @@ def _missing_duration(row: pd.Series) -> None | bool:
             return True
         if isinstance(value, dict):
             for _, tmp in value.items():
-                if len(tmp) == 0:
+                if not tmp or len(tmp) == 0:
                     return True
     return False
 
@@ -251,7 +268,8 @@ def _compute_total_duration(row: pd.Series) -> float:
             duration.extend(value)
         if isinstance(value, dict):
             for _, tmp in value.items():
-                duration.extend(tmp)
+                if tmp:
+                    duration.extend(tmp)
     return np.cumsum(duration)[-1] / 3600 if duration else np.nan
 
 
