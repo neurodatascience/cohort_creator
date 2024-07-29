@@ -722,7 +722,7 @@ def get_duration(
 
 
 def get_duration_for_datatype(
-    dataset_pth: Path, files: Generator[Path, None, None]
+    dataset_pth: Path, files: Generator[Path]
 ) -> Iterable[tuple[int, float]]:
     scan_duration = []
     for filepath in files:
