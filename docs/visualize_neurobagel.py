@@ -54,7 +54,7 @@ def wrangle(df: pd.DataFrame) -> pd.DataFrame:
             present.append(i)
     df = df[mask]
 
-    df["dataset_name"] = df["SessionPath"].apply(lambda x: x.split("/")[1])
+    df["dataset_name"] = df["SessionFilePath"].apply(lambda x: x.split("/")[1])
 
     df["missing_age"] = df["Age"].isnull()
 
