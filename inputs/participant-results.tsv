@@ -1,4 +1,4 @@
-      DatasetID	SubjectID	Age	Sex	Diagnosis	Assessment	SessionID	SessionPath	NumSessions	Modality
+      DatasetID	SubjectID	Age	Sex	Diagnosis	Assessment	SessionID	SessionFilePath	NumSessions	Modality
 http://neurobagel.org/vocab/0f2f957a-7979-442c-92fc-b1f68c0d3b50	sub-01	38.0	http://purl.bioontology.org/ontology/SNOMEDCT/248153007	, 	, 	ses-1	/ds001454/sub-01/ses-1	2	http://purl.org/nidash/nidm#FlowWeighted, http://purl.org/nidash/nidm#T1Weighted
 http://neurobagel.org/vocab/0f2f957a-7979-442c-92fc-b1f68c0d3b50	sub-01	38.0	http://purl.bioontology.org/ontology/SNOMEDCT/248153007	, 	, 	ses-2	/ds001454/sub-01/ses-2	2	http://purl.org/nidash/nidm#FlowWeighted, http://purl.org/nidash/nidm#T1Weighted
 http://neurobagel.org/vocab/15abcd42-0f61-4b44-81bf-7b51ba15b14e	sub-control05	36.0	http://purl.bioontology.org/ontology/SNOMEDCT/248153007	, 	, 	ses-1preEEG	/ds001408/sub-control05/ses-1preEEG	2	http://purl.org/nidash/nidm#FlowWeighted, http://purl.org/nidash/nidm#T1Weighted
