@@ -33,7 +33,7 @@ repos:
         args: [--autofix, --indent, '4']
 
 -   repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
     -   id: isort
         args: [--profile, black, --settings-path, pyproject.toml]
@@ -44,13 +44,13 @@ repos:
     -   id: flynt
 
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
+    rev: v3.19.1
     hooks:
     -   id: pyupgrade
         args: [--py38-plus]
 
 -   repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.10.0
+    rev: 25.1.0
     hooks:
     -   id: black
         args: [--config=pyproject.toml]
@@ -63,7 +63,7 @@ repos:
         -   black==22.12.0
 
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
     -   id: codespell
         args: [--toml=pyproject.toml]
@@ -77,7 +77,7 @@ repos:
 #         args: [--config-file=pyproject.toml]
 
 -   repo: https://github.com/pyCQA/flake8
-    rev: 7.1.1
+    rev: 7.1.2
     hooks:
     -   id: flake8
         args: [--verbose, --config, .flake8]
