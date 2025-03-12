@@ -3,17 +3,9 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
-from cohort_creator._cli import create_yoda
 from cohort_creator._utils import sourcedata
 from cohort_creator.main import construct_cohort, get_data, install_datasets
-
-
-@pytest.fixture
-def output_dir(tmp_path):
-    create_yoda(output_dir=tmp_path)
-    return tmp_path
 
 
 def test_install_datasets(output_dir, caplog):
