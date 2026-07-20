@@ -551,12 +551,10 @@ def _generate_bagel_for_cohort(
     df.to_csv(output_dir / "bagel.csv", index=False)
 
     cc_log.info(f"Cohort created at {output_dir}")
-    cc_log.info(
-        f"""Check what subjects have derivatives ready
+    cc_log.info(f"""Check what subjects have derivatives ready
 by uploading {output_dir / "bagel.csv"} to
 https://digest.neurobagel.org/
-"""
-    )
+""")
 
 
 def _recreate_mriqc_group_reports(
