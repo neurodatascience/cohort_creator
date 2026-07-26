@@ -40,7 +40,7 @@ def create_tsv_participant_session_in_datasets(output_dir: Path, dataset_paths: 
         "DatasetID": [],
         "SubjectID": [],
         "SessionID": [],
-        "SessionPath": [],
+        "SessionFilePath": [],
     }
 
     for dataset in dataset_paths:
@@ -60,7 +60,7 @@ def create_tsv_participant_session_in_datasets(output_dir: Path, dataset_paths: 
                     ses += "/"
                 else:
                     ses = ""
-                content["SessionPath"].append(f"{dataset.name}/sub-{sub}/{ses}")
+                content["SessionFilePath"].append(f"{dataset.name}/sub-{sub}/{ses}")
 
     df = pd.DataFrame(content)
     output_file = output_dir.parent / "code" / "participants.tsv"
@@ -153,7 +153,7 @@ def check_tsv_content(tsv_file: Path | str) -> pd.DataFrame:
 
 
 def check_participant_listing(participant_listing: pd.DataFrame) -> None:
-    for col in ["SubjectID", "SessionPath"]:
+    for col in ["SubjectID", "SessionFilePath"]:
         if col not in participant_listing.columns:
             raise ValueError(
                 f"Column '{col}' not found in participants listing data.\n"
