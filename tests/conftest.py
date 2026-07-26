@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 from datalad import api
 
+from cohort_creator._cli import create_yoda
+
 
 def root_dir():
     return Path(__file__).parent.parent
@@ -20,6 +22,12 @@ def bids_examples():
 
 
 @pytest.fixture
+def output_dir(tmp_path):
+    create_yoda(output_dir=tmp_path)
+    return tmp_path
+
+
+@pytest.fixture(scope="session")
 def install_dataset():
     def _install_dataset(dataset_name: str):
         output_path = Path(__file__).parent / "data" / "tmp" / dataset_name

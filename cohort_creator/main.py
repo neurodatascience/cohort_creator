@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import itertools
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -18,7 +17,6 @@ from datalad.support.exceptions import IncompleteResultsError
 
 from cohort_creator._utils import (
     add_study_tsv,
-    copy_top_files,
     create_ds_description,
     create_tsv_participant_session_in_datasets,
     dataset_path,
@@ -42,14 +40,11 @@ from cohort_creator._utils import (
     sourcedata,
 )
 from cohort_creator.bagelify import bagelify, new_bagel
+from cohort_creator.copy_files import copy_this_subject, copy_top_files
 from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
-
-
-def superdataset(pth: Path) -> api.Dataset:
-    return api.Dataset(pth)
 
 
 def install_datasets(
@@ -404,7 +399,7 @@ def construct_cohort(
                 else:
                     sessions = list_sessions_in_participant(data_pth / subject)
 
-                _copy_this_subject(
+                copy_this_subject(
                     subject=subject,
                     sessions=sessions,
                     datatypes=datatypes,
@@ -478,54 +473,6 @@ def _update_nipoppy_manifest(datatypes, subject, sessions, dataset_type_, output
 
     manifest = pd.DataFrame(manifest)
     manifest.to_csv(manifest_path, index=False, na_rep="n/a")
-
-
-def _copy_this_subject(
-    subject: str,
-    sessions: list[str] | list[None],
-    datatypes: list[str],
-    dataset_type: str,
-    task: str,
-    space: str,
-    src_pth: Path,
-    target_pth: Path,
-    bids_filter: None | dict[str, dict[str, dict[str, str]]] = None,
-) -> None:
-    for datatype_ in datatypes:
-        filters = get_filters(
-            dataset_type=dataset_type, datatype=datatype_, bids_filter=bids_filter
-        )
-        files = list_all_files_with_filter(
-            data_pth=src_pth,
-            dataset_type=dataset_type,
-            filters=filters,
-            subject=subject,
-            sessions=sessions,
-            datatype=datatype_,
-            task=task,
-            space=space,
-        )
-        if not files:
-            cc_log.warning(no_files_found_msg(src_pth, subject, datatype_, filters))
-            continue
-
-        cc_log.debug(f"    {subject} - copying files:\n     {files}")
-
-        dataset_root = src_pth
-        if "derivatives" in str(dataset_root):
-            dataset_root = Path(str(dataset_root).split("/derivatives")[0])
-
-        for f in files:
-            sub_dirs = Path(f).parents
-            (target_pth / sub_dirs[0]).mkdir(exist_ok=True, parents=True)
-            if (target_pth / f).exists():
-                cc_log.debug(f"      file already present:\n       '{f}'")
-                continue
-            try:
-                shutil.copy(src=dataset_root / f, dst=target_pth / f, follow_symlinks=True)
-                # TODO deal with permission
-            except FileNotFoundError:
-                cc_log.error(f"      Could not find file '{f}' in {dataset_root}")
 
 
 def _generate_bagel_for_cohort(
