@@ -33,7 +33,7 @@ repos:
         args: [--autofix, --indent, '4']
 
 -   repo: https://github.com/pycqa/isort
-    rev: 9.0.0b1
+    rev: 9.0.1
     hooks:
     -   id: isort
         args: [--profile, black, --settings-path, pyproject.toml]
@@ -84,7 +84,7 @@ repos:
         additional_dependencies: [flake8-docstrings]
 
 -   repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
+    rev: v2.15.1
     hooks:
     -   id: hadolint-docker
         name: Lint Dockerfiles
