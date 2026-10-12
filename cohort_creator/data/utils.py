@@ -7,7 +7,7 @@ import re
 from ast import literal_eval
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict, cast
 
 import numpy as np
 import pandas as pd
@@ -97,21 +97,21 @@ def _convert_duration(
 ) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
     # numpy >= 2 serializes scalars as e.g. "np.float64(384.0)"
     x = re.sub(r"np\.float64\(([^)]*)\)", r"\1", x)
-    x = literal_eval(x.replace("nan", "None"))
+    durations: dict[str, Any] = literal_eval(x.replace("nan", "None"))
 
-    if not x:
+    if not durations:
         return {}
 
-    for datatype, value in x.items():
+    for datatype, value in durations.items():
         if isinstance(value, list):
             value = [np.nan if None in run else np.prod(run) for run in value]
-            x[datatype] = value
+            durations[datatype] = value
 
         elif isinstance(value, dict):
             run_duration = []
             for task, runs in value.items():
                 if not value[task]:
-                    x[datatype][task] = None
+                    durations[datatype][task] = None
                     continue
                 for run in runs:
                     if not run:
@@ -120,11 +120,11 @@ def _convert_duration(
                         run_duration.append(run)
                         continue
                     elif isinstance(run, (tuple)):
-                        if all(x is not None for x in run):
+                        if all(i is not None for i in run):
                             run_duration.append(np.prod(run))
-                x[datatype][task] = run_duration
+                durations[datatype][task] = run_duration
 
-    return x
+    return durations
 
 
 def is_known_dataset(dataset_name: str) -> bool:
@@ -277,7 +277,8 @@ def _compute_total_duration(row: pd.Series) -> float:
 
 
 def _detect_missing_duration(df: pd.DataFrame) -> None:
-    df["missing_duration"] = df.apply(_missing_duration, axis=1)
+    # pandas-stubs has no overload for a row-wise function returning an optional value
+    df["missing_duration"] = df.apply(_missing_duration, axis=1)  # pyrefly: ignore[no-matching-overload]
     cc_log.debug(
         f"\nMissing some duration for {df['missing_duration'].sum()} datasets "
         f"({df['missing_duration'].sum() / len(df) * 100:0.1f} %)."
@@ -315,7 +316,19 @@ def _get_source_study(df: pd.DataFrame) -> list[str]:
     return source
 
 
-DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
+class FilterConfig(TypedDict):
+    fmriprep: bool | None
+    mriqc: bool | None
+    physio: bool | None
+    participants: bool | None
+    task: str
+    datatypes: list[str]
+    datatypes_and_or: str
+    sources: list[str] | None
+    sources_and_or: str
+
+
+DEFAULT_CONFIG: FilterConfig = {
     "fmriprep": None,
     "mriqc": None,
     "physio": None,
@@ -328,12 +341,12 @@ DEFAULT_CONFIG: dict[str, bool | str | list[str] | None] = {
 }
 
 
-def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
+def filter_data(df: pd.DataFrame, config: Any = None) -> pd.DataFrame:
     """Filter the listing of datasets based on some configuration.
 
     Parameters
     ----------
-    df : pd.Dataframe
+    df : pd.DataFrame
         Listing of datasets to filter.
     config : Any, default=None
         Should be a :obj:`dict` with any of the following keys.
@@ -359,11 +372,12 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     config = _check_config(config)
 
     mask_sources = ALL_TRUE
-    if config["sources"] is not None:
-        mask_sources = df["source"].apply(lambda x: len({x}.intersection(config["sources"])) > 0)
+    sources = config["sources"]
+    if sources is not None:
+        mask_sources = df["source"].apply(lambda x: len({x}.intersection(sources)) > 0)
         if config["sources_and_or"] == "AND":
             mask_sources = df["source"].apply(
-                lambda x: len({x}.intersection(config["sources"])) == len(config["sources"])
+                lambda x: len({x}.intersection(sources)) == len(sources)
             )
 
     # better filtering should make sure
@@ -388,12 +402,11 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     if config["participants"] is not None:
         mask_participants = df["useful_participants_tsv"] == config["participants"]
 
-    mask_datatypes = df["datatypes"].apply(
-        lambda x: len(set(x).intersection(config["datatypes"])) > 0
-    )
+    datatypes = config["datatypes"]
+    mask_datatypes = df["datatypes"].apply(lambda x: len(set(x).intersection(datatypes)) > 0)
     if config["datatypes_and_or"] == "AND":
         mask_datatypes = df["datatypes"].apply(
-            lambda x: len(set(x).intersection(config["datatypes"])) == len(config["datatypes"])
+            lambda x: len(set(x).intersection(datatypes)) == len(datatypes)
         )
 
     all_filters = pd.concat(
@@ -414,7 +427,7 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
     return filtered_df
 
 
-def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[str]]:
+def _check_config(config: None | dict[str, Any]) -> FilterConfig:
     if not config:
         config = {}
 
@@ -435,7 +448,7 @@ def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[
     if isinstance(config["sources"], str):
         config["sources"] = [config["sources"]]
 
-    return config
+    return cast(FilterConfig, config)
 
 
 def booleanify(value: bool | str | list[str] | None) -> bool | str | list[str] | None:
@@ -478,7 +491,7 @@ def save_dataset_listing(df: pd.DataFrame) -> None:
 
 def _count_extensions(df: pd.DataFrame, datatype: str) -> pd.DataFrame:
     if datatype == "eeg":
-        file_formats = {"bdf": 0, "edf": 0, "eeg": 0, "set": 0}
+        file_formats: dict[str, float] = {"bdf": 0, "edf": 0, "eeg": 0, "set": 0}
     elif datatype == "ieeg":
         file_formats = {"nwb": 0, "edf": 0, "eeg": 0, "set": 0, "mefd": 0}
     elif datatype == "meg":
