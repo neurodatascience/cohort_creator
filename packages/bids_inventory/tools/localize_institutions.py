@@ -11,17 +11,19 @@ from geopy.geocoders import Nominatim
 from geopy.location import Location
 from rich import print
 
-from cohort_creator.data.utils import known_datasets_df, wrangle_data
+from bids_inventory import load_inventory
+
+LOCATIONS_FILE = Path(__file__).parent / "locations.tsv"
 
 DEBUG = False
 
 
 def main() -> None:
-    df = wrangle_data(known_datasets_df())
+    df = load_inventory()
 
     _get_all_locations(df)
 
-    locations = pd.read_csv(Path("locations.tsv"), sep="\t")
+    locations = pd.read_csv(LOCATIONS_FILE, sep="\t")
 
     fig = px.scatter_geo(
         locations,
@@ -106,7 +108,7 @@ def _get_all_locations(df: pd.DataFrame) -> None:
                 v.append(value[k])
     df = pd.DataFrame(data)
     df = df.replace(r"^\s*$", "n/a", regex=True)
-    df.to_csv("locations.tsv", index=False, sep="\t")
+    df.to_csv(LOCATIONS_FILE, index=False, sep="\t")
 
 
 def _get_location(geolocator: Nominatim, address: str) -> None | Location:

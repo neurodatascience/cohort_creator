@@ -25,8 +25,8 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+from bids_inventory.listing import known_datasets_df
 from cohort_creator._version import __version__
-from cohort_creator.data.utils import known_datasets_df
 from cohort_creator.logger import cc_logger
 
 # import gender_guesser.detector as gender

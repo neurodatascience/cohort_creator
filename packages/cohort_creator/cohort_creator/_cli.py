@@ -44,20 +44,6 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     verbosity = args.verbosity
     set_verbosity(verbosity)
 
-    if args.command in ["browse"]:
-        from cohort_creator._browse import browse
-
-        debug = getattr(args, "debug", False)
-        browse(debug=debug)
-        exit(0)
-
-    if args.command in ["update"]:
-        from cohort_creator.data._update import update
-
-        debug = getattr(args, "debug", True)
-        update(debug=debug)
-        exit(0)
-
     from cohort_creator._run import _get_participant_listing_from_args
     from cohort_creator._utils import load_dataset_listing, validate_dataset_types
 

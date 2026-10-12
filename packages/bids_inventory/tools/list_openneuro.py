@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from cohort_creator.data._update import (
+from bids_inventory._update import (
     OPENNEURO,
     config,
     init_dataset,
@@ -19,10 +19,10 @@ from cohort_creator.data._update import (
     list_datasets_in_dir,
     list_openneuro_derivatives,
 )
-from cohort_creator.data.utils import save_known_datasets
-from cohort_creator.logger import cc_logger
+from bids_inventory.listing import save_known_datasets
+from bids_inventory.logger import bi_logger
 
-cc_log = cc_logger()
+cc_log = bi_logger()
 
 cc_log.setLevel("INFO")
 

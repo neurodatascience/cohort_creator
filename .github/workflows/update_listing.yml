@@ -33,7 +33,7 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install -y git-annex
                 python -m pip install --upgrade pip
-                pip install --editable .[dev]
+                pip install --editable ./packages/bids_inventory[update]
 
         -   name: Post-install
             run: |
@@ -41,7 +41,7 @@ jobs:
                 git config --global --add user.email 42@H2G2.com
 
         -   name: Update datasets
-            run: cohort_creator update
+            run: bids_inventory update
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -18,7 +18,7 @@ WORKDIR /cohort_creator
 
 COPY [".", "/cohort_creator"]
 RUN pip install --no-cache-dir --upgrade pip==23.0.1 && \
-    pip3 install --no-cache-dir -e .
+    pip3 install --no-cache-dir -e ./packages/bids_inventory -e ./packages/cohort_creator
 
 ENTRYPOINT [ "/cohort_creator/entrypoint.sh" ]
 COPY ["./docker/entrypoint.sh", \

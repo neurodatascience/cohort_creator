@@ -11,7 +11,7 @@ Command-Line Arguments
    :func: global_parser
 
 
-You can use the ``cohort_creator browse`` command to create a ``dataset-results.tsv``
+You can use the ``bids_inventory browse`` command to create a ``dataset-results.tsv``
 to use for the next steps.
 
 install
@@ -90,12 +90,10 @@ Python API
 
 .. code-block:: python
 
-   from cohort_creator.data.utils import filter_data
-   from cohort_creator.data.utils import known_datasets_df
-   from cohort_creator.data.utils import save_dataset_listing
-   from cohort_creator.data.utils import wrangle_data
+   from bids_inventory import filter_data, load_inventory
+   from bids_inventory.wrangling import save_dataset_listing
 
    filter_config = {"task": "back", "datatypes": ["func"]}
-   df = wrangle_data(known_datasets_df())
+   df = load_inventory()
    df = filter_data(df, config=filter_config)
    save_dataset_listing(df)

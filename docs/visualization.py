@@ -6,20 +6,15 @@ from pathlib import Path
 
 import plotly.express as px
 
-from cohort_creator._plotting import (
+from bids_inventory import filter_data, load_inventory
+from bids_inventory._plotting import (
     LABELS,
     datatypes_histogram,
     histogram_tasks,
     plot_dataset_size_vs_time,
     scatter_subject_vs,
 )
-from cohort_creator.data.utils import (
-    _count_extensions,
-    filter_data,
-    known_datasets_df,
-    save_dataset_listing,
-    wrangle_data,
-)
+from bids_inventory.wrangling import _count_extensions, save_dataset_listing
 
 # filter_config = {"is_openneuro": None, "task": "rest", "physio": True, "datatypes": ["func"]}
 # filter_config = {"is_openneuro": None, "datatypes": ["meg"]}
@@ -29,7 +24,7 @@ filter_config = None
 def main() -> None:
     output_dir = Path(__file__).parent / "source" / "images"
 
-    df = wrangle_data(known_datasets_df())
+    df = load_inventory()
 
     df = filter_data(df, config=filter_config)
 

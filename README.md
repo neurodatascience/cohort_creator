@@ -77,8 +77,11 @@ pip install cohort_creator
 ```bash
 git clone https://github.com/neurodatascience/cohort_creator.git
 cd cohort_creator
-pip install .
+pip install ./packages/bids_inventory ./packages/cohort_creator
 ```
+
+The list of datasets that cohort_creator can get data from
+is maintained by the [bids-inventory](https://github.com/neurodatascience/cohort_creator/tree/main/packages/bids_inventory) package in this repository.
 
 ## Limitations
 

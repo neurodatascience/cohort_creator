@@ -1,14 +1,6 @@
 cohort\_creator package
 =======================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   cohort_creator.data
-
 Submodules
 ----------
 

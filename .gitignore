@@ -1,6 +1,6 @@
 outputs
 tmp
-cohort_creator/_version.py
+packages/*/*/_version.py
 *.docx
 tmp.tsv
 datasets_results.tsv

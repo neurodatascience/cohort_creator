@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from cohort_creator.data._update import (
+# needs the 'update' extra
+pytest.importorskip("datalad")
+pytest.importorskip("mne")
+
+from bids_inventory._update import (  # noqa: E402
     count_meg_file_formats,
     count_stim_files,
     created_on,
@@ -22,7 +27,7 @@ from cohort_creator.data._update import (
     list_tasks,
 )
 
-# from cohort_creator.data._update import get_duration
+# from bids_inventory._update import get_duration
 
 
 def test_count_meg_file_formats(install_dataset):

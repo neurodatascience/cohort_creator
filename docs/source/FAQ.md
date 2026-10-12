@@ -28,7 +28,7 @@ Each suffic group MUST have:
 
 Those entries support typical glob pattern (like `*` or `?`...).
 
-The default filter file is located at `cohort_creator/data/bids_filter.json`.
+The default filter file is located at `packages/cohort_creator/cohort_creator/data/bids_filter.json`.
 
 ```{literalinclude} data/bids_filter.json
    :language: json

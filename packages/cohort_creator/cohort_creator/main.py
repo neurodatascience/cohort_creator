@@ -16,6 +16,7 @@ import pandas as pd
 from datalad import api
 from datalad.support.exceptions import IncompleteResultsError
 
+from bids_inventory.listing import is_known_dataset
 from cohort_creator._utils import (
     add_study_tsv,
     copy_top_files,
@@ -42,7 +43,6 @@ from cohort_creator._utils import (
     sourcedata,
 )
 from cohort_creator.bagelify import bagelify, new_bagel
-from cohort_creator.data.utils import is_known_dataset
 from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()

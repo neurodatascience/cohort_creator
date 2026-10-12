@@ -12,14 +12,14 @@ from pathlib import Path
 
 import pandas as pd
 
-from cohort_creator.data._update import init_dataset, list_datasets_in_dir
-from cohort_creator.data.utils import save_known_datasets
-from cohort_creator.logger import cc_logger
+from bids_inventory._update import init_dataset, list_datasets_in_dir
+from bids_inventory.listing import save_known_datasets
+from bids_inventory.logger import bi_logger
 
 DEBUG = False
 UPDATE_MERGE = False
 
-cc_log = cc_logger()
+cc_log = bi_logger()
 
 cc_log.setLevel("INFO")
 
