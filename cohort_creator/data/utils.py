@@ -104,15 +104,15 @@ def _convert_duration(
 
     for datatype, value in durations.items():
         if isinstance(value, list):
-            value = [np.nan if None in run else np.prod(run) for run in value]
+            value = [np.nan if None in run else float(np.prod(run)) for run in value]
             durations[datatype] = value
 
         elif isinstance(value, dict):
-            run_duration = []
             for task, runs in value.items():
                 if not value[task]:
                     durations[datatype][task] = None
                     continue
+                run_duration = []
                 for run in runs:
                     if not run:
                         continue
@@ -121,7 +121,7 @@ def _convert_duration(
                         continue
                     elif isinstance(run, (tuple)):
                         if all(i is not None for i in run):
-                            run_duration.append(np.prod(run))
+                            run_duration.append(float(np.prod(run)))
                 durations[datatype][task] = run_duration
 
     return durations

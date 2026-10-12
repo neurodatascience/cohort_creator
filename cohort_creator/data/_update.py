@@ -222,7 +222,9 @@ def get_auth() -> tuple[str, str] | None:
     import os
 
     if os.getenv("CI"):
-        return None
+        # unauthenticated requests quickly hit the GitHub API rate limit
+        token = os.getenv("GITHUB_TOKEN")
+        return None if token is None else ("github-actions", token)
 
     username = config()["auth"]["username"]
     token_file = Path(config()["auth"]["token_file"])
@@ -244,8 +246,8 @@ def request_list_of_repos(
     cc_log.info(url)
     response = requests.get(url, auth=auth)
     if response.status_code != 200:
-        warn(f"Error {response.status_code}: {response.text}")
-        return None
+        # fail loudly: an incomplete list of repos would silently skip datasets
+        raise RuntimeError(f"Error {response.status_code} for {url}: {response.text}")
     return response.json()
 
 
