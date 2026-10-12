@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import re
 from ast import literal_eval
 from pathlib import Path
 from typing import Any, Iterable
@@ -93,6 +94,8 @@ def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
 def _convert_duration(
     x: str,
 ) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+    # numpy >= 2 serializes scalars as e.g. "np.float64(384.0)"
+    x = re.sub(r"np\.float64\(([^)]*)\)", r"\1", x)
     x = literal_eval(x.replace("nan", "None"))
 
     if not x:

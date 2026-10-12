@@ -33,6 +33,8 @@ from cohort_creator.logger import cc_logger
 
 cc_log = cc_logger()
 
+NIPOPPY_VERSION = "0.2.0"
+
 
 def create_tsv_participant_session_in_datasets(output_dir: Path, dataset_paths: list[Path]) -> Path:
     (output_dir.parent / "code").mkdir(exist_ok=True, parents=True)
@@ -661,14 +663,18 @@ def nipoppy_template(output_dir: Path, dataset: str) -> None:
     for i in dirs_to_create:
         (target_pth / i).mkdir(exist_ok=True, parents=True)
 
-    api.install(
-        path=target_pth / "code" / "nipoppy",
-        source="https://github.com/neurodatascience/nipoppy.git",
-        dataset=api.Dataset(output_dir),
-        result_renderer="disabled",
-    )
+    nipoppy_pth = target_pth / "code" / "nipoppy"
+    if not api.Dataset(nipoppy_pth).is_installed():
+        api.install(
+            path=nipoppy_pth,
+            source="https://github.com/neurodatascience/nipoppy.git",
+            dataset=api.Dataset(output_dir),
+            result_renderer="disabled",
+        )
+        # later versions of nipoppy dropped this config file and changed its schema
+        api.Dataset(nipoppy_pth).repo.call_git(["checkout", "--quiet", NIPOPPY_VERSION])
 
-    src_config_path = target_pth / "code" / "nipoppy" / "nipoppy" / "sample_global_configs.json"
+    src_config_path = nipoppy_pth / "nipoppy" / "sample_global_configs.json"
     target_config_path = nipoppy_config_path(output_dir, dataset)
     shutil.copy(src=src_config_path, dst=target_config_path)
 
