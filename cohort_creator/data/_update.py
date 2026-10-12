@@ -5,8 +5,9 @@ import json
 import logging
 import os
 import subprocess
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Generator, Iterable
+from typing import Any
 from warnings import warn
 
 import numpy as np
@@ -157,9 +158,11 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
         If ``False``, will overwrite the tsv file with the current openneuro datasets.
         If ``True`` will save output in current directory and only index a few datasets.
     """
-    datasets = _load_known_datasets(_openneuro_listing_tsv())
-    datasets.replace({pd.NA: "n/a"}, inplace=True)
-    datasets = datasets.to_dict(orient="list")
+    datasets_df = _load_known_datasets(_openneuro_listing_tsv())
+    datasets_df.replace({pd.NA: "n/a"}, inplace=True)
+    datasets: dict[str, list[Any]] = {
+        str(k): v for k, v in datasets_df.to_dict(orient="list").items()
+    }
 
     if reset:
         datasets = init_dataset()
@@ -191,10 +194,8 @@ def known_derivatives() -> list[str]:
     """Focus on openneuro derivatives repositories."""
     tsv = _data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv"
     if not tsv.exists():
-        raise FileNotFoundError(
-            f"{tsv} not found.\n" f"Run 'list_derivatives.py' script to create it."
-        )
-    return pd.read_csv(tsv, sep="\t")["name"].values.tolist()
+        raise FileNotFoundError(f"{tsv} not found.\nRun 'list_derivatives.py' script to create it.")
+    return [str(x) for x in pd.read_csv(tsv, sep="\t")["name"]]
 
 
 def gh_api_base_url() -> str:
@@ -702,29 +703,28 @@ def get_duration(
                         dataset_pth, files
                     )
                     return duration_all_datatypes
+            duration_per_task: dict[str, Iterable[tuple[int, float]]] = {}
             for task_ in tasks:
                 if target_datatype == "func":
                     files = dataset_pth.glob(
                         f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
                     )
-                if target_datatype == "pet":
+                elif target_datatype == "pet":
                     files = dataset_pth.glob(
-                        f"{first_sub}/**/func/{first_sub}*task-{task_}*_pet.nii*"
+                        f"{first_sub}/**/pet/{first_sub}*task-{task_}*_pet.nii*"
                     )
-                elif target_datatype in ["eeg", "ieeg"]:
+                else:
                     files = dataset_pth.glob(
-                        f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"
+                        f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr"
                     )
-                if target_datatype not in duration_all_datatypes:
-                    duration_all_datatypes[target_datatype] = {}
-                duration_all_datatypes[target_datatype][task_] = get_duration_for_datatype(
-                    dataset_pth, files
-                )
+                duration_per_task[task_] = get_duration_for_datatype(dataset_pth, files)
+            if duration_per_task:
+                duration_all_datatypes[target_datatype] = duration_per_task
     return duration_all_datatypes
 
 
 def get_duration_for_datatype(
-    dataset_pth: Path, files: Generator[Path]
+    dataset_pth: Path, files: Iterator[Path]
 ) -> Iterable[tuple[int, float]]:
     scan_duration = []
     for filepath in files:
@@ -806,7 +806,7 @@ def construct_institution_string(json_dict: Any) -> str:
     institution_address = json_dict.get("InstitutionAddress", "")
     if not isinstance(institution_address, str):
         institution_address = ""
-    return ", ".join([institution_name.strip(), institution_address.strip()])
+    return f"{institution_name.strip()}, {institution_address.strip()}"
 
 
 def get_dataset_size(dataset_pth: Path) -> str:
