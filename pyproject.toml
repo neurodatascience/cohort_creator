@@ -71,16 +71,8 @@ cohort_creator = "cohort_creator._cli:cli"
 Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
 Homepage = "https://github.com/neurodatascience/cohort_creator"
 
-[tool.black]
-extend-exclude = '''
-(
-    ^/tests/data
-)
-'''
-line-length = 100
-
 [tool.codespell]
-skip = "./.git,.mypy_cache,env,venv,outputs,htmlcov,bids-examples,**/openneuro.tsv,locations.tsv"
+skip = "./.git,env,venv,outputs,htmlcov,bids-examples,**/openneuro.tsv,locations.tsv"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "cohort_creator/_version.py"
@@ -91,22 +83,8 @@ packages = ["cohort_creator"]
 [tool.hatch.version]
 source = "vcs"
 
-[tool.mypy]
-check_untyped_defs = true
-disallow_any_generics = true
-disallow_incomplete_defs = true
-disallow_untyped_defs = true
-enable_error_code = ["ignore-without-code", "redundant-expr"]  # "truthy-bool"
-no_implicit_optional = true
-show_error_codes = true
-# strict = true
-warn_redundant_casts = true
-warn_unreachable = true
-warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-ignore_missing_imports = true
-module = [
+[tool.pyrefly]
+ignore-missing-imports = [
     "bids.*",
     "cohort_creator._version",
     "dash.*",
@@ -115,16 +93,12 @@ module = [
     "geopy.*",
     "matplotlib",
     "mne.*",
-    "pandas",
     "plotly.*",
-    "pytest",
     "rich.*",
     "rich_argparse"
 ]
-
-[[tool.mypy.overrides]]
-ignore_errors = true
-module = ['tests.*']
+project-excludes = ["cohort_creator/_version.py"]
+project-includes = ["cohort_creator"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator --cov-report=html"
@@ -134,3 +108,22 @@ minversion = "6.0.0"
 norecursedirs = "data"
 testpaths = ["tests/"]
 xfail_strict = true
+
+[tool.ruff]
+extend-exclude = ["docs/source/conf.py", "tests/data", "cohort_creator/_version.py"]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+ignore = ["D101", "D103", "E501"]
+mccabe = { max-complexity = 12 }
+# E, W: pycodestyle / F: pyflakes / C90: mccabe / D: pydocstyle
+# I: isort / UP: pyupgrade / FLY: flynt
+select = ["C90", "D", "E", "F", "FLY", "I", "UP", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["D104"]
+"tests/*" = ["D100", "D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

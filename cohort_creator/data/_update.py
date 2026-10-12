@@ -5,8 +5,9 @@ import json
 import logging
 import os
 import subprocess
+from collections.abc import Generator, Iterable
 from pathlib import Path
-from typing import Any, Generator, Iterable
+from typing import Any
 from warnings import warn
 
 import numpy as np
@@ -191,9 +192,7 @@ def known_derivatives() -> list[str]:
     """Focus on openneuro derivatives repositories."""
     tsv = _data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv"
     if not tsv.exists():
-        raise FileNotFoundError(
-            f"{tsv} not found.\n" f"Run 'list_derivatives.py' script to create it."
-        )
+        raise FileNotFoundError(f"{tsv} not found.\nRun 'list_derivatives.py' script to create it.")
     return pd.read_csv(tsv, sep="\t")["name"].values.tolist()
 
 

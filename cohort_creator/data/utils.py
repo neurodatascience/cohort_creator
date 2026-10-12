@@ -5,8 +5,9 @@ from __future__ import annotations
 import functools
 import re
 from ast import literal_eval
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -102,7 +103,6 @@ def _convert_duration(
         return {}
 
     for datatype, value in x.items():
-
         if isinstance(value, list):
             value = [np.nan if None in run else np.prod(run) for run in value]
             x[datatype] = value
@@ -280,7 +280,7 @@ def _detect_missing_duration(df: pd.DataFrame) -> None:
     df["missing_duration"] = df.apply(_missing_duration, axis=1)
     cc_log.debug(
         f"\nMissing some duration for {df['missing_duration'].sum()} datasets "
-        f"({df['missing_duration'].sum() / len(df) * 100 :0.1f} %)."
+        f"({df['missing_duration'].sum() / len(df) * 100:0.1f} %)."
     )
     for datatype in ["func", "ieeg", "eeg", "pet"]:
         mask = df[datatype]
