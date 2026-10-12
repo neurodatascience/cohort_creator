@@ -589,7 +589,7 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
         if n_samples and info and info["sfreq"]:
-            return (n_samples, info["sfreq"])
+            return (n_samples, float(info["sfreq"]))
 
     return (0, np.nan)
 
