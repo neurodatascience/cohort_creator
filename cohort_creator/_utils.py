@@ -92,15 +92,17 @@ def load_dataset_listing(dataset_listing: list[str]) -> pd.DataFrame:
     :obj:`pandas.DataFrame`
 
     """
+    if len(dataset_listing) == 0:
+        raise ValueError("dataset_listing must not be empty.")
+
     if len(dataset_listing) > 1:
         return pd.DataFrame({"DatasetID": dataset_listing})
 
-    elif len(dataset_listing) == 1:
-        dataset = dataset_listing[0]
-        if not Path(dataset).exists():
-            return pd.DataFrame({"DatasetID": [dataset]})
-        dataset_tsv = Path(dataset).resolve()
-        return check_tsv_content(dataset_tsv)
+    dataset = dataset_listing[0]
+    if not Path(dataset).exists():
+        return pd.DataFrame({"DatasetID": [dataset]})
+    dataset_tsv = Path(dataset).resolve()
+    return check_tsv_content(dataset_tsv)
 
 
 def load_participant_listing(participant_listing: Path | str) -> pd.DataFrame:
@@ -177,7 +179,7 @@ def get_participant_ids(
 def return_dataset_id(datasets: pd.DataFrame, dataset_name: str) -> str:
     dataset_uri = return_dataset_uri_regex(dataset_name)
     mask = datasets.PortalURI.str.contains(dataset_uri, regex=True)
-    return datasets[mask]["DatasetID"].values[0]
+    return str(datasets[mask]["DatasetID"].iloc[0])
 
 
 def get_pipeline_version(pth: Path | None = None) -> None | str:
@@ -230,24 +232,20 @@ def dataset_path(root: Path, dataset: str, derivative: str | None = None) -> Pat
     return (root / dataset).with_name(name)
 
 
-def get_sessions(
-    participants: pd.DataFrame, dataset: str, participant: str
-) -> list[str] | list[None]:
+def get_sessions(participants: pd.DataFrame, dataset: str, participant: str) -> list[str | None]:
     mask = (participants["DatasetID"] == dataset) & (participants["SubjectID"] == participant)
-    sessions = sorted(participants[mask].SessionID.values.tolist())
+    sessions: list[str | None] = sorted(participants.loc[mask, "SessionID"].tolist())
     for i, ses in enumerate(sessions):
         if isinstance(ses, float) and isnan(ses):
             sessions[i] = None
     return sessions
 
 
-def list_sessions_in_participant(participant_pth: Path) -> list[str] | list[None]:
-    if sessions := [
+def list_sessions_in_participant(participant_pth: Path) -> list[str | None]:
+    sessions = sorted(
         x.name for x in participant_pth.iterdir() if x.is_dir() and x.name.startswith("ses-")
-    ]:
-        return sorted(sessions)
-    else:
-        return [None]
+    )
+    return list(sessions) if sessions else [None]
 
 
 def listify(some_str: str) -> list[str] | list[None]:
@@ -520,7 +518,7 @@ def list_all_files_with_filter(
     dataset_type: str,
     filters: dict[str, dict[str, str]],
     subject: str,
-    sessions: list[str] | list[None],
+    sessions: list[str | None],
     datatype: str,
     task: str | None = None,
     space: str | None = None,
@@ -604,9 +602,8 @@ def get_list_datasets_to_install(
     datasets_nodes = return_datasets_nodes(participant_listing)
     list_datasets = []
     for dataset in datasets_nodes:
-        dataset_uri = dataset_listing[dataset_listing["DatasetID"] == dataset]["PortalURI"].values[
-            0
-        ]
+        mask = dataset_listing["DatasetID"] == dataset
+        dataset_uri = str(dataset_listing.loc[mask, "PortalURI"].iloc[0])
         list_datasets.append(Path(dataset_uri).stem)
     return sorted(list_datasets)
 
@@ -626,8 +623,8 @@ def list_participants_in_dataset(data_pth: Path) -> list[str]:
 def get_dataset_url(dataset_name: str, dataset_type: str) -> str:
     datasets = known_datasets_df()
     mask = datasets.name == dataset_name
-    url = datasets[mask][dataset_type].values[0]
-    return "" if pd.isna(url) or not url else url
+    url = datasets.loc[mask, dataset_type].iloc[0]
+    return "" if pd.isna(url) or not url else str(url)
 
 
 def derivative_in_subfolder(dataset_name: str, dataset_type: str) -> bool:

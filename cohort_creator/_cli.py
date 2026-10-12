@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from rich_argparse import RichHelpFormatter
 

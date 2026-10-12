@@ -21,7 +21,7 @@ LABELS = {
 
 
 def scatter_subject_vs(
-    df: pd.Dataframe,
+    df: pd.DataFrame,
     y: str,
     size: None | str = None,
     color: None | str = "is_openneuro",
@@ -46,7 +46,7 @@ def scatter_subject_vs(
     )
 
 
-def histogram_tasks(df: pd.Dataframe) -> figure:
+def histogram_tasks(df: pd.DataFrame) -> figure:
     tasks = []
     for x in df.tasks:
         tasks.extend(x)

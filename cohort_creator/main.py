@@ -265,7 +265,7 @@ def return_participants_ids(
 
 def _get_data_this_subject(
     subject: str,
-    sessions: list[str] | list[None],
+    sessions: list[str | None],
     datatypes: list[str],
     task: str,
     space: str,
@@ -482,7 +482,7 @@ def _update_nipoppy_manifest(datatypes, subject, sessions, dataset_type_, output
 
 def _copy_this_subject(
     subject: str,
-    sessions: list[str] | list[None],
+    sessions: list[str | None],
     datatypes: list[str],
     dataset_type: str,
     task: str,
