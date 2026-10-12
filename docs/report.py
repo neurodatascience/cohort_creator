@@ -8,8 +8,7 @@ from pathlib import Path
 import pandas as pd
 from rich import print
 
-from bids_inventory.listing import known_datasets_df
-from cohort_creator.data.utils import wrangle_data
+from bids_inventory import load_inventory
 
 OUTPUT_FILE = Path(__file__).parent / "source" / "accessible_datasets.md"
 
@@ -19,8 +18,7 @@ def main() -> None:
         print("# Accessible datasets\n\n", file=f)
         print("## BIDS datasets\n", file=f)
 
-        datasets = known_datasets_df()
-        datasets = wrangle_data(datasets)
+        datasets = load_inventory()
 
         # tasks = []
         # for row in datasets.iterrows():

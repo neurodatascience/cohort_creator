@@ -10,15 +10,15 @@ import pandas as pd
 from dash import Dash, Input, Output, callback, dash_table, dcc, html
 from matplotlib import figure
 
-from bids_inventory.listing import KNOWN_DATATYPES, known_datasets_df
-from cohort_creator._plotting import (
+from bids_inventory._plotting import (
     datatypes_histogram,
     histogram_tasks,
     plot_dataset_size_vs_time,
     scatter_subject_vs,
 )
-from cohort_creator._version import version
-from cohort_creator.data.utils import (
+from bids_inventory._version import version
+from bids_inventory.listing import KNOWN_DATATYPES, known_datasets_df
+from bids_inventory.wrangling import (
     filter_data,
     save_dataset_listing,
     wrangle_data,
@@ -32,7 +32,7 @@ app = Dash(__name__)
 
 app.layout = html.Div(
     [
-        html.H1(children="Cohort creator: BIDS datasets dashboard", style={"textAlign": "center"}),
+        html.H1(children="BIDS inventory: BIDS datasets dashboard", style={"textAlign": "center"}),
         html.Div(
             [
                 html.H2(children="datatypes", style={"textAlign": "left"}),
@@ -183,7 +183,7 @@ app.layout = html.Div(
         dcc.Graph(figure={}, id="time-vs"),
         html.Footer(
             [
-                dcc.Markdown(children=f"cohort_creator version: {version}"),
+                dcc.Markdown(children=f"bids_inventory version: {version}"),
                 dcc.Markdown(
                     children="[Github repo](https://github.com/neurodatascience/cohort_creator.git)"
                 ),

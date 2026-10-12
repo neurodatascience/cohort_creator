@@ -21,14 +21,9 @@ classifiers = [
 ]
 dependencies = [
     "bids-inventory",
-    "dash",
-    "dash-bootstrap-components",
     "datalad",
-    "kaleido",
-    "matplotlib",
     "pandas",
     "pybids",
-    "plotly",
     "rich",
     "rich_argparse"
 ]

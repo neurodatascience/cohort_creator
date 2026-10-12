@@ -5,3 +5,4 @@ cohort_creator
    :maxdepth: 4
 
    cohort_creator
+   bids_inventory

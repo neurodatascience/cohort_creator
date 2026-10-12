@@ -15,12 +15,17 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
+    "dash",
+    "dash-bootstrap-components",
     "datalad",
     "datalad-fuse",
+    "kaleido",
+    "matplotlib",
     "mne",
     "nibabel",
     "numpy",
     "pandas",
+    "plotly",
     "pyyaml",
     "requests",
     "rich",

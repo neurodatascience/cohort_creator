@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from bids_inventory.listing import known_datasets_df
-from cohort_creator.data.utils import (
-    filter_data,
-    wrangle_data,
-)
+from bids_inventory import filter_data, known_datasets_df, load_inventory, wrangle_data
 
 
 def test_wrangle_data():
@@ -32,3 +28,9 @@ def test_wrangle_data_has_derivatives():
     for der in ["fmriprep", "freesurfer", "mriqc"]:
         assert wrangled[f"has_{der}"].sum() == df[der].notna().sum()
         assert wrangled[f"has_{der}"].sum() < len(wrangled)
+
+
+def test_load_inventory():
+    df = load_inventory()
+    assert len(df) == len(known_datasets_df())
+    assert {"has_fmriprep", "nb_tasks", "total_duration", "source"} <= set(df.columns)

@@ -1,4 +1,4 @@
-"""Utilities for data handling."""
+"""Add summary columns to the listing of datasets and filter it."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 
 from bids_inventory.listing import KNOWN_DATATYPES
-from cohort_creator.logger import cc_logger
+from bids_inventory.logger import bi_logger
 
-cc_log = cc_logger()
+cc_log = bi_logger()
 
 
 def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:

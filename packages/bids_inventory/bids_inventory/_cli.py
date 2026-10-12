@@ -33,6 +33,20 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         required=True,
     )
 
+    browse_parser = subparsers.add_parser(
+        "browse",
+        help="""Launch a dash app in the browser
+to browse, visualize and filter the listing of known datasets.
+It will also create a datasets_results.tsv with the filtered list of datasets.""",
+        formatter_class=parser.formatter_class,
+    )
+    browse_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Runs the Dash app in debug mode.",
+    )
+    _add_verbosity(browse_parser)
+
     update_parser = subparsers.add_parser(
         "update",
         help="Update listing of known BIDS datasets.",
@@ -43,7 +57,13 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         action="store_true",
         help="Only runs the update for a few subset of datasets.",
     )
-    update_parser.add_argument(
+    _add_verbosity(update_parser)
+
+    return parser
+
+
+def _add_verbosity(parser: ArgumentParser) -> None:
+    parser.add_argument(
         "--verbosity",
         help="""
         Verbosity level.
@@ -53,7 +73,6 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
         default=2,
         type=int,
     )
-    return parser
 
 
 def set_verbosity(verbosity: int) -> None:
@@ -72,7 +91,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     set_verbosity(args.verbosity)
 
-    if args.command == "update":
+    if args.command == "browse":
+        from bids_inventory._browse import browse
+
+        browse(debug=args.debug)
+
+    elif args.command == "update":
         from bids_inventory._update import update
 
         update(debug=args.debug)
