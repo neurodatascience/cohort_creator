@@ -64,7 +64,7 @@ def test_create_tsv_participant_session_in_datasets(bids_examples, tmp_path):
     assert tsv_file.exists()
     df = pd.read_csv(tsv_file, sep="\t")
 
-    assert df.columns.tolist() == ["DatasetID", "SubjectID", "SessionID", "SessionPath"]
+    assert df.columns.tolist() == ["DatasetID", "SubjectID", "SessionID", "SessionFilePath"]
 
     assert df["DatasetID"].unique().tolist() == ["ds001", "ds006"]
 

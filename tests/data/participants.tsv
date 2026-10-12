@@ -1,4 +1,4 @@
-DatasetID	SubjectID	Age	Sex	Diagnosis	SessionID	SessionPath	NumSessions	Modality
+DatasetID	SubjectID	Age	Sex	Diagnosis	SessionID	SessionFilePath	NumSessions	Modality
 ds000001	sub-03	26	Female	PD		n/a	1	[T1,T2,bold]
 ds000001	sub-17	25	Female	CTL		n/a	1	[T1,T2,bold]
 ds000002	sub-12	25	Female			n/a	1	[T1,T2,bold]
