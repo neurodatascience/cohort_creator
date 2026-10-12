@@ -342,12 +342,14 @@ def update_subject_vs(
             "participants": participants,
         },
     )
-    if subject_vs == "number of tasks":
-        y = "nb_tasks"
-    elif subject_vs == "mean size per subject":
-        y = "mean_size"
-    elif subject_vs == "mean duration per subject":
-        y = "total_duration"
+    y_columns = {
+        "number of tasks": "nb_tasks",
+        "mean size per subject": "mean_size",
+        "mean duration per subject": "total_duration",
+    }
+    if subject_vs not in y_columns:
+        raise ValueError(f"Unknown value for 'subject_vs': {subject_vs}")
+    y = y_columns[subject_vs]
     return scatter_subject_vs(
         filtered_df,
         y=y,

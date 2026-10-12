@@ -704,13 +704,13 @@ def get_duration(
                     files = dataset_pth.glob(
                         f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
                     )
-                if target_datatype == "pet":
+                elif target_datatype == "pet":
                     files = dataset_pth.glob(
-                        f"{first_sub}/**/func/{first_sub}*task-{task_}*_pet.nii*"
+                        f"{first_sub}/**/pet/{first_sub}*task-{task_}*_pet.nii*"
                     )
-                elif target_datatype in ["eeg", "ieeg"]:
+                else:
                     files = dataset_pth.glob(
-                        f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"
+                        f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr"
                     )
                 if target_datatype not in duration_all_datatypes:
                     duration_all_datatypes[target_datatype] = {}

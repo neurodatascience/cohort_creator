@@ -416,14 +416,13 @@ def filter_data(df: pd.Dataframe, config: Any = None) -> pd.DataFrame:
 
 def _check_config(config: None | dict[Any, Any]) -> dict[str, bool | str | list[str]]:
     if not config:
-        config = DEFAULT_CONFIG
+        config = {}
 
     if not isinstance(config, dict):
-        raise (TypeError, "config must be a dictionary or None.")
+        raise TypeError("config must be a dictionary or None.")
 
-    for key, value in DEFAULT_CONFIG.items():
-        if key not in config:
-            config[key] = value
+    # work on a copy to not modify the input or DEFAULT_CONFIG
+    config = {**DEFAULT_CONFIG, **config}
 
     for key, value in config.items():
         config[key] = booleanify(value)
@@ -484,6 +483,8 @@ def _count_extensions(df: pd.DataFrame, datatype: str) -> pd.DataFrame:
         file_formats = {"nwb": 0, "edf": 0, "eeg": 0, "set": 0, "mefd": 0}
     elif datatype == "meg":
         file_formats = {".ds": 0, "": 0, ".fif": 0, ".con": 0, ".kdf": 0, ".raw.mhd": 0}
+    else:
+        raise ValueError(f"Unsupported datatype: {datatype}")
 
     datatype_df = df[df[datatype]]
 

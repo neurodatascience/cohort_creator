@@ -92,15 +92,17 @@ def load_dataset_listing(dataset_listing: list[str]) -> pd.DataFrame:
     :obj:`pandas.DataFrame`
 
     """
+    if len(dataset_listing) == 0:
+        raise ValueError("dataset_listing must not be empty.")
+
     if len(dataset_listing) > 1:
         return pd.DataFrame({"DatasetID": dataset_listing})
 
-    elif len(dataset_listing) == 1:
-        dataset = dataset_listing[0]
-        if not Path(dataset).exists():
-            return pd.DataFrame({"DatasetID": [dataset]})
-        dataset_tsv = Path(dataset).resolve()
-        return check_tsv_content(dataset_tsv)
+    dataset = dataset_listing[0]
+    if not Path(dataset).exists():
+        return pd.DataFrame({"DatasetID": [dataset]})
+    dataset_tsv = Path(dataset).resolve()
+    return check_tsv_content(dataset_tsv)
 
 
 def load_participant_listing(participant_listing: Path | str) -> pd.DataFrame:
