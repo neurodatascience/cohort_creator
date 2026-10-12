@@ -10,6 +10,7 @@ import pandas as pd
 from dash import Dash, Input, Output, callback, dash_table, dcc, html
 from matplotlib import figure
 
+from bids_inventory.listing import KNOWN_DATATYPES, known_datasets_df
 from cohort_creator._plotting import (
     datatypes_histogram,
     histogram_tasks,
@@ -18,9 +19,7 @@ from cohort_creator._plotting import (
 )
 from cohort_creator._version import version
 from cohort_creator.data.utils import (
-    KNOWN_DATATYPES,
     filter_data,
-    known_datasets_df,
     save_dataset_listing,
     wrangle_data,
 )

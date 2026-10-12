@@ -49,81 +49,81 @@ demo_datasets_as-str:
 
 demo_no_participant:
 	cohort_creator install \
-		-d tests/data/datasets.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
 		-o outputs \
 		--datatype anat \
 		--verbosity 1
 	cohort_creator get \
-		-d tests/data/datasets.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
 		-o outputs \
 		--datatype anat \
 		--jobs 6 \
 		--verbosity 1
 	cohort_creator copy \
-		-d tests/data/datasets.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
 		-o outputs \
 		--verbosity 2
 
 demo_install:
 	cohort_creator install \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--verbosity 3
 
 demo_anat_get: demo_install
 	cohort_creator get \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
 		--jobs 6 \
-		--bids_filter_file cohort_creator/data/bids_filter.json \
+		--bids_filter_file packages/cohort_creator/cohort_creator/data/bids_filter.json \
 		--verbosity 2
 
 demo_anat: demo_anat_get
 	cohort_creator copy \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat \
-		--bids_filter_file cohort_creator/data/bids_filter.json \
+		--bids_filter_file packages/cohort_creator/cohort_creator/data/bids_filter.json \
 		--verbosity 2
 
 demo_all:
 	cohort_creator all \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat
 
 demo_func: demo_install
 	cohort_creator get \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype func \
 		--jobs 6 \
-		--bids_filter_file cohort_creator/data/bids_filter.json \
+		--bids_filter_file packages/cohort_creator/cohort_creator/data/bids_filter.json \
 		--verbosity 3
 	cohort_creator copy \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype func \
-		--bids_filter_file cohort_creator/data/bids_filter.json \
+		--bids_filter_file packages/cohort_creator/cohort_creator/data/bids_filter.json \
 		--verbosity 3
 
 demo_func_and_anat: demo_install
 	cohort_creator get \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
@@ -131,8 +131,8 @@ demo_func_and_anat: demo_install
 		--jobs 6 \
 		--verbosity 3
 	cohort_creator copy \
-		-d tests/data/datasets.tsv \
-		-p tests/data/participants.tsv \
+		-d packages/cohort_creator/tests/data/datasets.tsv \
+		-p packages/cohort_creator/tests/data/participants.tsv \
 		-o outputs \
 		--dataset_types raw mriqc fmriprep \
 		--datatype anat func \
@@ -174,7 +174,7 @@ Docker_run_version:
 
 Docker_demo:
 	docker run -t --rm \
-		-v $$PWD/tests/data:/data \
+		-v $$PWD/packages/cohort_creator/tests/data:/data \
 		-v $$PWD/outputs:/outputs \
 			cohort_creator all \
 				-d /data/datasets.tsv \

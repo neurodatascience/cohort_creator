@@ -20,19 +20,15 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
+    "bids-inventory",
     "dash",
     "dash-bootstrap-components",
     "datalad",
-    'datalad-fuse',
     "kaleido",
     "matplotlib",
-    "mne",
-    'nibabel',
     "pandas",
     "pybids",
     "plotly",
-    "pyyaml",
-    "requests",
     "rich",
     "rich_argparse"
 ]
@@ -71,9 +67,6 @@ cohort_creator = "cohort_creator._cli:cli"
 Documentation = "https://cohort-creator.readthedocs.io/en/latest/"
 Homepage = "https://github.com/neurodatascience/cohort_creator"
 
-[tool.codespell]
-skip = "./.git,env,venv,outputs,htmlcov,bids-examples,**/*openneuro.jsonl,locations.tsv"
-
 [tool.hatch.build.hooks.vcs]
 version-file = "cohort_creator/_version.py"
 
@@ -81,24 +74,8 @@ version-file = "cohort_creator/_version.py"
 packages = ["cohort_creator"]
 
 [tool.hatch.version]
+raw-options = { root = "../.." }
 source = "vcs"
-
-[tool.pyrefly]
-ignore-missing-imports = [
-    "bids.*",
-    "cohort_creator._version",
-    "dash.*",
-    "dash_bootstrap_components.*",
-    "datalad.*",
-    "geopy.*",
-    "matplotlib",
-    "mne.*",
-    "plotly.*",
-    "rich.*",
-    "rich_argparse"
-]
-project-excludes = ["cohort_creator/_version.py"]
-project-includes = ["cohort_creator"]
 
 [tool.pytest.ini_options]
 addopts = "-ra -q -vv --showlocals --strict-markers --strict-config --cov cohort_creator --cov-report=html"
@@ -108,22 +85,3 @@ minversion = "6.0.0"
 norecursedirs = "data"
 testpaths = ["tests/"]
 xfail_strict = true
-
-[tool.ruff]
-extend-exclude = ["docs/source/conf.py", "tests/data", "cohort_creator/_version.py"]
-line-length = 100
-target-version = "py310"
-
-[tool.ruff.lint]
-ignore = ["D101", "D103", "E501"]
-mccabe = { max-complexity = 12 }
-# E, W: pycodestyle / F: pyflakes / C90: mccabe / D: pydocstyle
-# I: isort / UP: pyupgrade / FLY: flynt
-select = ["C90", "D", "E", "F", "FLY", "I", "UP", "W"]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["D104"]
-"tests/*" = ["D100", "D104"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "numpy"

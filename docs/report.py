@@ -8,7 +8,8 @@ from pathlib import Path
 import pandas as pd
 from rich import print
 
-from cohort_creator.data.utils import known_datasets_df, wrangle_data
+from bids_inventory.listing import known_datasets_df
+from cohort_creator.data.utils import wrangle_data
 
 OUTPUT_FILE = Path(__file__).parent / "source" / "accessible_datasets.md"
 

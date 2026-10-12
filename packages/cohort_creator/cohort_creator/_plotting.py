@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from matplotlib import figure
 from plotly.subplots import make_subplots
 
-from cohort_creator.data.utils import KNOWN_DATATYPES
+from bids_inventory.listing import KNOWN_DATATYPES
 
 LABELS = {
     "nb_subjects": "number of participants",

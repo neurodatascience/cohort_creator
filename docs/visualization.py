@@ -6,6 +6,7 @@ from pathlib import Path
 
 import plotly.express as px
 
+from bids_inventory.listing import known_datasets_df
 from cohort_creator._plotting import (
     LABELS,
     datatypes_histogram,
@@ -16,7 +17,6 @@ from cohort_creator._plotting import (
 from cohort_creator.data.utils import (
     _count_extensions,
     filter_data,
-    known_datasets_df,
     save_dataset_listing,
     wrangle_data,
 )

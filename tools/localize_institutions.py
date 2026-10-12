@@ -11,7 +11,8 @@ from geopy.geocoders import Nominatim
 from geopy.location import Location
 from rich import print
 
-from cohort_creator.data.utils import known_datasets_df, wrangle_data
+from bids_inventory.listing import known_datasets_df
+from cohort_creator.data.utils import wrangle_data
 
 DEBUG = False
 

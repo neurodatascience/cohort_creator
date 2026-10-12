@@ -13,7 +13,9 @@ build:
 python:
     install:
     -   method: pip
-        path: .
+        path: packages/bids_inventory
+    -   method: pip
+        path: packages/cohort_creator
         extra_requirements:
         -   docs
 

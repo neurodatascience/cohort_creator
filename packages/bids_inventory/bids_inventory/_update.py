@@ -19,8 +19,8 @@ from datalad.support.exceptions import IncompleteResultsError
 from mne.io.brainvision.brainvision import _get_hdr_info
 from rich.progress import Progress
 
-from cohort_creator._utils import list_participants_in_dataset, progress_bar
-from cohort_creator.data.utils import (
+from bids_inventory._utils import list_participants_in_dataset, progress_bar
+from bids_inventory.listing import (
     KNOWN_DATATYPES,
     _data_dir,
     _load_known_datasets,
@@ -28,7 +28,7 @@ from cohort_creator.data.utils import (
     known_datasets_df,
     save_known_datasets,
 )
-from cohort_creator.logger import cc_logger
+from bids_inventory.logger import bi_logger
 
 DATASET_TYPE = dict[
     str,
@@ -46,7 +46,7 @@ OPENNEURO_DERIVATIVES = "OpenNeuroDerivatives"
 URL_OPENNEURO = f"https://github.com/{OPENNEURO}/"
 URL_OPENNEURO_DERIVATIVES = f"https://github.com/{OPENNEURO_DERIVATIVES}/"
 
-cc_log = cc_logger()
+cc_log = bi_logger()
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
@@ -55,7 +55,7 @@ logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 @functools.lru_cache(maxsize=1)
 def config() -> dict[str, Any]:
     """Return the configuration."""
-    with open(Path(__file__).parent / "config.yml") as f:
+    with open(_data_dir() / "config.yml") as f:
         return yaml.safe_load(f)
 
 
@@ -78,7 +78,7 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
         return
 
     if os.getenv("CI"):
-        output_dir = Path(__file__).parent / "tmp"
+        output_dir = _data_dir() / "tmp"
     else:
         output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
     output_dir.mkdir(exist_ok=True)
@@ -129,7 +129,7 @@ def list_openneuro_raw(use_superdataset: bool) -> set[str]:
     cc_log.info(sorted(unknown_datasets))
 
     df = pd.DataFrame({"name": datasets})
-    df.to_csv(Path(__file__).parent / f"{OPENNEURO}.tsv", sep="\t", index=False)
+    df.to_csv(_data_dir() / f"{OPENNEURO}.tsv", sep="\t", index=False)
     return unknown_datasets
 
 
@@ -174,7 +174,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
     if len(new_openneuro_datasets) > 0:
         if os.getenv("CI"):
-            input_dir = Path(__file__).parent / "tmp"
+            input_dir = _data_dir() / "tmp"
         else:
             input_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
         datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
