@@ -167,6 +167,8 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     - datatype: one column for each BIDS known datatype with ``True`` if this dataset contains that datatype.
     - ``total_duration``: Total "scanned" duration per participant (combines runs from: ``func``, ``eeg``, ``ieeg``)
     """
+    # do not modify the input (for example the cached output of known_datasets_df)
+    df = df.copy()
     _detect_duplicate_datasets(df)
 
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
@@ -183,7 +185,7 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         "freesurfer",
         "mriqc",
     ]:
-        df[der].fillna(False, inplace=True)
+        df[der] = df[der].fillna(False)
         df[f"has_{der}"] = df[der].apply(lambda x: bool(x))
 
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))

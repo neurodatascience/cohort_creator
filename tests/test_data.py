@@ -43,3 +43,12 @@ def test_convert_duration_per_task():
 
 def test_convert_duration_numpy_repr():
     assert _convert_duration("{'func': {'a': [np.float64(360.0)]}}") == {"func": {"a": [360.0]}}
+
+
+def test_wrangle_data_has_derivatives():
+    """Only datasets with a derivative URL should be flagged as having it."""
+    df = known_datasets_df()
+    wrangled = wrangle_data(df)
+    for der in ["fmriprep", "freesurfer", "mriqc"]:
+        assert wrangled[f"has_{der}"].sum() == df[der].notna().sum()
+        assert wrangled[f"has_{der}"].sum() < len(wrangled)
