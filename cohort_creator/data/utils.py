@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import functools
-import re
-from ast import literal_eval
-from collections.abc import Iterable
+import json
+from math import isnan
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
@@ -47,8 +46,8 @@ def known_datasets_df() -> pd.DataFrame:
     A data dictionary can be found in:
     ``cohort_creator/data/columns_description.json``
     """
-    openneuro_df = _load_known_datasets(_openneuro_listing_tsv())
-    non_opnenneuro_df = _load_known_datasets(_non_openneuro_listing_tsv())
+    openneuro_df = _load_known_datasets(_openneuro_listing())
+    non_opnenneuro_df = _load_known_datasets(_non_openneuro_listing())
     return pd.concat([openneuro_df, non_opnenneuro_df])
 
 
@@ -56,75 +55,100 @@ def _data_dir() -> Path:
     return Path(__file__).parent
 
 
-def _openneuro_listing_tsv() -> Path:
-    return _data_dir() / "openneuro.tsv"
+def _openneuro_listing() -> Path:
+    return _data_dir() / "openneuro.jsonl"
 
 
-def _non_openneuro_listing_tsv() -> Path:
-    return _data_dir() / "non_openneuro.tsv"
+def _non_openneuro_listing() -> Path:
+    return _data_dir() / "non_openneuro.jsonl"
 
 
-def _load_known_datasets(tsv_file: Path) -> pd.DataFrame:
-    df = pd.read_csv(
-        tsv_file,
-        sep="\t",
-        converters={
-            "has_participant_tsv": pd.eval,
-            "has_participant_json": pd.eval,
-            "participant_columns": pd.eval,
-            "has_phenotype_dir": pd.eval,
-            "datatypes": pd.eval,
-            "sessions": pd.eval,
-            "tasks": pd.eval,
-            "authors": pd.eval,
-            "institutions": pd.eval,
-            "has_stimuli_dir": pd.eval,
-            "eeg_file_formats": literal_eval,
-            "ieeg_file_formats": literal_eval,
-            "meg_file_formats": literal_eval,
-            "references_and_links": pd.eval,
-        },
-        parse_dates=["created_on"],
-    )
-
-    df["duration"] = df["duration"].apply(_convert_duration)
-
+def _load_known_datasets(listing: Path) -> pd.DataFrame:
+    """Load a listing of datasets stored as JSON lines (one dataset per line)."""
+    df = pd.read_json(listing, lines=True, dtype=False, convert_dates=False)
+    df["created_on"] = pd.to_datetime(df["created_on"], utc=True)
     return df
 
 
-def _convert_duration(
-    x: str,
-) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
-    # numpy >= 2 serializes scalars as e.g. "np.float64(384.0)"
-    x = re.sub(r"np\.float64\(([^)]*)\)", r"\1", x)
-    durations: dict[str, Any] = literal_eval(x.replace("nan", "None"))
+def save_known_datasets(df: pd.DataFrame, output_file: Path) -> None:
+    """Save a listing of datasets as JSON lines (one dataset per line, sorted by name).
 
-    if not durations:
+    Missing values (``NaN``, ``None``, ``"n/a"``) are saved as ``null``
+    and durations are saved in seconds.
+    """
+    df = df.copy()
+    df["duration"] = df["duration"].apply(_convert_duration)
+    df["created_on"] = pd.to_datetime(df["created_on"], utc=True, errors="coerce")
+    records = sorted(df.to_dict(orient="records"), key=lambda x: str(x["name"]))
+    with open(output_file, "w", encoding="utf-8") as f:
+        for record in records:
+            record = {str(k): _to_json_value(v) for k, v in record.items()}
+            f.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
+
+
+def _to_json_value(value: Any) -> Any:
+    """Convert a value to something that can be saved as JSON."""
+    if isinstance(value, dict):
+        return {str(k): _to_json_value(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, np.ndarray)):
+        return [_to_json_value(v) for v in value]
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if isinstance(value, np.generic):
+        value = value.item()
+    if value is None or value is pd.NaT or value is pd.NA or value == "n/a":
+        return None
+    if isinstance(value, float) and isnan(value):
+        return None
+    return value
+
+
+def _run_duration(run: Any) -> float | None:
+    """Return the duration of a run in seconds.
+
+    A run can already be a duration in seconds,
+    or a pair ``(number of samples, duration of a sample)``
+    (for example ``(number of volumes, repetition time)``).
+    Returns ``None`` if the duration is unknown.
+    """
+    if run is None:
+        return None
+    if isinstance(run, (int, float)):
+        duration = float(run)
+    elif any(i is None or isnan(i) for i in run):
+        return None
+    else:
+        duration = float(np.prod(run))
+    # a duration of 0 means the duration could not be read
+    return None if isnan(duration) or duration <= 0 else duration
+
+
+def _convert_duration(
+    durations: dict[str, Any],
+) -> dict[str, list[float] | dict[str, list[float] | None]]:
+    """Convert the duration of all runs to seconds.
+
+    ``durations`` is either ``{datatype: [run, ...]}``
+    or ``{datatype: {task: [run, ...]}}``.
+    Runs with an unknown duration are dropped from the task lists
+    and tasks without any known duration are set to ``None``.
+    """
+    if not isinstance(durations, dict) or not durations:
         return {}
 
+    converted: dict[str, list[float] | dict[str, list[float] | None]] = {}
     for datatype, value in durations.items():
         if isinstance(value, list):
-            value = [np.nan if None in run else float(np.prod(run)) for run in value]
-            durations[datatype] = value
-
+            converted[datatype] = [
+                np.nan if (d := _run_duration(run)) is None else d for run in value
+            ]
         elif isinstance(value, dict):
-            for task, runs in value.items():
-                if not value[task]:
-                    durations[datatype][task] = None
-                    continue
-                run_duration = []
-                for run in runs:
-                    if not run:
-                        continue
-                    if isinstance(run, (int, float)):
-                        run_duration.append(run)
-                        continue
-                    elif isinstance(run, (tuple)):
-                        if all(i is not None for i in run):
-                            run_duration.append(float(np.prod(run)))
-                durations[datatype][task] = run_duration
+            converted[datatype] = {
+                task: [d for run in runs or [] if (d := _run_duration(run)) is not None] or None
+                for task, runs in value.items()
+            }
 
-    return durations
+    return converted
 
 
 def is_known_dataset(dataset_name: str) -> bool:
@@ -167,6 +191,8 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
     - datatype: one column for each BIDS known datatype with ``True`` if this dataset contains that datatype.
     - ``total_duration``: Total "scanned" duration per participant (combines runs from: ``func``, ``eeg``, ``ieeg``)
     """
+    # do not modify the input (for example the cached output of known_datasets_df)
+    df = df.copy()
     _detect_duplicate_datasets(df)
 
     df["nb_sessions"] = df["sessions"].apply(lambda x: max(len(x), 1))
@@ -183,7 +209,7 @@ def wrangle_data(df: pd.DataFrame) -> pd.DataFrame:
         "freesurfer",
         "mriqc",
     ]:
-        df[der].fillna(False, inplace=True)
+        df[der] = df[der].fillna(False)
         df[f"has_{der}"] = df[der].apply(lambda x: bool(x))
 
     df["nb_tasks"] = df["tasks"].apply(lambda x: len(x))

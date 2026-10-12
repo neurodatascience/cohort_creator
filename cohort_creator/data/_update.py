@@ -24,8 +24,9 @@ from cohort_creator.data.utils import (
     KNOWN_DATATYPES,
     _data_dir,
     _load_known_datasets,
-    _openneuro_listing_tsv,
+    _openneuro_listing,
     known_datasets_df,
+    save_known_datasets,
 )
 from cohort_creator.logger import cc_logger
 
@@ -155,10 +156,10 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
     Parameters
     ----------
     debug : bool
-        If ``False``, will overwrite the tsv file with the current openneuro datasets.
+        If ``False``, will overwrite the listing with the current openneuro datasets.
         If ``True`` will save output in current directory and only index a few datasets.
     """
-    datasets_df = _load_known_datasets(_openneuro_listing_tsv())
+    datasets_df = _load_known_datasets(_openneuro_listing())
     datasets_df.replace({pd.NA: "n/a"}, inplace=True)
     datasets: dict[str, list[Any]] = {
         str(k): v for k, v in datasets_df.to_dict(orient="list").items()
@@ -179,15 +180,12 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
         datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
 
     datasets_df = pd.DataFrame.from_dict(datasets)
-    datasets_df = datasets_df.sort_values("name")
 
-    datasets_df["created_on"] = datasets_df["created_on"].apply(lambda x: pd.to_datetime(x))
-
-    output_file = _openneuro_listing_tsv()
+    output_file = _openneuro_listing()
     if debug:
-        output_file = Path.cwd() / "openneuro.tsv"
+        output_file = Path.cwd() / output_file.name
     cc_log.info(f"Saving to {output_file}")
-    datasets_df.to_csv(output_file, index=False, sep="\t")
+    save_known_datasets(datasets_df, output_file)
 
 
 def known_derivatives() -> list[str]:
@@ -592,7 +590,8 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
         if n_samples and info and info["sfreq"]:
-            return (n_samples, float(info["sfreq"]))
+            # same convention as for MRI: (number of samples, duration of a sample)
+            return (n_samples, 1 / float(info["sfreq"]))
 
     return (0, np.nan)
 
