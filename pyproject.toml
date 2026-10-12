@@ -3,7 +3,7 @@ build-backend = "hatchling.build"
 requires = ["hatchling", "hatch-vcs"]
 
 [project]
-authors = [{name = "Rémi Gau"}]
+authors = [{ name = "Rémi Gau" }]
 classifiers = [
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
@@ -38,8 +38,8 @@ dependencies = [
 ]
 description = "Creates a neuroimaging cohort by aggregating data across datasets."
 dynamic = ["version"]
-license = {text = "MIT"}
-maintainers = [{name = "Rémi Gau", email = "remi.gau@gmail.com"}]
+license = { text = "MIT" }
+maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
 name = "cohort_creator"
 readme = "README.md"
 requires-python = ">=3.10"
