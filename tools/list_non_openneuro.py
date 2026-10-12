@@ -1,4 +1,4 @@
-"""List datasets contents on openneuro and write the results in a tsv file.
+"""List datasets contents on openneuro and write the results in a JSON lines file.
 
 Also checks for derivatives folders for mriqc, frmiprep and freesurfer.
 
@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from cohort_creator.data._update import init_dataset, list_datasets_in_dir
+from cohort_creator.data.utils import save_known_datasets
 from cohort_creator.logger import cc_logger
 
 DEBUG = False
@@ -86,10 +87,9 @@ def main() -> None:
     )
 
     datasets_df = pd.DataFrame.from_dict(datasets)
-    datasets_df = datasets_df.sort_values("name")
 
-    output_file = Path(__file__).parent.parent / "non_openneuro.tsv"
-    datasets_df.to_csv(output_file, index=False, sep="\t")
+    output_file = Path(__file__).parent.parent / "non_openneuro.jsonl"
+    save_known_datasets(datasets_df, output_file)
 
     print("data saved to:", output_file)
 
