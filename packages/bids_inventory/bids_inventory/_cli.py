@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 import sys
 from argparse import ArgumentParser, HelpFormatter
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 
 from rich_argparse import RichHelpFormatter
 
@@ -84,6 +85,19 @@ def set_verbosity(verbosity: int) -> None:
         logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
+@contextmanager
+def _check_extra(extra: str) -> Iterator[None]:
+    """Exit with an explanation if the optional dependencies of a command are missing."""
+    try:
+        yield
+    except ImportError as e:
+        bi_log.error(
+            f"The '{extra}' command needs optional dependencies ({e.name} is missing).\n"
+            f"Install them with: pip install 'bids-inventory[{extra}]'"
+        )
+        sys.exit(1)
+
+
 def cli(argv: Sequence[str] = sys.argv) -> None:
     """Entry point."""
     parser = global_parser(formatter_class=RichHelpFormatter)
@@ -92,11 +106,13 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     set_verbosity(args.verbosity)
 
     if args.command == "browse":
-        from bids_inventory._browse import browse
+        with _check_extra("browse"):
+            from bids_inventory._browse import browse
 
         browse(debug=args.debug)
 
     elif args.command == "update":
-        from bids_inventory._update import update
+        with _check_extra("update"):
+            from bids_inventory._update import update
 
         update(debug=args.debug)

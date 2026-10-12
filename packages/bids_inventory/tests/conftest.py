@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from datalad import api
 
 # pin dataset versions so that upstream updates do not change test results
 DATASET_VERSIONS = {
@@ -17,6 +16,9 @@ DATASET_VERSIONS = {
 @pytest.fixture
 def install_dataset():
     def _install_dataset(dataset_name: str):
+        # needs the 'update' extra
+        from datalad import api
+
         output_path = Path(__file__).parent / "data" / "tmp" / dataset_name
         output_path.mkdir(exist_ok=True, parents=True)
         if not (output_path / "dataset_description.json").exists():

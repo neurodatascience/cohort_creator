@@ -39,7 +39,7 @@ jobs:
                 python -m pip install --upgrade pip
 
         -   name: Install
-            run: pip install ./packages/bids_inventory[test] ./packages/cohort_creator[test]
+            run: pip install ./packages/bids_inventory[browse,test,update] ./packages/cohort_creator[test]
 
         -   name: Post-install
             run: |

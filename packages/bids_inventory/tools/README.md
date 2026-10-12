@@ -8,7 +8,7 @@ the listing of openneuro and non-openneuro BIDS datasets.
 Install the bids_inventory package with its development dependencies
 
 ```bash
-pip install -e packages/bids_inventory[dev]
+pip install -e 'packages/bids_inventory[dev]'
 ```
 
 ## Installing datasets

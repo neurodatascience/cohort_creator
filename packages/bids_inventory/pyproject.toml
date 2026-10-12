@@ -14,23 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"
 ]
-dependencies = [
-    "dash",
-    "dash-bootstrap-components",
-    "datalad",
-    "datalad-fuse",
-    "kaleido",
-    "matplotlib",
-    "mne",
-    "nibabel",
-    "numpy",
-    "pandas",
-    "plotly",
-    "pyyaml",
-    "requests",
-    "rich",
-    "rich_argparse"
-]
+dependencies = ["numpy", "pandas", "rich", "rich_argparse"]
 description = "Keeps an inventory of publicly available BIDS datasets."
 dynamic = ["version"]
 license = { text = "MIT" }
@@ -40,8 +24,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-dev = ["bids-inventory[test]", "pandas-stubs", "pre-commit"]
+# dash app to browse the listing: `bids_inventory browse`
+browse = ["dash", "dash-bootstrap-components", "kaleido", "matplotlib", "plotly"]
+dev = ["bids-inventory[browse,test,update]", "pandas-stubs", "pre-commit"]
 test = ["pytest", "pytest-cov"]
+# update of the listing: `bids_inventory update`
+update = ["datalad", "datalad-fuse", "mne", "nibabel", "pyyaml", "requests"]
 
 [project.scripts]
 bids_inventory = "bids_inventory._cli:cli"
