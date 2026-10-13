@@ -365,6 +365,8 @@ def test_skipped_datasets_are_not_indexed(tmp_path, monkeypatch):
 
     assert indexed == ["ds000001"]
     assert datasets["name"] == ["ds000001"]
+
+
 def test_get_scan_duration_error_reason(tmp_path, caplog):
     """The error says why the header could not be read."""
     from datalad import api
