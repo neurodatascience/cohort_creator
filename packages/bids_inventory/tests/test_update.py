@@ -17,6 +17,7 @@ from bids_inventory._update import (  # noqa: E402
     get_info_dataset,
     get_institutions,
     get_license,
+    get_meeg_header,
     get_nb_subjects,
     get_references_and_links,
     has_participant_tsv,
@@ -182,6 +183,22 @@ def test_get_duration_ds002041(install_dataset):
     datatypes = list_datatypes(ds002041, sessions=sessions)
     tasks = list_tasks(ds002041, sessions=sessions)
     get_duration(ds002041, datatypes, tasks)
+
+
+def test_get_meeg_header_unreadable(tmp_path):
+    """A malformed header should be skipped with a warning, not stop the update."""
+    from datalad import api
+
+    ds = api.create(tmp_path / "ds", result_renderer="disabled")
+    eeg = ds.pathobj / "sub-01" / "eeg"
+    eeg.mkdir(parents=True)
+    header = eeg / "sub-01_task-rest_eeg.vhdr"
+    header.write_bytes(b"\x00\x05\x16\x07\x00\x02Mac OS X")
+    header.with_suffix(".vmrk").write_bytes(b"")
+    ds.save(result_renderer="disabled")
+
+    with pytest.warns(UserWarning, match="Could not read header"):
+        assert get_meeg_header(ds.pathobj, header) == (None, 0)
 
 
 def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, caplog):
