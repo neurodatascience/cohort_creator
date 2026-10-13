@@ -16,6 +16,12 @@ local_paths:
     openneuro:
         # folder where new openneuro datasets are installed during an update
         OpenNeuroDatasets:
+    datalad:
+        # optional: openneuro folder of the datalad superdataset
+        # (datalad install ///openneuro, then install its subdatasets).
+        # Its installed datasets are indexed in place and are not installed again:
+        # only the datasets missing from it are installed in openneuro.OpenNeuroDatasets.
+        OpenNeuroDatasets:
     # folder with the datasets that are not on openneuro
     # (abide, abide2, adhd200, corr and cneuromod subfolders),
     # for example installed with tools/install_extra_datasets.sh

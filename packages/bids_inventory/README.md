@@ -87,8 +87,11 @@ auth:
     token_file: ~/tokens/github_token.txt
 local_paths:
     openneuro:
-        # where the OpenNeuro datasets are installed
+        # where the update installs the OpenNeuro datasets it needs
         OpenNeuroDatasets: ~/openneuro
+    datalad:
+        # optional: openneuro folder of the datalad superdataset (see below)
+        OpenNeuroDatasets: ~/datalad/datasets.datalad.org/openneuro
     # where the datasets that are not on OpenNeuro are installed
     # (only needed for --source non-openneuro)
     non_openneuro: ~/non_openneuro
@@ -106,7 +109,9 @@ only their git history and file names are downloaded, not the data.
 - **OpenNeuro**: `bids_inventory update` installs the datasets it needs
   in `local_paths.openneuro.OpenNeuroDatasets`.
   To install all of them faster beforehand, you can use the datalad superdataset
-  and point `local_paths.openneuro.OpenNeuroDatasets` to its `openneuro` folder:
+  and set `local_paths.datalad.OpenNeuroDatasets` to its `openneuro` folder.
+  The datasets installed in the superdataset are indexed there and are not installed again:
+  only the datasets missing from it are installed in `local_paths.openneuro.OpenNeuroDatasets`.
 
   ```bash
   cd ~/datalad

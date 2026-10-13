@@ -612,3 +612,86 @@ def test_error_reason(stdout, stderr, expected):
     from bids_inventory._update import _error_reason
 
     assert _error_reason(stdout, stderr) == expected
+
+
+@pytest.fixture
+def superdataset(tmp_path, monkeypatch):
+    """Superdataset with ds000001 and ds000002 installed, ds000003 not installed."""
+    from bids_inventory._update import CONFIG_ENV_VAR, config
+
+    path = tmp_path / "datalad" / "openneuro"
+    for name in ["ds000001", "ds000002"]:
+        (path / name / ".git").mkdir(parents=True)
+    (path / "ds000003").mkdir()
+    install_dir = tmp_path / "openneuro"
+    install_dir.mkdir()
+
+    user_config = tmp_path / "config.yml"
+    user_config.write_text(
+        "local_paths:\n"
+        f"    datalad:\n        OpenNeuroDatasets: {path}\n"
+        f"    openneuro:\n        OpenNeuroDatasets: {install_dir}\n"
+    )
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setenv(CONFIG_ENV_VAR, str(user_config))
+    config.cache_clear()
+    yield path, install_dir
+    config.cache_clear()
+
+
+def test_datasets_in_superdataset_are_not_installed(superdataset, tmp_path, monkeypatch):
+    import pandas as pd
+
+    from bids_inventory import _update
+
+    monkeypatch.setattr(_update, "get_list_of_datasets", lambda org: ["ds000001", "ds000003"])
+    monkeypatch.setattr(_update, "known_datasets_df", lambda: pd.DataFrame({"name": []}))
+    monkeypatch.setattr(_update, "skipped_datasets", lambda: {})
+    monkeypatch.setattr(_update, "_data_dir", lambda: tmp_path)
+
+    assert _update.superdataset_datasets() == ["ds000001", "ds000002"]
+    # ds000003 is in the superdataset but not installed
+    assert _update.list_openneuro_raw() == {"ds000003"}
+    assert _update.list_openneuro_raw(reindex=True) == {"ds000003"}
+
+
+def test_update_openneuro_indexes_superdataset(superdataset, tmp_path, monkeypatch):
+    """Datasets are indexed from the superdataset if they are installed there."""
+    from bids_inventory import _update
+    from bids_inventory.listing import _load_known_datasets
+
+    path, install_dir = superdataset
+    for name in ["ds000002", "ds000004"]:
+        (install_dir / name).mkdir()
+    listing = tmp_path / "openneuro.jsonl"
+    listing.write_text("")
+    (tmp_path / "OpenNeuroDatasets.tsv").write_text("name\nds000001\n")
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        indexed.append(str(dataset_pth.relative_to(tmp_path)))
+        return _update.new_dataset(dataset_pth.name)
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+    monkeypatch.setattr(_update, "skipped_datasets", lambda: {})
+    monkeypatch.setattr(_update, "_data_dir", lambda: tmp_path)
+    monkeypatch.setattr(_update, "_openneuro_listing", lambda: listing)
+    monkeypatch.setattr(
+        _update, "_load_known_datasets", lambda f: _load_or_empty(_load_known_datasets, f)
+    )
+
+    _update.update_openneuro(debug=False)
+
+    # ds000002 is in both folders: only indexed from the superdataset
+    assert indexed == [
+        "datalad/openneuro/ds000001",
+        "datalad/openneuro/ds000002",
+        "openneuro/ds000004",
+    ]
+    assert _load_known_datasets(listing)["name"].tolist() == ["ds000001", "ds000002", "ds000004"]

@@ -177,11 +177,41 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
     return "installed", ""
 
 
+def superdataset_dir() -> Path | None:
+    """Return the openneuro folder of the datalad superdataset, if it is configured.
+
+    Optional: set with ``local_paths.datalad.OpenNeuroDatasets``.
+    Its datasets are indexed in place and are not installed again.
+    """
+    if os.getenv("CI"):
+        return None
+    value = (config()["local_paths"].get("datalad") or {}).get(OPENNEURO)
+    if not value:
+        return None
+    path = Path(value).expanduser()
+    if not path.is_dir():
+        cc_log.warning(f"Superdataset folder not found: {path}")
+        return None
+    return path
+
+
+def superdataset_datasets() -> list[str]:
+    """List the datasets installed in the datalad superdataset (if configured)."""
+    if (path := superdataset_dir()) is None:
+        return []
+    # datasets of the superdataset that are not installed are empty folders
+    return sorted(x.name for x in path.glob("ds*") if (x / ".git").exists())
+
+
 def list_openneuro_raw(reindex: bool = False) -> set[str]:
-    if reindex:
-        known_datasets = []
-    else:
-        known_datasets = known_datasets_df()["name"].values.tolist()
+    """List the openneuro datasets to install.
+
+    Those not in the listing (all of them when re-indexing),
+    except those already installed in the datalad superdataset.
+    """
+    known_datasets = superdataset_datasets()
+    if not reindex:
+        known_datasets += known_datasets_df()["name"].values.tolist()
 
     print()
     cc_log.info("Getting list of public openneuro raw datasets from the GitHub API.")
@@ -235,6 +265,19 @@ def update_openneuro(debug: bool = True, jobs: int = 1, reindex: bool = False) -
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
     if len(new_openneuro_datasets) > 0:
+        # datasets installed in the datalad superdataset are indexed from there,
+        # the others from the folder where the update installs them
+        superdataset = superdataset_dir()
+        if superdataset is not None and (in_superdataset := superdataset_datasets()):
+            datasets = list_datasets_in_dir(
+                datasets,
+                superdataset,
+                debug=debug,
+                include=in_superdataset,
+                jobs=jobs,
+                output_file=output_file,
+                reindex=reindex,
+            )
         if os.getenv("CI"):
             input_dir = _data_dir() / "tmp"
         else:
