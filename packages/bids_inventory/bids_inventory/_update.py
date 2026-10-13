@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import subprocess
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 from warnings import warn
@@ -19,7 +19,7 @@ from datalad.support.exceptions import IncompleteResultsError
 from mne.io.brainvision.brainvision import _get_hdr_info
 from rich.progress import Progress
 
-from bids_inventory._utils import list_participants_in_dataset, progress_bar
+from bids_inventory._utils import glob_files, list_participants_in_dataset, progress_bar
 from bids_inventory.listing import (
     KNOWN_DATATYPES,
     _data_dir,
@@ -370,6 +370,7 @@ def list_datasets_in_dir(
 
     derivatives = known_derivatives()
 
+    failed: list[str] = []
     with progress_bar(text="Updating") as progress:
         task = progress.add_task(description="updating", total=len(raw_datasets))
 
@@ -399,9 +400,14 @@ def list_datasets_in_dir(
             # if dataset_pth.name.startswith('ds'):
             enable_S3_remote(dataset_pth)
 
-            dataset = get_info_dataset(dataset_pth, study_prefix)
-
-            dataset = add_derivatives(dataset, dataset_pth, derivatives)
+            try:
+                dataset = get_info_dataset(dataset_pth, study_prefix)
+                dataset = add_derivatives(dataset, dataset_pth, derivatives)
+            except Exception:
+                cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
+                failed.append(dataset_pth.name)
+                progress.update(task, advance=1)
+                continue
 
             if dataset["name"] in datasets["name"]:
                 # raise ValueError(f"dataset {dataset['name']} already in datasets")
@@ -411,6 +417,9 @@ def list_datasets_in_dir(
                 datasets[keys].append(dataset[keys])
 
             progress.update(task, advance=1)
+
+    if failed:
+        cc_log.error(f"{len(failed)} datasets could not be indexed: {sorted(failed)}")
 
     return datasets
 
@@ -543,9 +552,9 @@ def is_known_bids_datatype(datatype: str) -> bool:
 
 
 def list_datatypes(bids_pth: Path, sessions: list[str]) -> list[str]:
-    sub_dirs = [v.name for v in bids_pth.glob("sub-*/*") if v.is_dir()]
+    sub_dirs = [v.name for v in glob_files(bids_pth, "sub-*/*") if v.is_dir()]
     if sessions:
-        tmp = [v.name for v in bids_pth.glob("sub-*/ses-*/*") if v.is_dir()]
+        tmp = [v.name for v in glob_files(bids_pth, "sub-*/ses-*/*") if v.is_dir()]
         sub_dirs.extend(tmp)
     datatypes = [v for v in set(sub_dirs) if is_known_bids_datatype(v)]
     return sorted(list(set(datatypes)))
@@ -553,10 +562,10 @@ def list_datatypes(bids_pth: Path, sessions: list[str]) -> list[str]:
 
 def list_data_files(bids_pth: Path, sessions: list[str]) -> list[str]:
     """Return the list of files with the task entity."""
-    files = [v.name for v in bids_pth.glob("sub-*/*/*_task-*")]
+    files = [v.name for v in glob_files(bids_pth, "sub-*/*/*_task-*")]
     if not sessions:
         return files
-    tmp = [v.name for v in bids_pth.glob("sub-*/*/*/*_task-*")]
+    tmp = [v.name for v in glob_files(bids_pth, "sub-*/*/*/*_task-*")]
     files.extend(tmp)
     return files
 
@@ -623,6 +632,11 @@ def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str,
     except FileNotFoundError:
         warn(f"FileNotFoundError for {filepath}", stacklevel=2)
         return None, 0
+    except Exception as e:
+        # headers in third party datasets can be malformed in many ways:
+        # one bad file should not stop the update
+        warn(f"Could not read header of {filepath}: {e!r}", stacklevel=2)
+        return None, 0
 
 
 def created_on(dataset_pth: Path) -> str:
@@ -637,13 +651,13 @@ def created_on(dataset_pth: Path) -> str:
 
 
 def count_stim_files(dataset_pth: Path) -> int:
-    return len(list(dataset_pth.glob("sub-*/**/*stim.tsv.gz")))
+    return len(list(glob_files(dataset_pth, "sub-*/**/*stim.tsv.gz")))
 
 
 def count_eeg_file_formats(dataset_pth: Path) -> dict[str, int]:
     SUPPORTED_FORMATS = ["bdf", "edf", "eeg", "set"]
     count = {
-        format: len(list(dataset_pth.glob(f"sub-*/**/eeg/*_eeg.{format}")))
+        format: len(list(glob_files(dataset_pth, f"sub-*/**/eeg/*_eeg.{format}")))
         for format in SUPPORTED_FORMATS
     }
     return count
@@ -652,7 +666,7 @@ def count_eeg_file_formats(dataset_pth: Path) -> dict[str, int]:
 def count_ieeg_file_formats(dataset_pth: Path) -> dict[str, int]:
     SUPPORTED_FORMATS = ["nwb", "edf", "eeg", "set", "mefd"]
     count = {
-        format: len(list(dataset_pth.glob(f"sub-*/**/ieeg/*_ieeg.{format}")))
+        format: len(list(glob_files(dataset_pth, f"sub-*/**/ieeg/*_ieeg.{format}")))
         for format in SUPPORTED_FORMATS
     }
     return count
@@ -661,7 +675,7 @@ def count_ieeg_file_formats(dataset_pth: Path) -> dict[str, int]:
 def count_meg_file_formats(dataset_pth: Path) -> dict[str, int]:
     SUPPORTED_FORMATS = [".ds", "", ".fif", ".con", ".kdf", ".raw.mhd"]
     count = {
-        format: len(list(dataset_pth.glob(f"sub-*/**/meg/*_meg{format}")))
+        format: len(list(glob_files(dataset_pth, f"sub-*/**/meg/*_meg{format}")))
         for format in SUPPORTED_FORMATS
     }
     return count
@@ -672,7 +686,9 @@ def get_number_meeg_channels(dataset_pth: Path, datatypes: list[str]) -> list[in
     nb_channels = []
     for target_datatype in ["ieeg", "eeg"]:
         if target_datatype in datatypes:
-            files = dataset_pth.glob(f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr")
+            files = glob_files(
+                dataset_pth, f"{first_sub}/**/{target_datatype}/*_{target_datatype}.vhdr"
+            )
             for filepath in files:
                 info, _ = get_meeg_header(dataset_pth, filepath)
                 if info:
@@ -697,7 +713,7 @@ def get_duration(
             if tasks is None:
                 tasks = []
                 if target_datatype == "pet":
-                    files = dataset_pth.glob(f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
+                    files = glob_files(dataset_pth, f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
                     duration_all_datatypes[target_datatype] = get_duration_for_datatype(
                         dataset_pth, files
                     )
@@ -705,16 +721,17 @@ def get_duration(
             duration_per_task: dict[str, Iterable[tuple[int, float]]] = {}
             for task_ in tasks:
                 if target_datatype == "func":
-                    files = dataset_pth.glob(
-                        f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
+                    files = glob_files(
+                        dataset_pth, f"{first_sub}/**/func/{first_sub}*task-{task_}*_bold.nii*"
                     )
                 elif target_datatype == "pet":
-                    files = dataset_pth.glob(
-                        f"{first_sub}/**/pet/{first_sub}*task-{task_}*_pet.nii*"
+                    files = glob_files(
+                        dataset_pth, f"{first_sub}/**/pet/{first_sub}*task-{task_}*_pet.nii*"
                     )
                 else:
-                    files = dataset_pth.glob(
-                        f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr"
+                    files = glob_files(
+                        dataset_pth,
+                        f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr",
                     )
                 duration_per_task[task_] = get_duration_for_datatype(dataset_pth, files)
             if duration_per_task:
@@ -723,7 +740,7 @@ def get_duration(
 
 
 def get_duration_for_datatype(
-    dataset_pth: Path, files: Iterator[Path]
+    dataset_pth: Path, files: Iterable[Path]
 ) -> Iterable[tuple[int, float]]:
     scan_duration = []
     for filepath in files:
@@ -766,9 +783,9 @@ def get_institutions(dataset_pth: Path) -> list[str]:
     Assumes that first subject is representative of the dataset.
     """
     cc_log.info(" Getting institution")
-    json_files = list(dataset_pth.glob("*.json"))
+    json_files = list(glob_files(dataset_pth, "*.json"))
     first_subject = list_participants_in_dataset(dataset_pth)[0]
-    json_files.extend(list(dataset_pth.glob(f"{first_subject}/**/*.json")))
+    json_files.extend(list(glob_files(dataset_pth, f"{first_subject}/**/*.json")))
 
     institutions = []
     ds = api.Dataset(dataset_pth)
@@ -824,7 +841,9 @@ def get_dataset_size(dataset_pth: Path) -> str:
 
 
 def list_sessions(dataset_pth: Path) -> list[str]:
-    sessions = [v.name.replace("ses-", "") for v in dataset_pth.glob("sub-*/ses-*") if v.is_dir()]
+    sessions = [
+        v.name.replace("ses-", "") for v in glob_files(dataset_pth, "sub-*/ses-*") if v.is_dir()
+    ]
     return sorted(list(set(sessions)))
 
 
@@ -859,7 +878,7 @@ def add_derivatives(
     ]:
         if dataset[der] != "n/a":
             continue
-        if der_datasets := dataset_pth.glob(f"derivatives/*{der}*"):
+        if der_datasets := glob_files(dataset_pth, f"derivatives/*{der}*"):
             for i in der_datasets:
                 dataset[der] = f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
 
@@ -867,15 +886,15 @@ def add_derivatives(
 
 
 def count_sessions_tsv(dataset_pth: Path) -> int:
-    return len(list(dataset_pth.glob("sub-*/*sessions.tsv")))
+    return len(list(glob_files(dataset_pth, "sub-*/*sessions.tsv")))
 
 
 def count_scans_tsv(dataset_pth: Path) -> int:
-    return len(list(dataset_pth.glob("sub-*/**/*scans.tsv")))
+    return len(list(glob_files(dataset_pth, "sub-*/**/*scans.tsv")))
 
 
 def count_physio_files(dataset_pth: Path) -> int:
-    return len(list(dataset_pth.glob("sub-*/**/*physio.tsv.gz")))
+    return len(list(glob_files(dataset_pth, "sub-*/**/*physio.tsv.gz")))
 
 
 def update(reset: bool = False, debug: bool = True) -> None:
