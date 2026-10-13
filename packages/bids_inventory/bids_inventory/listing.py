@@ -59,6 +59,19 @@ def _non_openneuro_listing() -> Path:
     return _data_dir() / "non_openneuro.jsonl"
 
 
+def _skipped_datasets_file() -> Path:
+    return _data_dir() / "skipped_datasets.csv"
+
+
+def skipped_datasets() -> dict[str, str]:
+    """Return the datasets that must not be indexed, with the reason why.
+
+    For example datasets deleted from OpenNeuro but still mirrored on GitHub.
+    """
+    df = pd.read_csv(_skipped_datasets_file(), dtype=str, keep_default_na=False)
+    return dict(zip(df["name"], df["reason"]))
+
+
 def _load_known_datasets(listing: Path) -> pd.DataFrame:
     """Load a listing of datasets stored as JSON lines (one dataset per line)."""
     df = pd.read_json(listing, lines=True, dtype=False, convert_dates=False)

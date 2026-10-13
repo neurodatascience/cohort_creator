@@ -334,3 +334,32 @@ def test_annexed_file_size(tmp_path):
 
     assert _annexed_file_size(tmp_path / "missing.eeg") is None
     assert _brainvision_n_samples(tmp_path / "missing.eeg", "single", 66) is None
+
+
+def test_skipped_datasets_are_not_indexed(tmp_path, monkeypatch):
+    from bids_inventory import _update
+
+    input_dir = tmp_path / "openneuro"
+    for name in ["ds000001", "ds000002"]:
+        (input_dir / name).mkdir(parents=True)
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        indexed.append(dataset_pth.name)
+        dataset = {key: [] for key in _update.init_dataset()}
+        dataset.update(_update.new_dataset(dataset_pth.name))
+        return dataset
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+    monkeypatch.setattr(_update, "skipped_datasets", lambda: {"ds000002": "deleted"})
+
+    datasets = _update.list_datasets_in_dir(_update.init_dataset(), input_dir, debug=False)
+
+    assert indexed == ["ds000001"]
+    assert datasets["name"] == ["ds000001"]
