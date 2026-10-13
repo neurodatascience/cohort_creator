@@ -177,6 +177,17 @@ def test_get_duration_ds000002(install_dataset):
     }
 
 
+def test_get_duration_parallel(install_dataset):
+    """Reading headers in parallel must give the same durations in the same order."""
+    ds000002 = install_dataset("ds000002")
+    sessions = list_sessions(ds000002)
+    datatypes = list_datatypes(ds000002, sessions=sessions)
+    tasks = list_tasks(ds000002, sessions=sessions)
+    assert get_duration(ds000002, datatypes, tasks, jobs=4) == get_duration(
+        ds000002, datatypes, tasks, jobs=1
+    )
+
+
 def test_get_duration_ds002041(install_dataset):
     ds002041 = install_dataset("ds002041")
     sessions = list_sessions(ds002041)

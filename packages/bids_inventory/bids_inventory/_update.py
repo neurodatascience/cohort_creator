@@ -215,7 +215,7 @@ def list_openneuro_derivatives() -> None:
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
-def update_openneuro(reset: bool = False, debug: bool = True) -> None:
+def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
     """Update list of datasets on openneuro and overwrite old tsv file.
 
     - this will add new datasets,
@@ -238,7 +238,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
     if reset:
         datasets = init_dataset()
         input_dir = config_path("local_paths", "datalad", OPENNEURO)
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
+        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug, jobs=jobs)
 
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
@@ -247,7 +247,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
             input_dir = _data_dir() / "tmp"
         else:
             input_dir = config_path("local_paths", "openneuro", OPENNEURO)
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
+        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug, jobs=jobs)
 
     datasets_df = pd.DataFrame.from_dict(datasets)
 
@@ -398,6 +398,7 @@ def list_datasets_in_dir(
     study_prefix: str = "",
     include: None | list[str] = None,
     update_merge: bool = False,
+    jobs: int = 1,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -475,7 +476,7 @@ def list_datasets_in_dir(
             enable_S3_remote(dataset_pth)
 
             try:
-                dataset = get_info_dataset(dataset_pth, study_prefix)
+                dataset = get_info_dataset(dataset_pth, study_prefix, jobs=jobs)
                 dataset = add_derivatives(dataset, dataset_pth, derivatives)
             except Exception:
                 cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
@@ -538,7 +539,7 @@ def get_raw_url(dataset_pth: Path) -> str:
         return api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
 
 
-def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
+def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> DATASET_TYPE:
     dataset_name = dataset_pth.name
 
     dataset = new_dataset(f"{study_prefix}{dataset_name}")
@@ -590,7 +591,7 @@ def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
 
     dataset["institutions"] = get_institutions(dataset_pth)
 
-    dataset["duration"] = get_duration(dataset_pth, datatypes, tasks)
+    dataset["duration"] = get_duration(dataset_pth, datatypes, tasks, jobs=jobs)
 
     return dataset
 
@@ -656,19 +657,36 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     if "nii" in filepath.suffix or "gz" in filepath.suffix:
         script_path = _data_dir() / "read_nb_vols"
 
-        cmd = f"   datalad fsspec-head -d {dataset_pth} -c 1024 {filepath.relative_to(dataset_pth)} | python {script_path}"
-        cc_log.debug(cmd)
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # only stream the beginning of the file and read the header from it
+        head_cmd = [
+            _datalad_executable(),
+            "fsspec-head",
+            "-d",
+            str(dataset_pth),
+            "-c",
+            "1024",
+            str(filepath.relative_to(dataset_pth)),
+        ]
+        # use the python of this environment (with nibabel) whatever the PATH
+        read_cmd = [sys.executable, str(script_path)]
+        cc_log.debug(f"{' '.join(head_cmd)} | {' '.join(read_cmd)}")
+        with subprocess.Popen(head_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as head:
+            result = subprocess.run(
+                read_cmd, stdin=head.stdout, capture_output=True, text=True, check=False
+            )
+            assert head.stdout is not None
+            head.stdout.close()
+            head_stderr = head.stderr.read().decode() if head.stderr else ""
 
-        if not result.stderr:
+        try:
             tmp = result.stdout.replace("\n", "").split(" ")
             n_samples: int = int(tmp[0])
             repetition_time: float = float(tmp[1])
             return (n_samples, repetition_time)
-
-        cc_log.error(f"   Could not get duration for: {filepath.relative_to(dataset_pth)}")
-        cc_log.debug(result.stderr)
-        return (0, np.nan)
+        except (ValueError, IndexError):
+            cc_log.error(f"   Could not get duration for: {filepath.relative_to(dataset_pth)}")
+            cc_log.debug(f"{head_stderr}\n{result.stderr}")
+            return (0, np.nan)
 
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
@@ -772,27 +790,56 @@ def get_number_meeg_channels(dataset_pth: Path, datatypes: list[str]) -> list[in
 
 
 def get_duration(
-    dataset_pth: Path, datatypes: list[str], tasks: list[str] | None
+    dataset_pth: Path, datatypes: list[str], tasks: list[str] | None, jobs: int = 1
 ) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+    """Get the duration of each run of the first subject.
+
+    Parameters
+    ----------
+    jobs : int
+        Number of NIfTI headers to read in parallel.
+    """
     first_sub = list_participants_in_dataset(dataset_pth)[0]
 
     cc_log.info(f" Getting 'scan' duration for {first_sub}")
 
+    files_per_datatype = _files_for_duration(dataset_pth, first_sub, datatypes, tasks)
+
+    # then read all the headers at once
+    all_files = []
+    for value in files_per_datatype.values():
+        for files in value.values() if isinstance(value, dict) else [value]:
+            all_files.extend(files)
+    durations = get_scan_durations(dataset_pth, all_files, jobs=jobs)
+
     duration_all_datatypes: dict[
         str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]
     ] = {}
+    for datatype, value in files_per_datatype.items():
+        if isinstance(value, dict):
+            duration_all_datatypes[datatype] = {
+                task: [durations[x] for x in files] for task, files in value.items()
+            }
+        else:
+            duration_all_datatypes[datatype] = [durations[x] for x in value]
+    return duration_all_datatypes
 
+
+def _files_for_duration(
+    dataset_pth: Path, first_sub: str, datatypes: list[str], tasks: list[str] | None
+) -> dict[str, list[Path] | dict[str, list[Path]]]:
+    """List the files to read to get the duration of each datatype (and task)."""
+    files_per_datatype: dict[str, list[Path] | dict[str, list[Path]]] = {}
     for target_datatype in ["func", "pet", "ieeg", "eeg"]:
         if target_datatype in datatypes:
             if tasks is None:
                 tasks = []
                 if target_datatype == "pet":
-                    files = glob_files(dataset_pth, f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
-                    duration_all_datatypes[target_datatype] = get_duration_for_datatype(
-                        dataset_pth, files
+                    files_per_datatype[target_datatype] = glob_files(
+                        dataset_pth, f"{first_sub}/**/pet/{first_sub}*_pet.nii*"
                     )
-                    return duration_all_datatypes
-            duration_per_task: dict[str, Iterable[tuple[int, float]]] = {}
+                    break
+            files_per_task: dict[str, list[Path]] = {}
             for task_ in tasks:
                 if target_datatype == "func":
                     files = glob_files(
@@ -807,20 +854,45 @@ def get_duration(
                         dataset_pth,
                         f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr",
                     )
-                duration_per_task[task_] = get_duration_for_datatype(dataset_pth, files)
-            if duration_per_task:
-                duration_all_datatypes[target_datatype] = duration_per_task
-    return duration_all_datatypes
+                files_per_task[task_] = files
+            if files_per_task:
+                files_per_datatype[target_datatype] = files_per_task
+    return files_per_datatype
+
+
+def get_scan_durations(
+    dataset_pth: Path, files: Iterable[Path], jobs: int = 1
+) -> dict[Path, tuple[int, float]]:
+    """Get the duration of several runs.
+
+    NIfTI headers are read in parallel (each in its own subprocess).
+    M/EEG headers are read one after the other
+    as they are read with the datalad python API that is not guaranteed to be thread safe.
+    """
+    files = list(dict.fromkeys(files))
+    for filepath in files:
+        cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
+
+    nifti = [x for x in files if "nii" in x.suffix or "gz" in x.suffix]
+    others = [x for x in files if x not in nifti]
+
+    durations: dict[Path, tuple[int, float]] = {}
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        for filepath, duration in zip(
+            nifti, executor.map(lambda x: get_scan_duration(dataset_pth, x), nifti)
+        ):
+            durations[filepath] = duration
+    for filepath in others:
+        durations[filepath] = get_scan_duration(dataset_pth, filepath)
+    return durations
 
 
 def get_duration_for_datatype(
-    dataset_pth: Path, files: Iterable[Path]
+    dataset_pth: Path, files: Iterable[Path], jobs: int = 1
 ) -> Iterable[tuple[int, float]]:
-    scan_duration = []
-    for filepath in files:
-        cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
-        scan_duration.append(get_scan_duration(dataset_pth, filepath))
-    return scan_duration
+    files = list(files)
+    durations = get_scan_durations(dataset_pth, files, jobs=jobs)
+    return [durations[x] for x in files]
 
 
 def get_authors(dataset_pth: Path) -> list[str]:
@@ -977,7 +1049,7 @@ def update(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
         config_path("local_paths", "openneuro", OPENNEURO)
     install_missing_datasets(use_superdataset=False, jobs=jobs)
     list_openneuro_derivatives()
-    update_openneuro(reset=reset, debug=debug)
+    update_openneuro(reset=reset, debug=debug, jobs=jobs)
 
 
 if __name__ == "__main__":

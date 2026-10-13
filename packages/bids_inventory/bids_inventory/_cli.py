@@ -62,7 +62,7 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
     )
     update_parser.add_argument(
         "--jobs",
-        help="Number of new datasets to install in parallel.",
+        help="Number of new datasets to install, and of NIfTI headers to read, in parallel.",
         required=False,
         default=4,
         type=int,
@@ -133,6 +133,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
     elif args.command == "update":
         with _check_extra("update"):
             from bids_inventory._update import CONFIG_ENV_VAR, update
+
+        if args.jobs < 1:
+            bi_log.error(f"--jobs must be at least 1, got {args.jobs}")
+            sys.exit(1)
 
         if args.config is not None:
             if not args.config.is_file():
