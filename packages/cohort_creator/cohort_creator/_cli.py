@@ -1,7 +1,5 @@
 """Command line interface for cohort_creator."""
 
-from __future__ import annotations
-
 import logging
 import sys
 from collections.abc import Sequence

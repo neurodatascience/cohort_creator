@@ -1,7 +1,5 @@
 """Load and save the listing of known BIDS datasets."""
 
-from __future__ import annotations
-
 import functools
 import json
 from math import isnan

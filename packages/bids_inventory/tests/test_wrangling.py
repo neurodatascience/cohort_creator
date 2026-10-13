@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from bids_inventory import filter_data, known_datasets_df, load_inventory, wrangle_data
 
 

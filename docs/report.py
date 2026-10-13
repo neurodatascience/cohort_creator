@@ -1,7 +1,5 @@
 """Print a small report about the datasets that got covered."""
 
-from __future__ import annotations
-
 from io import TextIOWrapper
 from pathlib import Path
 
@@ -45,7 +43,7 @@ def main() -> None:
         print_results(datasets, file=f)
 
 
-def print_results(datasets: pd.Dataframe, file: TextIOWrapper) -> None:
+def print_results(datasets: pd.DataFrame, file: TextIOWrapper) -> None:
     print(
         f"Number of datasets: {len(datasets)} with {datasets.nb_subjects.sum()} subjects",
         file=file,
@@ -70,7 +68,7 @@ def print_results(datasets: pd.Dataframe, file: TextIOWrapper) -> None:
         )
 
 
-def has_mri(datasets: pd.Dataframe) -> pd.Dataframe:
+def has_mri(datasets: pd.DataFrame) -> pd.DataFrame:
     new_col = []
     for _, row in datasets.iterrows():
         value = {"anat", "func", "dwi", "fmap", "perf"}.intersection(set(row["datatypes"]))

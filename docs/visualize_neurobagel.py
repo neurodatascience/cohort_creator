@@ -8,8 +8,6 @@ Required inuput:
   https://query.neurobagel.org/
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import pandas as pd

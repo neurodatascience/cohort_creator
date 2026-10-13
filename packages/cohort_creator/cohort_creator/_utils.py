@@ -1,7 +1,5 @@
 """General utility functions for the cohort creator."""
 
-from __future__ import annotations
-
 import itertools
 import json
 import shutil
