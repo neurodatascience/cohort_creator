@@ -334,3 +334,69 @@ def test_annexed_file_size(tmp_path):
 
     assert _annexed_file_size(tmp_path / "missing.eeg") is None
     assert _brainvision_n_samples(tmp_path / "missing.eeg", "single", 66) is None
+
+
+@pytest.mark.parametrize(
+    "description, expected",
+    [
+        (None, "n/a"),
+        ({}, "n/a"),
+        ({"GeneratedBy": [{"Name": "fMRIPrep", "Version": "21.0.1"}]}, "21.0.1"),
+        # prefer the entry about the pipeline
+        (
+            {
+                "GeneratedBy": [
+                    {"Name": "Manual", "Version": "1"},
+                    {"Name": "fMRIPrep", "Version": "23.2.0"},
+                ]
+            },
+            "23.2.0",
+        ),
+        # BIDS < 1.4
+        ({"PipelineDescription": {"Name": "fmriprep", "Version": "1.4.1"}}, "1.4.1"),
+        ({"GeneratedBy": [{"Name": "fMRIPrep"}]}, "n/a"),
+    ],
+)
+def test_pipeline_version(description, expected):
+    from bids_inventory._update import pipeline_version
+
+    assert pipeline_version(description, "fmriprep") == expected
+
+
+def test_get_field_strength():
+    from bids_inventory._update import get_field_strength
+
+    sidecars = [
+        {"MagneticFieldStrength": 3},
+        {"MagneticFieldStrength": 3.0},
+        {"MagneticFieldStrength": "7T"},
+        {"MagneticFieldStrength": "n/a"},
+        {"MagneticFieldStrength": 0},
+        {"RepetitionTime": 2},
+    ]
+    assert get_field_strength(sidecars) == [3.0, 7.0]
+    assert get_field_strength([]) == []
+
+
+@pytest.mark.parametrize(
+    "version, expected", [("1.8.0", "1.8.0"), ("v1.2.2", "1.2.2"), ("", "n/a")]
+)
+def test_get_bids_version(tmp_path, version, expected):
+    import json
+
+    from bids_inventory._update import get_bids_version
+
+    (tmp_path / "dataset_description.json").write_text(json.dumps({"BIDSVersion": version}))
+    assert get_bids_version(tmp_path) == expected
+    assert get_bids_version(tmp_path / "missing") == "n/a"
+
+
+def test_listing_to_dict_adds_new_columns():
+    """Listings saved before new columns were added can still be updated."""
+    import pandas as pd
+
+    from bids_inventory._update import init_dataset, listing_to_dict
+
+    datasets = listing_to_dict(pd.DataFrame({"name": ["ds000001", "ds000002"]}))
+    assert set(datasets) == set(init_dataset())
+    assert datasets["bids_version"] == ["n/a", "n/a"]
