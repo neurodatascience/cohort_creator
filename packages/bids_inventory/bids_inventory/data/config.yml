@@ -13,12 +13,20 @@ auth:
     username:
     token_file:
 local_paths:
-    datalad:
-        # paths to the datasets in the datalad superdataset
-        # (datalad install ///openneuro)
-        # only needed to regenerate the listing from scratch
-        OpenNeuroDatasets:
-        OpenNeuroDerivatives:
     openneuro:
-        # folder where new openneuro datasets are installed during an update
+        # folder where the openneuro datasets missing from the superdataset are installed
         OpenNeuroDatasets:
+    datalad:
+        # required: openneuro folder of the datalad superdataset
+        # (datalad install ///openneuro).
+        # Datasets are indexed from it, and installed in it if needed.
+        OpenNeuroDatasets:
+        # required: folder of the datalad superdataset of the openneuro derivatives
+        # (datalad install ///openneuro-derivatives).
+        # Derivatives are listed, and their version read, from it first.
+        OpenNeuroDerivatives:
+    # folder with the datasets that are not on openneuro
+    # (abide, abide2, adhd200, corr and cneuromod subfolders),
+    # for example installed with tools/install_extra_datasets.sh
+    # only needed for: bids_inventory update --source non-openneuro
+    non_openneuro:

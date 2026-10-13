@@ -28,6 +28,7 @@ from bids_inventory.listing import (
     KNOWN_DATATYPES,
     _data_dir,
     _load_known_datasets,
+    _non_openneuro_listing,
     _openneuro_listing,
     known_datasets_df,
     save_known_datasets,
@@ -98,20 +99,15 @@ def config_path(*keys: str) -> Path:
     return Path(value).expanduser()
 
 
-def install_missing_datasets(
-    use_superdataset: bool = False, jobs: int = 1, reindex: bool = False
-) -> None:
-    """Install unknown openneuro datasets.
+def install_missing_datasets(jobs: int = 1, reindex: bool = False) -> None:
+    """Install the openneuro datasets that are not in the listing.
 
-    This script installs all the datasets from openneuro:
-    - that are not in the openneuro.tsv file
-    - OR that are not part of the datalad superdatasets.
+    - datasets of the datalad superdataset are installed in the superdataset,
+    - the datasets missing from the superdataset are installed
+      in ``local_paths.openneuro.OpenNeuroDatasets``.
 
     Parameters
     ----------
-    use_superdataset : bool
-       Set to ``True`` to only use datasets from the datalad superdatasets as known.
-
     jobs : int
        Number of datasets to install in parallel.
 
@@ -119,11 +115,19 @@ def install_missing_datasets(
        Install all the datasets missing locally,
        not only those missing from the listing.
     """
-    unknown_datasets = list_openneuro_raw(use_superdataset, reindex=reindex)
+    unknown_datasets = list_openneuro_raw(reindex=reindex)
 
     if not unknown_datasets:
         cc_log.info("No new dataset found")
         return
+
+    if (superdataset := superdataset_dir()) is not None:
+        in_superdataset, installed = superdataset_content()
+        if to_install := sorted((unknown_datasets & in_superdataset) - installed):
+            _install_in_superdataset(superdataset, to_install, jobs=jobs)
+        unknown_datasets -= in_superdataset
+        if not unknown_datasets:
+            return
 
     if os.getenv("CI"):
         output_dir = _data_dir() / "tmp"
@@ -185,14 +189,116 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
     return "installed", ""
 
 
-def list_openneuro_raw(use_superdataset: bool, reindex: bool = False) -> set[str]:
-    if reindex:
-        known_datasets = []
-    elif use_superdataset:
-        path_known_datasets = config_path("local_paths", "datalad", OPENNEURO)
-        known_datasets = [x.name for x in path_known_datasets.glob("*")]
-    else:
-        known_datasets = known_datasets_df()["name"].values.tolist()
+def superdataset_dir() -> Path | None:
+    """Return the openneuro folder of the datalad superdataset.
+
+    Set with ``local_paths.datalad.OpenNeuroDatasets``: required, except in CI.
+    Datasets are indexed from the superdataset,
+    and only the datasets missing from it are installed elsewhere.
+    """
+    if os.getenv("CI"):
+        return None
+    path = config_path("local_paths", "datalad", OPENNEURO)
+    if not path.is_dir():
+        raise ValueError(
+            f"Datalad superdataset not found: {path}\n"
+            "Install it with 'datalad install ///openneuro' "
+            "or fix 'local_paths.datalad.OpenNeuroDatasets' in the configuration."
+        )
+    return path
+
+
+def derivatives_superdataset_dir() -> Path | None:
+    """Return the folder of the OpenNeuroDerivatives datalad superdataset.
+
+    Set with ``local_paths.datalad.OpenNeuroDerivatives``: required, except in CI.
+    """
+    if os.getenv("CI"):
+        return None
+    path = config_path("local_paths", "datalad", OPENNEURO_DERIVATIVES)
+    if not (path / ".git").exists():
+        raise ValueError(
+            f"Datalad superdataset of the derivatives not found or not installed: {path}\n"
+            f"Install it with 'datalad get -n {path}' "
+            "or fix 'local_paths.datalad.OpenNeuroDerivatives' in the configuration."
+        )
+    return path
+
+
+def superdataset_content() -> tuple[set[str], set[str]]:
+    """Return the datasets of the datalad superdataset, and those that are installed."""
+    if (path := superdataset_dir()) is None:
+        return set(), set()
+    # datasets of the superdataset that are not installed are empty folders
+    in_superdataset = {x.name for x in path.glob("ds*") if x.is_dir()}
+    installed = {x for x in in_superdataset if (path / x / ".git").exists()}
+    return in_superdataset, installed
+
+
+def superdataset_datasets() -> list[str]:
+    """List the datasets installed in the datalad superdataset."""
+    return sorted(superdataset_content()[1])
+
+
+def _install_in_superdataset(superdataset: Path, names: list[str], jobs: int = 1) -> None:
+    """Install datasets of the datalad superdataset, in the superdataset.
+
+    A single ``datalad get -n`` installs them ``jobs`` at a time:
+    several datalad processes changing the same superdataset could conflict.
+    """
+    cc_log.info(
+        f"Installing {len(names)} datasets in the datalad superdataset {superdataset} "
+        f"({jobs} at a time)"
+    )
+    chunk_size = 50
+    with Progress() as progress:
+        task = progress.add_task("[green]Installing...", total=len(names))
+        for i in range(0, len(names), chunk_size):
+            chunk = names[i : i + chunk_size]
+            result = subprocess.run(
+                [_datalad_executable(), "-f", "json", "get", "-n", "-J", str(jobs), "-d", "."]
+                + chunk,
+                cwd=superdataset,
+                capture_output=True,
+                text=True,
+            )
+            reported = set()
+            for line in result.stdout.splitlines():
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                name = Path(record.get("path", "")).name
+                if name not in chunk or name in reported:
+                    continue
+                reported.add(name)
+                if record.get("status") in ("ok", "notneeded"):
+                    cc_log.info(f"installed: {name}")
+                else:
+                    cc_log.error(f"failed: {name} ({_datalad_message(record)})")
+            for name in sorted(set(chunk) - reported):
+                cc_log.error(
+                    f"failed: {name} ({_error_reason(result.stderr) or 'no result from datalad'})"
+                )
+            progress.update(task, advance=len(chunk))
+
+
+def _datalad_message(record: dict[str, Any]) -> str:
+    """Format the message of a datalad result: a string or [format, *args]."""
+    message = record.get("message", "")
+    if isinstance(message, list) and message:
+        try:
+            message = message[0] % tuple(message[1:])
+        except (TypeError, ValueError):
+            message = " ".join(str(x) for x in message)
+    return (
+        str(message).strip().splitlines()[0] if str(message).strip() else str(record.get("status"))
+    )
+
+
+def list_openneuro_raw(reindex: bool = False) -> set[str]:
+    """List the openneuro datasets that are not in the listing (all of them when re-indexing)."""
+    known_datasets = [] if reindex else known_datasets_df()["name"].values.tolist()
 
     print()
     cc_log.info("Getting list of public openneuro raw datasets from the GitHub API.")
@@ -212,32 +318,44 @@ def list_openneuro_raw(use_superdataset: bool, reindex: bool = False) -> set[str
 
 
 def list_openneuro_derivatives() -> None:
-    """List openeneuro derivatives datasets from the GitHub organization.
+    """List the openneuro derivatives datasets.
+
+    Those of the datalad superdataset first,
+    then those of the GitHub organization that are missing from it.
 
     Saves the listing to a TSV file.
     """
+    datasets: set[str] = set()
+    if (superdataset := derivatives_superdataset_dir()) is not None:
+        # subdatasets are listed as folders even when they are not installed
+        datasets = {x.name for x in superdataset.glob("ds*-*") if x.is_dir()}
+        cc_log.info(f"{len(datasets)} derivatives datasets in {superdataset}")
+
     print()
     cc_log.info("Getting list of public openneuro derivatives datasets from the GitHub API.")
-    datasets = get_list_of_datasets(gh_orga=OPENNEURO_DERIVATIVES)
-    df = pd.DataFrame({"name": datasets})
+    on_github = set(get_list_of_datasets(gh_orga=OPENNEURO_DERIVATIVES))
+    if superdataset is not None and (only_on_github := on_github - datasets):
+        cc_log.info(
+            f"{len(only_on_github)} derivatives datasets only on GitHub "
+            f"(not in the superdataset yet): {sorted(only_on_github)}"
+        )
+    datasets |= on_github
+
+    df = pd.DataFrame({"name": sorted(datasets)})
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
-def update_openneuro(
-    reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False
-) -> None:
-    """Update list of datasets on openneuro and overwrite old tsv file.
-
-    - this will add new datasets,
-    - this will update the values the links to the derivatives datasets
-    - this should fail if a dataset is already in the tsv file
-    if they now exist
+def update_openneuro(debug: bool = True, jobs: int = 1, reindex: bool = False) -> None:
+    """Index the openneuro datasets installed locally and update the listing.
 
     Parameters
     ----------
     debug : bool
         If ``False``, will overwrite the listing with the current openneuro datasets.
         If ``True`` will save output in current directory and only index a few datasets.
+
+    reindex : bool
+        Index again the datasets already in the listing.
     """
     datasets_df = _load_known_datasets(_openneuro_listing())
     datasets_df.replace({pd.NA: "n/a"}, inplace=True)
@@ -247,16 +365,22 @@ def update_openneuro(
     if debug:
         output_file = Path.cwd() / output_file.name
 
-    if reset:
-        datasets = init_dataset()
-        input_dir = config_path("local_paths", "datalad", OPENNEURO)
-        datasets = list_datasets_in_dir(
-            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
-        )
-
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
     if len(new_openneuro_datasets) > 0:
+        # datasets installed in the datalad superdataset are indexed from there,
+        # the others from the folder where the update installs them
+        superdataset = superdataset_dir()
+        if superdataset is not None and (in_superdataset := superdataset_datasets()):
+            datasets = list_datasets_in_dir(
+                datasets,
+                superdataset,
+                debug=debug,
+                include=in_superdataset,
+                jobs=jobs,
+                output_file=output_file,
+                reindex=reindex,
+            )
         if os.getenv("CI"):
             input_dir = _data_dir() / "tmp"
         else:
@@ -275,18 +399,80 @@ def update_openneuro(
     cc_log.info(f"Saving to {output_file}")
     save_known_datasets(datasets_df, output_file)
 
-    if reindex and (reindex_file := reindex_progress_file(output_file)):
-        not_reindexed = set(datasets["name"]) - _read_reindex_progress(reindex_file)
-        if not_reindexed:
-            # for example datasets not installed locally or that failed:
-            # keep the progress file so that running the re-index again retries them
-            cc_log.warning(
-                f"{len(not_reindexed)} datasets were not re-indexed "
-                f"and keep their previous entry: {sorted(not_reindexed)}"
-            )
-        else:
-            reindex_file.unlink(missing_ok=True)
-            cc_log.info("All datasets re-indexed")
+    if reindex:
+        _finish_reindex(datasets, output_file)
+
+
+# Datasets that are not on OpenNeuro:
+# (folder in local_paths.non_openneuro, prefix added to their name, datasets to include)
+NON_OPENNEURO_COLLECTIONS: list[tuple[str, str, list[str] | None]] = [
+    ("abide", "ABIDE_", None),
+    ("abide2", "ABIDE2_", None),
+    ("adhd200", "ADHD200_", None),
+    ("corr", "CORR_", None),
+    (
+        "cneuromod",
+        "CNEUROMOD_",
+        ["anat", "friends", "harrypotter", "hcptrt", "movie10", "shinobi", "shinobi_training"],
+    ),
+]
+
+
+def update_non_openneuro(debug: bool = True, jobs: int = 1, reindex: bool = False) -> None:
+    """Update the listing of datasets that are not on OpenNeuro (ABIDE, CoRR...).
+
+    The datasets must be installed in the folder set by ``local_paths.non_openneuro``
+    in the configuration, for example with ``tools/install_extra_datasets.sh``.
+    """
+    base_dir = config_path("local_paths", "non_openneuro")
+
+    datasets_df = _load_known_datasets(_non_openneuro_listing())
+    datasets_df.replace({pd.NA: "n/a"}, inplace=True)
+    datasets = listing_to_dict(datasets_df)
+
+    output_file = _non_openneuro_listing()
+    if debug:
+        output_file = Path.cwd() / output_file.name
+
+    for folder, study_prefix, include in NON_OPENNEURO_COLLECTIONS:
+        if not (base_dir / folder).is_dir():
+            cc_log.warning(f"{base_dir / folder} not found: skipping {study_prefix.strip('_')}")
+            continue
+        datasets = list_datasets_in_dir(
+            datasets,
+            base_dir / folder,
+            debug=debug,
+            dataset_name_prefix="",
+            study_prefix=study_prefix,
+            include=include,
+            jobs=jobs,
+            output_file=output_file,
+            reindex=reindex,
+        )
+
+    cc_log.info(f"Saving to {output_file}")
+    save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+
+    if reindex:
+        _finish_reindex(datasets, output_file)
+
+
+def _finish_reindex(datasets: dict[str, list[Any]], output_file: Path) -> None:
+    """Report the datasets not re-indexed, or remove the progress file if all were."""
+    reindex_file = reindex_progress_file(output_file)
+    if reindex_file is None:
+        return
+    not_reindexed = set(datasets["name"]) - _read_reindex_progress(reindex_file)
+    if not_reindexed:
+        # for example datasets not installed locally or that failed:
+        # keep the progress file so that running the re-index again retries them
+        cc_log.warning(
+            f"{len(not_reindexed)} datasets were not re-indexed "
+            f"and keep their previous entry: {sorted(not_reindexed)}"
+        )
+    else:
+        reindex_file.unlink(missing_ok=True)
+        cc_log.info("All datasets re-indexed")
 
 
 def known_derivatives() -> list[str]:
@@ -1191,9 +1377,7 @@ def add_derivatives(dataset: BidsDataset, dataset_pth: Path, derivatives: list[s
     for der in ["fmriprep", "mriqc"]:
         if f"{dataset_name}-{der}" in derivatives:
             setattr(dataset, der, f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}")
-            description = _remote_dataset_description(
-                f"{URL_RAW_OPENNEURO_DERIVATIVES}{dataset_name}-{der}/main/dataset_description.json"
-            )
+            description = _derivative_description(f"{dataset_name}-{der}")
             setattr(dataset, f"{der}_version", pipeline_version(description, der))
 
     for der in [
@@ -1237,6 +1421,21 @@ def pipeline_version(description: dict[str, Any] | None, pipeline: str) -> str:
     return "n/a"
 
 
+def _derivative_description(name: str) -> dict[str, Any] | None:
+    """Read the dataset_description.json of an OpenNeuroDerivatives dataset.
+
+    From the datalad superdataset if the dataset is installed there,
+    otherwise from GitHub.
+    """
+    superdataset = derivatives_superdataset_dir()
+    if superdataset is not None and (superdataset / name / ".git").exists():
+        if description := _local_dataset_description(superdataset / name, superdataset / name):
+            return description
+    return _remote_dataset_description(
+        f"{URL_RAW_OPENNEURO_DERIVATIVES}{name}/main/dataset_description.json"
+    )
+
+
 def _remote_dataset_description(url: str) -> dict[str, Any] | None:
     try:
         response = requests.get(url, timeout=30)
@@ -1273,7 +1472,12 @@ def count_physio_files(dataset_pth: Path) -> int:
     return len(list(glob_files(dataset_pth, "sub-*/**/*physio.tsv.gz")))
 
 
-def update(reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False) -> None:
+def update(
+    debug: bool = True,
+    jobs: int = 1,
+    reindex: bool = False,
+    source: str = "openneuro",
+) -> None:
     """Update the listing of OpenNeuro datasets.
 
     Parameters
@@ -1281,13 +1485,24 @@ def update(reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool
     reindex : bool
         Index again all the datasets, not only those missing from the listing.
         Can be resumed if interrupted.
+
+    source : "openneuro" | "non-openneuro"
+        Which listing to update.
     """
+    if source == "non-openneuro":
+        update_non_openneuro(debug=debug, jobs=jobs, reindex=reindex)
+        return
+    if source != "openneuro":
+        raise ValueError(f"Unknown source: {source}")
+
     if not os.getenv("CI"):
-        # fail early if the folder where to install new datasets is not set
+        # fail early if the superdatasets or the folder for the other datasets are not set
+        superdataset_dir()
+        derivatives_superdataset_dir()
         config_path("local_paths", "openneuro", OPENNEURO)
-    install_missing_datasets(use_superdataset=False, jobs=jobs, reindex=reindex)
+    install_missing_datasets(jobs=jobs, reindex=reindex)
     list_openneuro_derivatives()
-    update_openneuro(reset=reset, debug=debug, jobs=jobs, reindex=reindex)
+    update_openneuro(debug=debug, jobs=jobs, reindex=reindex)
 
 
 if __name__ == "__main__":

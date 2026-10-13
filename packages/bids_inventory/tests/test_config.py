@@ -37,10 +37,7 @@ def test_user_config(tmp_path, monkeypatch):
 
     assert config_path("local_paths", "openneuro", "OpenNeuroDatasets") == Path.home() / "openneuro"
     # keys not in the user file keep their default
-    assert config()["local_paths"]["datalad"] == {
-        "OpenNeuroDatasets": None,
-        "OpenNeuroDerivatives": None,
-    }
+    assert config()["local_paths"]["non_openneuro"] is None
 
 
 def test_get_auth(tmp_path, monkeypatch):
