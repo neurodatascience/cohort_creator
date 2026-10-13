@@ -264,3 +264,51 @@ def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, cap
     assert "not found: ds999999" in caplog.text
     # datalad output must not mess up the progress bar
     assert "install(ok)" not in capsys.readouterr().out
+
+
+def test_list_datasets_in_dir_can_resume(tmp_path, monkeypatch):
+    """An interrupted update keeps the datasets indexed so far and resumes after them."""
+    from bids_inventory import _update
+    from bids_inventory.listing import _load_known_datasets
+
+    input_dir = tmp_path / "openneuro"
+    for name in ["ds000001", "ds000002", "ds000003"]:
+        (input_dir / name).mkdir(parents=True)
+    output_file = tmp_path / "openneuro.jsonl"
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        if dataset_pth.name == "ds000003" and "stop" in indexed:
+            raise KeyboardInterrupt  # someone stops the update
+        indexed.append(dataset_pth.name)
+        dataset = {key: [] for key in _update.init_dataset()}
+        dataset.update(_update.new_dataset(dataset_pth.name))
+        return dataset
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+
+    # first run is interrupted while indexing ds000003
+    indexed.append("stop")
+    with pytest.raises(KeyboardInterrupt):
+        _update.list_datasets_in_dir(
+            _update.init_dataset(), input_dir, debug=False, output_file=output_file
+        )
+    assert _load_known_datasets(output_file)["name"].tolist() == ["ds000001", "ds000002"]
+
+    # the restart only indexes what is missing
+    indexed.clear()
+    datasets = _load_known_datasets(output_file).to_dict(orient="list")
+    _update.list_datasets_in_dir(datasets, input_dir, debug=False, output_file=output_file)
+    assert indexed == ["ds000003"]
+    assert _load_known_datasets(output_file)["name"].tolist() == [
+        "ds000001",
+        "ds000002",
+        "ds000003",
+    ]
+    assert not output_file.with_name("openneuro.jsonl.tmp").exists()

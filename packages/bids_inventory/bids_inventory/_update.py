@@ -238,10 +238,16 @@ def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> 
         str(k): v for k, v in datasets_df.to_dict(orient="list").items()
     }
 
+    output_file = _openneuro_listing()
+    if debug:
+        output_file = Path.cwd() / output_file.name
+
     if reset:
         datasets = init_dataset()
         input_dir = config_path("local_paths", "datalad", OPENNEURO)
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug, jobs=jobs)
+        datasets = list_datasets_in_dir(
+            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+        )
 
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
@@ -250,13 +256,12 @@ def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> 
             input_dir = _data_dir() / "tmp"
         else:
             input_dir = config_path("local_paths", "openneuro", OPENNEURO)
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug, jobs=jobs)
+        datasets = list_datasets_in_dir(
+            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+        )
 
     datasets_df = pd.DataFrame.from_dict(datasets)
 
-    output_file = _openneuro_listing()
-    if debug:
-        output_file = Path.cwd() / output_file.name
     cc_log.info(f"Saving to {output_file}")
     save_known_datasets(datasets_df, output_file)
 
@@ -402,6 +407,7 @@ def list_datasets_in_dir(
     include: None | list[str] = None,
     update_merge: bool = False,
     jobs: int = 1,
+    output_file: Path | None = None,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -421,6 +427,16 @@ def list_datasets_in_dir(
         _description_, by default None
     update_merge: bool, default = False
         Pull latest version of each dataset before collecting its metadata
+
+    jobs : int, default = 1
+        Number of NIfTI headers to read in parallel.
+
+    output_file : Path | None, default = None
+        If set, the listing is saved to this file after each dataset is indexed,
+        so that an interrupted update does not lose its progress.
+
+    Datasets already in ``datasets`` are skipped:
+    restarting an interrupted update only indexes the remaining datasets.
 
     Returns
     -------
@@ -448,6 +464,7 @@ def list_datasets_in_dir(
 
     derivatives = known_derivatives()
 
+    known = set(datasets["name"])
     failed: list[str] = []
     try:
         with progress_bar(text="Updating") as progress:
@@ -458,6 +475,11 @@ def list_datasets_in_dir(
                 print()
                 cc_log.info(f"{dataset_pth.name}")
                 set_current_dataset(f"{dataset_pth.name} {index}/{len(raw_datasets)}")
+
+                if f"{study_prefix}{dataset_pth.name}" in known:
+                    cc_log.info("  already in the listing: skipping")
+                    progress.update(task, advance=1)
+                    continue
 
                 if not _check_dataset(dataset_pth):
                     progress.update(task, advance=1)
@@ -489,12 +511,12 @@ def list_datasets_in_dir(
                     progress.update(task, advance=1)
                     continue
 
-                if dataset["name"] in datasets["name"]:
-                    # raise ValueError(f"dataset {dataset['name']} already in datasets")
-                    cc_log.warning(f"dataset {dataset['name']} already in datasets")
-
                 for keys in datasets:
                     datasets[keys].append(dataset[keys])
+                known.add(dataset["name"])
+
+                if output_file is not None:
+                    save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
 
                 progress.update(task, advance=1)
 
