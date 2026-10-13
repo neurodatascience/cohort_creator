@@ -61,6 +61,13 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         help="Only runs the update for a few subset of datasets.",
     )
     update_parser.add_argument(
+        "--jobs",
+        help="Number of new datasets to install in parallel.",
+        required=False,
+        default=4,
+        type=int,
+    )
+    update_parser.add_argument(
         "--config",
         help="""
         YAML file with local settings (paths to datasets, GitHub token file...).
@@ -133,4 +140,4 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
                 sys.exit(1)
             os.environ[CONFIG_ENV_VAR] = str(args.config.resolve())
 
-        update(debug=args.debug)
+        update(debug=args.debug, jobs=args.jobs)

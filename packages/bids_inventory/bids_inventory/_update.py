@@ -4,8 +4,11 @@ import functools
 import json
 import logging
 import os
+import shutil
 import subprocess
+import sys
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 from warnings import warn
@@ -100,7 +103,7 @@ def config_path(*keys: str) -> Path:
     return Path(value).expanduser()
 
 
-def install_missing_datasets(use_superdataset: bool = False) -> None:
+def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> None:
     """Install unknown openneuro datasets.
 
     This script installs all the datasets from openneuro:
@@ -111,6 +114,9 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
     ----------
     use_superdataset : bool
        Set to ``True`` to only use datasets from the datalad superdatasets as known.
+
+    jobs : int
+       Number of datasets to install in parallel.
     """
     unknown_datasets = list_openneuro_raw(use_superdataset)
 
@@ -124,34 +130,57 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
         output_dir = config_path("local_paths", "openneuro", OPENNEURO)
     output_dir.mkdir(exist_ok=True, parents=True)
 
-    with Progress() as progress:
+    cc_log.info(f"Installing {len(unknown_datasets)} datasets in {output_dir} ({jobs} at a time)")
+
+    with (
+        Progress() as progress,
+        ThreadPoolExecutor(max_workers=jobs) as executor,
+    ):
         task = progress.add_task("[green]Installing...", total=len(unknown_datasets))
-
-        for dataset in unknown_datasets:
-            data_pth = output_dir / dataset
-
-            if data_pth.exists():
-                cc_log.info(f"  data already present at {data_pth}")
-                progress.update(task, advance=1)
-                continue
-
-            source = f"https://github.com/{OPENNEURO}/{dataset}.git"
-            response = requests.get(source)
-            if response.status_code != 200:
-                cc_log.warning(f"error {response.status_code} for dataset {source}")
-                progress.update(task, advance=1)
-                continue
-
-            cc_log.info(f"installing: {data_pth}")
-            try:
-                api.install(
-                    path=data_pth,
-                    source=source,
-                    recursive=False,
-                )
-            except IncompleteResultsError:
-                cc_log.error(f" could not install: {data_pth}")
+        futures = {
+            executor.submit(_install_openneuro_dataset, output_dir / dataset): dataset
+            for dataset in sorted(unknown_datasets)
+        }
+        for future in as_completed(futures):
+            status, message = future.result()
+            log = cc_log.error if status == "failed" else cc_log.info
+            log(f"{status}: {futures[future]} {message}".rstrip())
             progress.update(task, advance=1)
+
+
+def _datalad_executable() -> str:
+    """Return the datalad executable of the current environment, if any."""
+    in_env = Path(sys.executable).parent / "datalad"
+    return str(in_env) if in_env.exists() else (shutil.which("datalad") or "datalad")
+
+
+def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
+    """Install one openneuro dataset.
+
+    Runs ``datalad install`` in a subprocess
+    so that several datasets can be installed in parallel.
+
+    Returns
+    -------
+    The status ("already present", "not found", "installed" or "failed")
+    and a message with more details.
+    """
+    if data_pth.exists():
+        return "already present", ""
+
+    source = f"https://github.com/{OPENNEURO}/{data_pth.name}.git"
+    response = requests.get(source)
+    if response.status_code != 200:
+        return "not found", f"(error {response.status_code} for {source})"
+
+    result = subprocess.run(
+        [_datalad_executable(), "install", "--source", source, str(data_pth)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return "failed", result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
+    return "installed", ""
 
 
 def list_openneuro_raw(use_superdataset: bool) -> set[str]:
@@ -923,11 +952,11 @@ def count_physio_files(dataset_pth: Path) -> int:
     return len(list(dataset_pth.glob("sub-*/**/*physio.tsv.gz")))
 
 
-def update(reset: bool = False, debug: bool = True) -> None:
+def update(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
     if not os.getenv("CI"):
         # fail early if the folder where to install new datasets is not set
         config_path("local_paths", "openneuro", OPENNEURO)
-    install_missing_datasets(use_superdataset=False)
+    install_missing_datasets(use_superdataset=False, jobs=jobs)
     list_openneuro_derivatives()
     update_openneuro(reset=reset, debug=debug)
 

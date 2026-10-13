@@ -182,3 +182,24 @@ def test_get_duration_ds002041(install_dataset):
     datatypes = list_datatypes(ds002041, sessions=sessions)
     tasks = list_tasks(ds002041, sessions=sessions)
     get_duration(ds002041, datatypes, tasks)
+
+
+def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, caplog):
+    from bids_inventory import _update
+
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr(
+        _update, "list_openneuro_raw", lambda use_superdataset: {"ds000001", "ds000002", "ds999999"}
+    )
+    monkeypatch.setattr(_update, "config_path", lambda *keys: tmp_path)
+    (tmp_path / "ds000002").mkdir()
+    caplog.set_level("INFO", logger="bids_inventory")
+
+    _update.install_missing_datasets(jobs=3)
+
+    assert (tmp_path / "ds000001" / "dataset_description.json").exists()
+    assert "installed: ds000001" in caplog.text
+    assert "already present: ds000002" in caplog.text
+    assert "not found: ds999999" in caplog.text
+    # datalad output must not mess up the progress bar
+    assert "install(ok)" not in capsys.readouterr().out
