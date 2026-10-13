@@ -470,6 +470,8 @@ def test_list_datasets_in_dir_reindex_can_resume(tmp_path, monkeypatch):
         "ds000001",
         "ds000002",
     }
+
+
 def test_get_scan_duration_error_reason(tmp_path, caplog):
     """The error says why the header could not be read."""
     from datalad import api
