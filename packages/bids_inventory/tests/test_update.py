@@ -241,6 +241,8 @@ def test_get_meeg_header_mne_warnings_are_logged(tmp_path, caplog, recwarn):
     info, n_samples = get_meeg_header(ds.pathobj, header)
 
     assert info["sfreq"] == 1000
+    # 20 bytes of INT_16 data for 1 channel
+    assert n_samples == 10
     assert "MarkerFile 'sub-01_task-rest_eye_closed_eeg.vmrk' not found" in caplog.text
     assert not [w for w in recwarn if "MarkerFile" in str(w.message)]
 
@@ -312,3 +314,23 @@ def test_list_datasets_in_dir_can_resume(tmp_path, monkeypatch):
         "ds000003",
     ]
     assert not output_file.with_name("openneuro.jsonl.tmp").exists()
+
+
+def test_annexed_file_size(tmp_path):
+    """The size of a file whose content is not downloaded is read from its annex key."""
+    from bids_inventory._update import _annexed_file_size, _brainvision_n_samples
+
+    present = tmp_path / "present.eeg"
+    present.write_bytes(b"\x00" * 8)
+    assert _annexed_file_size(present) == 8
+
+    not_downloaded = tmp_path / "sub-01_task-rest_eeg.eeg"
+    not_downloaded.symlink_to(
+        "../.git/annex/objects/q5/pm/SHA256E-s3800016000--5c95f30c.eeg/SHA256E-s3800016000--5c95f30c.eeg"
+    )
+    assert _annexed_file_size(not_downloaded) == 3800016000
+    # ds005486: 66 channels of IEEE_FLOAT_32
+    assert _brainvision_n_samples(not_downloaded, "single", 66) == 14394000
+
+    assert _annexed_file_size(tmp_path / "missing.eeg") is None
+    assert _brainvision_n_samples(tmp_path / "missing.eeg", "single", 66) is None

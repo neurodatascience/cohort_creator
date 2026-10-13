@@ -4,6 +4,7 @@ import functools
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,7 @@ import requests
 import yaml
 from datalad import api
 from datalad.support.exceptions import IncompleteResultsError
+from mne.io.brainvision.brainvision import _fmt_byte_dict as _BRAINVISION_BYTES
 from mne.io.brainvision.brainvision import _get_hdr_info
 from rich.progress import Progress
 
@@ -733,6 +735,28 @@ def _get_file(ds: api.Dataset, filepath: Path) -> None:
     cc_log.debug(f"  got {filepath}")
 
 
+def _annexed_file_size(filepath: Path) -> int | None:
+    """Return the size of a file, even if its content is not downloaded.
+
+    For files whose content is not present,
+    the size is read from their git-annex key (``<backend>-s<size>--<hash>``).
+    """
+    if filepath.exists():
+        return filepath.stat().st_size
+    if filepath.is_symlink():
+        if match := re.search(r"-s(\d+)--", os.readlink(filepath)):
+            return int(match.group(1))
+    return None
+
+
+def _brainvision_n_samples(data_fname: Path, fmt: str, nchan: int) -> int | None:
+    """Compute the number of samples of a binary BrainVision data file from its size."""
+    size = _annexed_file_size(data_fname)
+    if size is None or nchan == 0:
+        return None
+    return size // (_BRAINVISION_BYTES[fmt] * nchan)
+
+
 def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], int]:
     ds = api.Dataset(dataset_pth)
     try:
@@ -744,8 +768,8 @@ def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str,
             warnings.simplefilter("always")
             (
                 info,
-                _,
-                _,
+                data_fname,
+                fmt,
                 _,
                 n_samples,
                 _,
@@ -759,7 +783,12 @@ def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str,
             )
         for w in caught:
             cc_log.warning(f"{filepath.relative_to(dataset_pth)}: {w.message}")
-        return info, n_samples
+        if not n_samples and isinstance(fmt, str):
+            # MNE only computes the number of samples when reading the data:
+            # for binary data compute it from the size of the data file
+            # (without downloading it)
+            n_samples = _brainvision_n_samples(Path(data_fname), fmt, int(info["nchan"]))
+        return info, n_samples or 0
     except IncompleteResultsError:
         cc_log.warning(f"Could not get {filepath.relative_to(dataset_pth)}")
         return None, 0
