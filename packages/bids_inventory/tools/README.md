@@ -73,6 +73,13 @@ To update the listing with the new openneuro datasets, run `bids_inventory updat
 If the listing must be regenerated from scratch (in case old entries need to be updated)
 use `tools/list_openneuro.py`.
 
+## Skipping datasets
+
+Datasets listed in `bids_inventory/data/skipped_datasets.csv` are never installed or indexed,
+for example datasets deleted from OpenNeuro that are still mirrored on GitHub
+(their file contents cannot be downloaded).
+Each dataset is listed with the reason why it is skipped.
+
 ## GitHub API tokens
 
 To list the datasets on the openneuro organizations several calls need to be made to the GitHub API.

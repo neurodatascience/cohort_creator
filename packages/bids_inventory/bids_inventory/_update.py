@@ -33,6 +33,7 @@ from bids_inventory.listing import (
     _openneuro_listing,
     known_datasets_df,
     save_known_datasets,
+    skipped_datasets,
 )
 from bids_inventory.logger import bi_logger, set_current_dataset
 
@@ -199,6 +200,10 @@ def list_openneuro_raw(use_superdataset: bool) -> set[str]:
     cc_log.info("Getting list of public openneuro raw datasets from the GitHub API.")
     datasets = get_list_of_datasets(OPENNEURO)
     unknown_datasets = set(datasets) - set(known_datasets)
+
+    if skipped := unknown_datasets & set(skipped_datasets()):
+        cc_log.info(f"Skipping {len(skipped)} datasets listed in skipped_datasets.csv")
+        unknown_datasets -= skipped
 
     cc_log.info(f"{len(unknown_datasets)} unknown datasets")
     cc_log.info(sorted(unknown_datasets))
@@ -400,6 +405,15 @@ def new_dataset(name: str) -> DATASET_TYPE:
     }
 
 
+def _skip_reason(name: str, study_prefix: str, known: set[str], skipped: dict[str, str]) -> str:
+    """Return why a dataset must not be indexed (empty if it must be)."""
+    if f"{study_prefix}{name}" in known:
+        return "already in the listing"
+    if name in skipped:
+        return f"in skipped_datasets.csv ({skipped[name]})"
+    return ""
+
+
 def list_datasets_in_dir(
     datasets: dict[str, list[Any]],
     path: Path,
@@ -467,6 +481,7 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     known = set(datasets["name"])
+    skipped = skipped_datasets()
     failed: list[str] = []
     try:
         with progress_bar(text="Updating") as progress:
@@ -478,8 +493,8 @@ def list_datasets_in_dir(
                 cc_log.info(f"{dataset_pth.name}")
                 set_current_dataset(f"{dataset_pth.name} {index}/{len(raw_datasets)}")
 
-                if f"{study_prefix}{dataset_pth.name}" in known:
-                    cc_log.info("  already in the listing: skipping")
+                if reason := _skip_reason(dataset_pth.name, study_prefix, known, skipped):
+                    cc_log.info(f"  skipping: {reason}")
                     progress.update(task, advance=1)
                     continue
 
