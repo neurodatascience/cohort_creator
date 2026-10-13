@@ -68,6 +68,15 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         type=int,
     )
     update_parser.add_argument(
+        "--reindex",
+        help="""
+        Index again all the datasets, not only those missing from the listing,
+        for example to fill new fields.
+        Can be resumed: if interrupted, run the same command again.
+        """,
+        action="store_true",
+    )
+    update_parser.add_argument(
         "--log-dir",
         help="""
         Folder where to save the warnings and the errors of the update,
@@ -156,7 +165,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
         warnings_log, errors_log = add_log_files(args.log_dir)
         try:
-            update(debug=args.debug, jobs=args.jobs)
+            update(debug=args.debug, jobs=args.jobs, reindex=args.reindex)
         finally:
             for log_file in [warnings_log, errors_log]:
                 if log_file.exists():

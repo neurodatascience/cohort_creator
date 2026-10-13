@@ -110,7 +110,9 @@ def config_path(*keys: str) -> Path:
     return Path(value).expanduser()
 
 
-def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> None:
+def install_missing_datasets(
+    use_superdataset: bool = False, jobs: int = 1, reindex: bool = False
+) -> None:
     """Install unknown openneuro datasets.
 
     This script installs all the datasets from openneuro:
@@ -124,8 +126,12 @@ def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> N
 
     jobs : int
        Number of datasets to install in parallel.
+
+    reindex : bool
+       Install all the datasets missing locally,
+       not only those missing from the listing.
     """
-    unknown_datasets = list_openneuro_raw(use_superdataset)
+    unknown_datasets = list_openneuro_raw(use_superdataset, reindex=reindex)
 
     if not unknown_datasets:
         cc_log.info("No new dataset found")
@@ -190,8 +196,10 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
     return "installed", ""
 
 
-def list_openneuro_raw(use_superdataset: bool) -> set[str]:
-    if use_superdataset:
+def list_openneuro_raw(use_superdataset: bool, reindex: bool = False) -> set[str]:
+    if reindex:
+        known_datasets = []
+    elif use_superdataset:
         path_known_datasets = config_path("local_paths", "datalad", OPENNEURO)
         known_datasets = [x.name for x in path_known_datasets.glob("*")]
     else:
@@ -222,7 +230,9 @@ def list_openneuro_derivatives() -> None:
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
-def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
+def update_openneuro(
+    reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False
+) -> None:
     """Update list of datasets on openneuro and overwrite old tsv file.
 
     - this will add new datasets,
@@ -259,13 +269,31 @@ def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> 
         else:
             input_dir = config_path("local_paths", "openneuro", OPENNEURO)
         datasets = list_datasets_in_dir(
-            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+            datasets,
+            input_dir,
+            debug=debug,
+            jobs=jobs,
+            output_file=output_file,
+            reindex=reindex,
         )
 
     datasets_df = pd.DataFrame.from_dict(datasets)
 
     cc_log.info(f"Saving to {output_file}")
     save_known_datasets(datasets_df, output_file)
+
+    if reindex and (reindex_file := reindex_progress_file(output_file)):
+        not_reindexed = set(datasets["name"]) - _read_reindex_progress(reindex_file)
+        if not_reindexed:
+            # for example datasets not installed locally or that failed:
+            # keep the progress file so that running the re-index again retries them
+            cc_log.warning(
+                f"{len(not_reindexed)} datasets were not re-indexed "
+                f"and keep their previous entry: {sorted(not_reindexed)}"
+            )
+        else:
+            reindex_file.unlink(missing_ok=True)
+            cc_log.info("All datasets re-indexed")
 
 
 def known_derivatives() -> list[str]:
@@ -421,6 +449,44 @@ def new_dataset(name: str) -> DATASET_TYPE:
     }
 
 
+def _add_or_replace(datasets: dict[str, list[Any]], dataset: DATASET_TYPE) -> None:
+    """Add a dataset to the listing, or replace its entry if it is already there."""
+    if dataset["name"] in datasets["name"]:
+        index = datasets["name"].index(dataset["name"])
+        for keys in datasets:
+            datasets[keys][index] = dataset[keys]
+    else:
+        for keys in datasets:
+            datasets[keys].append(dataset[keys])
+
+
+def _save_progress(
+    datasets: dict[str, list[Any]],
+    name: str,
+    output_file: Path | None,
+    reindex_file: Path | None,
+) -> None:
+    """Save the listing after the dataset ``name`` was indexed."""
+    if output_file is not None:
+        save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+    if reindex_file is not None:
+        with open(reindex_file, "a") as f:
+            f.write(f"{name}\n")
+
+
+def reindex_progress_file(output_file: Path | None) -> Path | None:
+    """File listing the datasets re-indexed so far (one per line)."""
+    if output_file is None:
+        return None
+    return output_file.with_name(f"{output_file.name}.reindexed")
+
+
+def _read_reindex_progress(reindex_file: Path | None) -> set[str]:
+    if reindex_file is None or not reindex_file.exists():
+        return set()
+    return {x.strip() for x in reindex_file.read_text().splitlines() if x.strip()}
+
+
 def list_datasets_in_dir(
     datasets: dict[str, list[Any]],
     path: Path,
@@ -431,6 +497,7 @@ def list_datasets_in_dir(
     update_merge: bool = False,
     jobs: int = 1,
     output_file: Path | None = None,
+    reindex: bool = False,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -458,7 +525,12 @@ def list_datasets_in_dir(
         If set, the listing is saved to this file after each dataset is indexed,
         so that an interrupted update does not lose its progress.
 
-    Datasets already in ``datasets`` are skipped:
+    reindex : bool, default = False
+        Index again the datasets already in ``datasets`` and replace their entry.
+        The datasets re-indexed so far are tracked in ``<output_file>.reindexed``
+        so that an interrupted re-index can be resumed.
+
+    Otherwise datasets already in ``datasets`` are skipped:
     restarting an interrupted update only indexes the remaining datasets.
 
     Returns
@@ -488,6 +560,10 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     known = set(datasets["name"])
+    reindex_file = reindex_progress_file(output_file) if reindex else None
+    if reindex:
+        known = _read_reindex_progress(reindex_file)
+        cc_log.info(f"Re-indexing: {len(known)} datasets already re-indexed")
     failed: list[str] = []
     try:
         with progress_bar(text="Updating") as progress:
@@ -534,12 +610,9 @@ def list_datasets_in_dir(
                     progress.update(task, advance=1)
                     continue
 
-                for keys in datasets:
-                    datasets[keys].append(dataset[keys])
-                known.add(dataset["name"])
-
-                if output_file is not None:
-                    save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+                _add_or_replace(datasets, dataset)
+                known.add(str(dataset["name"]))
+                _save_progress(datasets, str(dataset["name"]), output_file, reindex_file)
 
                 progress.update(task, advance=1)
 
@@ -1222,13 +1295,21 @@ def count_physio_files(dataset_pth: Path) -> int:
     return len(list(glob_files(dataset_pth, "sub-*/**/*physio.tsv.gz")))
 
 
-def update(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
+def update(reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False) -> None:
+    """Update the listing of OpenNeuro datasets.
+
+    Parameters
+    ----------
+    reindex : bool
+        Index again all the datasets, not only those missing from the listing.
+        Can be resumed if interrupted.
+    """
     if not os.getenv("CI"):
         # fail early if the folder where to install new datasets is not set
         config_path("local_paths", "openneuro", OPENNEURO)
-    install_missing_datasets(use_superdataset=False, jobs=jobs)
+    install_missing_datasets(use_superdataset=False, jobs=jobs, reindex=reindex)
     list_openneuro_derivatives()
-    update_openneuro(reset=reset, debug=debug, jobs=jobs)
+    update_openneuro(reset=reset, debug=debug, jobs=jobs, reindex=reindex)
 
 
 if __name__ == "__main__":

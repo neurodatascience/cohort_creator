@@ -252,7 +252,9 @@ def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, cap
 
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setattr(
-        _update, "list_openneuro_raw", lambda use_superdataset: {"ds000001", "ds000002", "ds999999"}
+        _update,
+        "list_openneuro_raw",
+        lambda use_superdataset, reindex=False: {"ds000001", "ds000002", "ds999999"},
     )
     monkeypatch.setattr(_update, "config_path", lambda *keys: tmp_path)
     (tmp_path / "ds000002").mkdir()
@@ -400,3 +402,69 @@ def test_listing_to_dict_adds_new_columns():
     datasets = listing_to_dict(pd.DataFrame({"name": ["ds000001", "ds000002"]}))
     assert set(datasets) == set(init_dataset())
     assert datasets["bids_version"] == ["n/a", "n/a"]
+
+
+def test_list_datasets_in_dir_reindex_can_resume(tmp_path, monkeypatch):
+    """Re-indexing replaces entries in place and can be resumed."""
+    import pandas as pd
+
+    from bids_inventory import _update
+    from bids_inventory.listing import _load_known_datasets, save_known_datasets
+
+    input_dir = tmp_path / "openneuro"
+    for name in ["ds000001", "ds000002"]:
+        (input_dir / name).mkdir(parents=True)
+    output_file = tmp_path / "openneuro.jsonl"
+
+    # listing indexed before a new field was added
+    old = _update.init_dataset()
+    for name in ["ds000001", "ds000002"]:
+        entry = {key: [] for key in old}
+        entry.update(_update.new_dataset(name))
+        _update._add_or_replace(old, entry)
+    save_known_datasets(pd.DataFrame.from_dict(old), output_file)
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        if dataset_pth.name == "ds000002" and "stop" in indexed:
+            raise KeyboardInterrupt
+        indexed.append(dataset_pth.name)
+        dataset = {key: [] for key in _update.init_dataset()}
+        dataset.update(_update.new_dataset(dataset_pth.name))
+        dataset["bids_version"] = "1.10.0"
+        return dataset
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+
+    def run():
+        datasets = _update.listing_to_dict(_load_known_datasets(output_file))
+        return _update.list_datasets_in_dir(
+            datasets, input_dir, debug=False, output_file=output_file, reindex=True
+        )
+
+    # interrupted while re-indexing ds000002
+    indexed.append("stop")
+    with pytest.raises(KeyboardInterrupt):
+        run()
+    listing = _load_known_datasets(output_file).set_index("name")
+    # the listing stays complete: ds000002 keeps its previous entry
+    assert listing.index.tolist() == ["ds000001", "ds000002"]
+    assert listing.loc["ds000001", "bids_version"] == "1.10.0"
+    assert pd.isna(listing.loc["ds000002", "bids_version"])
+
+    # the restart only re-indexes ds000002
+    indexed.clear()
+    run()
+    assert indexed == ["ds000002"]
+    listing = _load_known_datasets(output_file).set_index("name")
+    assert listing["bids_version"].tolist() == ["1.10.0", "1.10.0"]
+    assert _update._read_reindex_progress(_update.reindex_progress_file(output_file)) == {
+        "ds000001",
+        "ds000002",
+    }
