@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 # needs the 'update' extra
@@ -363,3 +365,37 @@ def test_skipped_datasets_are_not_indexed(tmp_path, monkeypatch):
 
     assert indexed == ["ds000001"]
     assert datasets["name"] == ["ds000001"]
+def test_get_scan_duration_error_reason(tmp_path, caplog):
+    """The error says why the header could not be read."""
+    from datalad import api
+
+    from bids_inventory._update import get_scan_duration
+
+    ds = api.create(tmp_path / "ds", result_renderer="disabled")
+    bold = ds.pathobj / "sub-01" / "func" / "sub-01_task-rest_bold.nii.gz"
+    bold.parent.mkdir(parents=True)
+    bold.write_bytes(b"not really a nifti file")
+    ds.save(result_renderer="disabled")
+    # the content is not available anywhere anymore
+    ds.drop(bold, reckless="kill", result_renderer="disabled")
+
+    n_volumes, repetition_time = get_scan_duration(ds.pathobj, bold)
+    assert n_volumes == 0
+    assert math.isnan(repetition_time)
+    assert "Could not get duration for: sub-01/func/sub-01_task-rest_bold.nii.gz (" in caplog.text
+    assert "Could not find a usable URL" in caplog.text
+
+
+def test_get_scan_duration_retries_once(monkeypatch, tmp_path):
+    from bids_inventory import _update
+
+    calls = []
+
+    def flaky(dataset_pth, filepath):
+        calls.append(filepath)
+        return (None, "temporary error") if len(calls) == 1 else ((180, 2.0), "")
+
+    monkeypatch.setattr(_update, "_read_nifti_header", flaky)
+    bold = tmp_path / "sub-01_task-rest_bold.nii.gz"
+    assert _update.get_scan_duration(tmp_path, bold) == (180, 2.0)
+    assert len(calls) == 2
