@@ -11,6 +11,8 @@ The inventory is stored in `bids_inventory/data/` as [JSON lines](https://jsonli
 - `non_openneuro.jsonl`
 
 A description of each field is in `bids_inventory/data/columns_description.json`.
+It is generated from the data model in `bids_inventory/models.py`:
+after changing the model, regenerate it with `python -m bids_inventory.models`.
 
 ## Installation
 

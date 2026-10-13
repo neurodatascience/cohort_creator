@@ -9,14 +9,23 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError  # noqa: E402
 
-from bids_inventory.models import BidsDataset  # noqa: E402
+from bids_inventory.models import BidsDataset, columns_description  # noqa: E402
 
 
-def test_fields_are_described():
-    """Each field of the model is described in columns_description.json, and vice versa."""
+def test_columns_description_is_up_to_date():
+    """columns_description.json is generated from the model."""
     with open(_data_dir() / "columns_description.json") as f:
-        described = json.load(f)["Columns"]
-    assert set(BidsDataset.model_fields) == set(described)
+        on_disk = json.load(f)
+    assert on_disk == columns_description(), (
+        "columns_description.json is out of date: "
+        "regenerate it with 'python -m bids_inventory.models'"
+    )
+
+
+def test_all_fields_are_described():
+    for name, column in columns_description()["Columns"].items():
+        assert column["Description"], name
+        assert column["Format"], name
 
 
 def test_assignment_is_validated():
