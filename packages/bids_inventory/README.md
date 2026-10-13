@@ -86,12 +86,14 @@ auth:
     # text file containing a GitHub token (or set the GITHUB_TOKEN environment variable)
     token_file: ~/tokens/github_token.txt
 local_paths:
-    openneuro:
-        # where the update installs the OpenNeuro datasets it needs
-        OpenNeuroDatasets: ~/openneuro
     datalad:
-        # optional: openneuro folder of the datalad superdataset (see below)
+        # openneuro folder of the datalad superdataset
         OpenNeuroDatasets: ~/datalad/datasets.datalad.org/openneuro
+        # folder of the datalad superdataset of the OpenNeuro derivatives
+        OpenNeuroDerivatives: ~/datalad/datasets.datalad.org/openneuro-derivatives
+    openneuro:
+        # where the OpenNeuro datasets missing from the superdataset are installed
+        OpenNeuroDatasets: ~/openneuro
     # where the datasets that are not on OpenNeuro are installed
     # (only needed for --source non-openneuro)
     non_openneuro: ~/non_openneuro
@@ -106,28 +108,37 @@ If a setting needed by the update is missing, the error message says which one.
 The datasets are installed with [datalad](https://www.datalad.org/):
 only their git history and file names are downloaded, not the data.
 
-- **OpenNeuro**: `bids_inventory update` installs the datasets it needs
-  in `local_paths.openneuro.OpenNeuroDatasets`.
-  To install all of them faster beforehand, you can use the datalad superdataset
-  and set `local_paths.datalad.OpenNeuroDatasets` to its `openneuro` folder.
-  The datasets installed in the superdataset are indexed there and are not installed again:
-  only the datasets missing from it are installed in `local_paths.openneuro.OpenNeuroDatasets`.
+**OpenNeuro**: the update reads the datasets from the datalad superdataset,
+which must be installed (the update stops otherwise):
 
-  ```bash
-  cd ~/datalad
-  datalad install ///
-  cd datasets.datalad.org
-  datalad install openneuro
-  cd openneuro
-  datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
-  ```
+```bash
+cd ~/datalad
+datalad install ///
+cd datasets.datalad.org
+datalad install openneuro openneuro-derivatives
+```
 
-- **Other datasets**: install them with `tools/install_extra_datasets.sh`,
-  in the folder set by `local_paths.non_openneuro`:
+Then `bids_inventory update`:
 
-  ```bash
-  packages/bids_inventory/tools/install_extra_datasets.sh ~/non_openneuro
-  ```
+1. installs, in the superdataset, the datasets it needs that are not installed there yet
+   (you can also install all of them beforehand:
+   `cd openneuro && datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install`),
+2. installs the datasets that are missing from the superdataset
+   (for example datasets more recent than the superdataset)
+   in `local_paths.openneuro.OpenNeuroDatasets`,
+3. indexes the datasets of the superdataset, then the others.
+
+The derivatives (fMRIPrep, MRIQC) are listed from their superdataset first,
+then from GitHub for those missing from it.
+The version of the pipeline is read from the superdataset when the derivative dataset is installed there,
+otherwise from GitHub.
+
+**Other datasets**: install them with `tools/install_extra_datasets.sh`,
+in the folder set by `local_paths.non_openneuro`:
+
+```bash
+packages/bids_inventory/tools/install_extra_datasets.sh ~/non_openneuro
+```
 
 There are many datasets: make sure you have enough disk space.
 

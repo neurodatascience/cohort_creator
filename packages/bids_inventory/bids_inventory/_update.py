@@ -102,6 +102,10 @@ def config_path(*keys: str) -> Path:
 def install_missing_datasets(jobs: int = 1, reindex: bool = False) -> None:
     """Install the openneuro datasets that are not in the listing.
 
+    - datasets of the datalad superdataset are installed in the superdataset,
+    - the datasets missing from the superdataset are installed
+      in ``local_paths.openneuro.OpenNeuroDatasets``.
+
     Parameters
     ----------
     jobs : int
@@ -116,6 +120,14 @@ def install_missing_datasets(jobs: int = 1, reindex: bool = False) -> None:
     if not unknown_datasets:
         cc_log.info("No new dataset found")
         return
+
+    if (superdataset := superdataset_dir()) is not None:
+        in_superdataset, installed = superdataset_content()
+        if to_install := sorted((unknown_datasets & in_superdataset) - installed):
+            _install_in_superdataset(superdataset, to_install, jobs=jobs)
+        unknown_datasets -= in_superdataset
+        if not unknown_datasets:
+            return
 
     if os.getenv("CI"):
         output_dir = _data_dir() / "tmp"
@@ -178,40 +190,115 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
 
 
 def superdataset_dir() -> Path | None:
-    """Return the openneuro folder of the datalad superdataset, if it is configured.
+    """Return the openneuro folder of the datalad superdataset.
 
-    Optional: set with ``local_paths.datalad.OpenNeuroDatasets``.
-    Its datasets are indexed in place and are not installed again.
+    Set with ``local_paths.datalad.OpenNeuroDatasets``: required, except in CI.
+    Datasets are indexed from the superdataset,
+    and only the datasets missing from it are installed elsewhere.
     """
     if os.getenv("CI"):
         return None
-    value = (config()["local_paths"].get("datalad") or {}).get(OPENNEURO)
-    if not value:
-        return None
-    path = Path(value).expanduser()
+    path = config_path("local_paths", "datalad", OPENNEURO)
     if not path.is_dir():
-        cc_log.warning(f"Superdataset folder not found: {path}")
-        return None
+        raise ValueError(
+            f"Datalad superdataset not found: {path}\n"
+            "Install it with 'datalad install ///openneuro' "
+            "or fix 'local_paths.datalad.OpenNeuroDatasets' in the configuration."
+        )
     return path
 
 
-def superdataset_datasets() -> list[str]:
-    """List the datasets installed in the datalad superdataset (if configured)."""
+def derivatives_superdataset_dir() -> Path | None:
+    """Return the folder of the OpenNeuroDerivatives datalad superdataset.
+
+    Set with ``local_paths.datalad.OpenNeuroDerivatives``: required, except in CI.
+    """
+    if os.getenv("CI"):
+        return None
+    path = config_path("local_paths", "datalad", OPENNEURO_DERIVATIVES)
+    if not (path / ".git").exists():
+        raise ValueError(
+            f"Datalad superdataset of the derivatives not found or not installed: {path}\n"
+            f"Install it with 'datalad get -n {path}' "
+            "or fix 'local_paths.datalad.OpenNeuroDerivatives' in the configuration."
+        )
+    return path
+
+
+def superdataset_content() -> tuple[set[str], set[str]]:
+    """Return the datasets of the datalad superdataset, and those that are installed."""
     if (path := superdataset_dir()) is None:
-        return []
+        return set(), set()
     # datasets of the superdataset that are not installed are empty folders
-    return sorted(x.name for x in path.glob("ds*") if (x / ".git").exists())
+    in_superdataset = {x.name for x in path.glob("ds*") if x.is_dir()}
+    installed = {x for x in in_superdataset if (path / x / ".git").exists()}
+    return in_superdataset, installed
+
+
+def superdataset_datasets() -> list[str]:
+    """List the datasets installed in the datalad superdataset."""
+    return sorted(superdataset_content()[1])
+
+
+def _install_in_superdataset(superdataset: Path, names: list[str], jobs: int = 1) -> None:
+    """Install datasets of the datalad superdataset, in the superdataset.
+
+    A single ``datalad get -n`` installs them ``jobs`` at a time:
+    several datalad processes changing the same superdataset could conflict.
+    """
+    cc_log.info(
+        f"Installing {len(names)} datasets in the datalad superdataset {superdataset} "
+        f"({jobs} at a time)"
+    )
+    chunk_size = 50
+    with Progress() as progress:
+        task = progress.add_task("[green]Installing...", total=len(names))
+        for i in range(0, len(names), chunk_size):
+            chunk = names[i : i + chunk_size]
+            result = subprocess.run(
+                [_datalad_executable(), "-f", "json", "get", "-n", "-J", str(jobs), "-d", "."]
+                + chunk,
+                cwd=superdataset,
+                capture_output=True,
+                text=True,
+            )
+            reported = set()
+            for line in result.stdout.splitlines():
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                name = Path(record.get("path", "")).name
+                if name not in chunk or name in reported:
+                    continue
+                reported.add(name)
+                if record.get("status") in ("ok", "notneeded"):
+                    cc_log.info(f"installed: {name}")
+                else:
+                    cc_log.error(f"failed: {name} ({_datalad_message(record)})")
+            for name in sorted(set(chunk) - reported):
+                cc_log.error(
+                    f"failed: {name} ({_error_reason(result.stderr) or 'no result from datalad'})"
+                )
+            progress.update(task, advance=len(chunk))
+
+
+def _datalad_message(record: dict[str, Any]) -> str:
+    """Format the message of a datalad result: a string or [format, *args]."""
+    message = record.get("message", "")
+    if isinstance(message, list) and message:
+        try:
+            message = message[0] % tuple(message[1:])
+        except (TypeError, ValueError):
+            message = " ".join(str(x) for x in message)
+    return (
+        str(message).strip().splitlines()[0] if str(message).strip() else str(record.get("status"))
+    )
 
 
 def list_openneuro_raw(reindex: bool = False) -> set[str]:
-    """List the openneuro datasets to install.
-
-    Those not in the listing (all of them when re-indexing),
-    except those already installed in the datalad superdataset.
-    """
-    known_datasets = superdataset_datasets()
-    if not reindex:
-        known_datasets += known_datasets_df()["name"].values.tolist()
+    """List the openneuro datasets that are not in the listing (all of them when re-indexing)."""
+    known_datasets = [] if reindex else known_datasets_df()["name"].values.tolist()
 
     print()
     cc_log.info("Getting list of public openneuro raw datasets from the GitHub API.")
@@ -231,14 +318,30 @@ def list_openneuro_raw(reindex: bool = False) -> set[str]:
 
 
 def list_openneuro_derivatives() -> None:
-    """List openeneuro derivatives datasets from the GitHub organization.
+    """List the openneuro derivatives datasets.
+
+    Those of the datalad superdataset first,
+    then those of the GitHub organization that are missing from it.
 
     Saves the listing to a TSV file.
     """
+    datasets: set[str] = set()
+    if (superdataset := derivatives_superdataset_dir()) is not None:
+        # subdatasets are listed as folders even when they are not installed
+        datasets = {x.name for x in superdataset.glob("ds*-*") if x.is_dir()}
+        cc_log.info(f"{len(datasets)} derivatives datasets in {superdataset}")
+
     print()
     cc_log.info("Getting list of public openneuro derivatives datasets from the GitHub API.")
-    datasets = get_list_of_datasets(gh_orga=OPENNEURO_DERIVATIVES)
-    df = pd.DataFrame({"name": datasets})
+    on_github = set(get_list_of_datasets(gh_orga=OPENNEURO_DERIVATIVES))
+    if superdataset is not None and (only_on_github := on_github - datasets):
+        cc_log.info(
+            f"{len(only_on_github)} derivatives datasets only on GitHub "
+            f"(not in the superdataset yet): {sorted(only_on_github)}"
+        )
+    datasets |= on_github
+
+    df = pd.DataFrame({"name": sorted(datasets)})
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
@@ -1274,9 +1377,7 @@ def add_derivatives(dataset: BidsDataset, dataset_pth: Path, derivatives: list[s
     for der in ["fmriprep", "mriqc"]:
         if f"{dataset_name}-{der}" in derivatives:
             setattr(dataset, der, f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}")
-            description = _remote_dataset_description(
-                f"{URL_RAW_OPENNEURO_DERIVATIVES}{dataset_name}-{der}/main/dataset_description.json"
-            )
+            description = _derivative_description(f"{dataset_name}-{der}")
             setattr(dataset, f"{der}_version", pipeline_version(description, der))
 
     for der in [
@@ -1318,6 +1419,21 @@ def pipeline_version(description: dict[str, Any] | None, pipeline: str) -> str:
     for entry in matching or generated_by:
         return str(entry["Version"]).strip()
     return "n/a"
+
+
+def _derivative_description(name: str) -> dict[str, Any] | None:
+    """Read the dataset_description.json of an OpenNeuroDerivatives dataset.
+
+    From the datalad superdataset if the dataset is installed there,
+    otherwise from GitHub.
+    """
+    superdataset = derivatives_superdataset_dir()
+    if superdataset is not None and (superdataset / name / ".git").exists():
+        if description := _local_dataset_description(superdataset / name, superdataset / name):
+            return description
+    return _remote_dataset_description(
+        f"{URL_RAW_OPENNEURO_DERIVATIVES}{name}/main/dataset_description.json"
+    )
 
 
 def _remote_dataset_description(url: str) -> dict[str, Any] | None:
@@ -1380,7 +1496,9 @@ def update(
         raise ValueError(f"Unknown source: {source}")
 
     if not os.getenv("CI"):
-        # fail early if the folder where to install new datasets is not set
+        # fail early if the superdatasets or the folder for the other datasets are not set
+        superdataset_dir()
+        derivatives_superdataset_dir()
         config_path("local_paths", "openneuro", OPENNEURO)
     install_missing_datasets(jobs=jobs, reindex=reindex)
     list_openneuro_derivatives()
