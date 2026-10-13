@@ -51,3 +51,53 @@ bids_inventory update
 The listing is updated every week by the `update_listing.yml` GitHub workflow.
 
 See `tools/README.md` to regenerate the listing from scratch.
+
+## Running the update locally
+
+### Install all OpenNeuro datasets
+
+The datasets are installed with [datalad](https://www.datalad.org/)
+from the datalad superdataset.
+Only the git history and file names are downloaded (not the data),
+but there are a lot of datasets, so this takes a while.
+
+```bash
+# where to install the superdataset, for example ~/datalad
+cd ~/datalad
+datalad install ///
+cd datasets.datalad.org
+
+# raw datasets: install all of them, 10 at a time
+datalad install openneuro
+cd openneuro
+datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
+cd ..
+
+# derivatives (fmriprep, mriqc...): same thing
+datalad install openneuro-derivatives
+cd openneuro-derivatives
+datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
+```
+
+### Configure and run the update
+
+Tell the update where those datasets are
+in a configuration file outside of the repository
+(see `tools/README.md` for all the settings):
+
+```yaml
+# ~/bids_inventory_config.yml
+local_paths:
+    datalad:
+        OpenNeuroDatasets: ~/datalad/datasets.datalad.org/openneuro
+        OpenNeuroDerivatives: ~/datalad/datasets.datalad.org/openneuro-derivatives
+    openneuro:
+        # where new datasets (not yet in the listing) are installed
+        OpenNeuroDatasets: ~/openneuro
+```
+
+```bash
+pip install -e './packages/bids_inventory[update]'
+export GITHUB_TOKEN=...  # optional, avoids GitHub API rate limits
+bids_inventory update --config ~/bids_inventory_config.yml
+```
