@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 # needs the 'update' extra
@@ -148,13 +147,12 @@ def test_get_info_dataset_smoke(install_dataset):
 
 
 def test_get_duration(install_dataset):
+    """ds001339 has uncompressed .nii files."""
     ds001339 = install_dataset("ds001339")
     sessions = list_sessions(ds001339)
     datatypes = list_datatypes(ds001339, sessions=sessions)
     tasks = list_tasks(ds001339, sessions=sessions)
-    assert get_duration(ds001339, datatypes, tasks) == {
-        "func": {"iaps": [(0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan)]}
-    }
+    assert get_duration(ds001339, datatypes, tasks) == {"func": {"iaps": [(120, 2.0)] * 5}}
 
 
 def test_get_duration_ds000002(install_dataset):
