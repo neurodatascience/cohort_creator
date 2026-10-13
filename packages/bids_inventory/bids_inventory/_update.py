@@ -52,11 +52,52 @@ logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
 
 
+CONFIG_ENV_VAR = "BIDS_INVENTORY_CONFIG"
+
+
 @functools.lru_cache(maxsize=1)
 def config() -> dict[str, Any]:
-    """Return the configuration."""
+    """Return the configuration.
+
+    The default configuration (``bids_inventory/data/config.yml``)
+    is updated with the content of the YAML file
+    whose path is in the ``BIDS_INVENTORY_CONFIG`` environment variable.
+    """
     with open(_data_dir() / "config.yml") as f:
-        return yaml.safe_load(f)
+        cfg: dict[str, Any] = yaml.safe_load(f)
+    if user_config := os.getenv(CONFIG_ENV_VAR):
+        with open(Path(user_config).expanduser()) as f:
+            cfg = _merge(cfg, yaml.safe_load(f) or {})
+    return cfg
+
+
+def _merge(default: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(default)
+    for key, value in user.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def config_path(*keys: str) -> Path:
+    """Return a path from the configuration.
+
+    Raises an error explaining how to set it if it is not set.
+    """
+    value: Any = config()
+    for key in keys:
+        value = value.get(key) if isinstance(value, dict) else None
+    if not value:
+        raise ValueError(
+            f"'{'.'.join(keys)}' is not set in the configuration.\n"
+            "Set it in a YAML file and pass it with "
+            "'bids_inventory update --config <file>' "
+            f"or with the {CONFIG_ENV_VAR} environment variable.\n"
+            f"See {_data_dir() / 'config.yml'} for the available settings."
+        )
+    return Path(value).expanduser()
 
 
 def install_missing_datasets(use_superdataset: bool = False) -> None:
@@ -80,8 +121,8 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
     if os.getenv("CI"):
         output_dir = _data_dir() / "tmp"
     else:
-        output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
-    output_dir.mkdir(exist_ok=True)
+        output_dir = config_path("local_paths", "openneuro", OPENNEURO)
+    output_dir.mkdir(exist_ok=True, parents=True)
 
     with Progress() as progress:
         task = progress.add_task("[green]Installing...", total=len(unknown_datasets))
@@ -115,7 +156,7 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
 
 def list_openneuro_raw(use_superdataset: bool) -> set[str]:
     if use_superdataset:
-        path_known_datasets = Path(config()["local_paths"]["datalad"][OPENNEURO])
+        path_known_datasets = config_path("local_paths", "datalad", OPENNEURO)
         known_datasets = [x.name for x in path_known_datasets.glob("*")]
     else:
         known_datasets = known_datasets_df()["name"].values.tolist()
@@ -167,7 +208,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
 
     if reset:
         datasets = init_dataset()
-        input_dir = Path(config()["local_paths"]["datalad"][OPENNEURO])
+        input_dir = config_path("local_paths", "datalad", OPENNEURO)
         datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
 
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
@@ -176,7 +217,7 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
         if os.getenv("CI"):
             input_dir = _data_dir() / "tmp"
         else:
-            input_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
+            input_dir = config_path("local_paths", "openneuro", OPENNEURO)
         datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
 
     datasets_df = pd.DataFrame.from_dict(datasets)
@@ -215,26 +256,30 @@ def get_list_of_datasets(gh_orga: str) -> list[str]:
     return datasets
 
 
-# TODO adatp to pass token from CLI
 def get_auth() -> tuple[str, str] | None:
-    import os
+    """Return credentials for the GitHub API.
 
-    if os.getenv("CI"):
-        # unauthenticated requests quickly hit the GitHub API rate limit
-        token = os.getenv("GITHUB_TOKEN")
-        return None if token is None else ("github-actions", token)
+    Unauthenticated requests quickly hit the GitHub API rate limit.
+    Uses the GITHUB_TOKEN environment variable if set,
+    otherwise the token file from the configuration.
+    """
+    username = config()["auth"].get("username") or "bids-inventory"
 
-    username = config()["auth"]["username"]
-    token_file = Path(config()["auth"]["token_file"])
+    if token := os.getenv("GITHUB_TOKEN"):
+        return (username, token)
 
-    token = None
-    if token_file.exists():
-        with open(token_file) as f:
-            token = f.read().strip()
-    else:
-        cc_log.warning(f"Token file not found.\n{str(token_file)}")
-    auth = None if username is None or token is None else (username, token)
-    return auth
+    if not config()["auth"].get("token_file"):
+        cc_log.warning(
+            "No GitHub token: the GitHub API may rate limit the update.\n"
+            "Set the GITHUB_TOKEN environment variable or 'auth.token_file' in the configuration."
+        )
+        return None
+
+    token_file = config_path("auth", "token_file")
+    if not token_file.exists():
+        cc_log.warning(f"Token file not found: {token_file}")
+        return None
+    return (username, token_file.read_text().strip())
 
 
 def request_list_of_repos(
@@ -879,6 +924,9 @@ def count_physio_files(dataset_pth: Path) -> int:
 
 
 def update(reset: bool = False, debug: bool = True) -> None:
+    if not os.getenv("CI"):
+        # fail early if the folder where to install new datasets is not set
+        config_path("local_paths", "openneuro", OPENNEURO)
     install_missing_datasets(use_superdataset=False)
     list_openneuro_derivatives()
     update_openneuro(reset=reset, debug=debug)

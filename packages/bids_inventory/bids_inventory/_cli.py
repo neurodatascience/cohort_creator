@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from pathlib import Path
 
 from rich_argparse import RichHelpFormatter
 
@@ -57,6 +59,16 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         "--debug",
         action="store_true",
         help="Only runs the update for a few subset of datasets.",
+    )
+    update_parser.add_argument(
+        "--config",
+        help="""
+        YAML file with local settings (paths to datasets, GitHub token file...).
+        See bids_inventory/data/config.yml for the available settings.
+        Can also be set with the BIDS_INVENTORY_CONFIG environment variable.
+        """,
+        required=False,
+        type=Path,
     )
     _add_verbosity(update_parser)
 
@@ -113,6 +125,12 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     elif args.command == "update":
         with _check_extra("update"):
-            from bids_inventory._update import update
+            from bids_inventory._update import CONFIG_ENV_VAR, update
+
+        if args.config is not None:
+            if not args.config.is_file():
+                bi_log.error(f"Config file not found: {args.config}")
+                sys.exit(1)
+            os.environ[CONFIG_ENV_VAR] = str(args.config.resolve())
 
         update(debug=args.debug)
