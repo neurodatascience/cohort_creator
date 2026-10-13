@@ -1,12 +1,24 @@
 ---
+# Default configuration of `bids_inventory update`.
+#
+# Do not put your own paths here:
+# copy the keys you need in your own YAML file and pass it with
+#   bids_inventory update --config my_config.yml
+# or set the BIDS_INVENTORY_CONFIG environment variable to its path.
+# Values from your file are merged over these defaults. `~` is expanded.
 auth:
-    username: Remi-Gau
-    token_file: /home/remi/Documents/tokens/gh_read_repo_for_orga.txt
+    # GitHub API calls are rate limited: authenticated calls get a higher limit.
+    # If the GITHUB_TOKEN environment variable is set, it is used.
+    # Otherwise set the path to a text file containing a GitHub token.
+    username:
+    token_file:
 local_paths:
     datalad:
-        # paths to the datalad datasets contained
-        # in the datalad superdataset
-        OpenNeuroDatasets: /home/remi/datalad/datasets.datalad.org/openneuro
-        OpenNeuroDerivatives: /home/remi/datalad/datasets.datalad.org/openneuro-derivatives
+        # paths to the datasets in the datalad superdataset
+        # (datalad install ///openneuro)
+        # only needed to regenerate the listing from scratch
+        OpenNeuroDatasets:
+        OpenNeuroDerivatives:
     openneuro:
-        OpenNeuroDatasets: /home/remi/openneuro/
+        # folder where new openneuro datasets are installed during an update
+        OpenNeuroDatasets:

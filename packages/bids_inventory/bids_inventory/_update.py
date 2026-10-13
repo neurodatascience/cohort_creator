@@ -4,12 +4,16 @@ import functools
 import json
 import logging
 import os
+import shutil
 import subprocess
+import sys
+import warnings
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
-from warnings import warn
 
+import mne
 import numpy as np
 import pandas as pd
 import requests
@@ -28,7 +32,7 @@ from bids_inventory.listing import (
     known_datasets_df,
     save_known_datasets,
 )
-from bids_inventory.logger import bi_logger
+from bids_inventory.logger import bi_logger, set_current_dataset
 
 DATASET_TYPE = dict[
     str,
@@ -50,16 +54,59 @@ cc_log = bi_logger()
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
+# MNE prints info messages ("Setting channel info structure...") when reading headers
+mne.set_log_level("WARNING")
+
+
+CONFIG_ENV_VAR = "BIDS_INVENTORY_CONFIG"
 
 
 @functools.lru_cache(maxsize=1)
 def config() -> dict[str, Any]:
-    """Return the configuration."""
+    """Return the configuration.
+
+    The default configuration (``bids_inventory/data/config.yml``)
+    is updated with the content of the YAML file
+    whose path is in the ``BIDS_INVENTORY_CONFIG`` environment variable.
+    """
     with open(_data_dir() / "config.yml") as f:
-        return yaml.safe_load(f)
+        cfg: dict[str, Any] = yaml.safe_load(f)
+    if user_config := os.getenv(CONFIG_ENV_VAR):
+        with open(Path(user_config).expanduser()) as f:
+            cfg = _merge(cfg, yaml.safe_load(f) or {})
+    return cfg
 
 
-def install_missing_datasets(use_superdataset: bool = False) -> None:
+def _merge(default: dict[str, Any], user: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(default)
+    for key, value in user.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def config_path(*keys: str) -> Path:
+    """Return a path from the configuration.
+
+    Raises an error explaining how to set it if it is not set.
+    """
+    value: Any = config()
+    for key in keys:
+        value = value.get(key) if isinstance(value, dict) else None
+    if not value:
+        raise ValueError(
+            f"'{'.'.join(keys)}' is not set in the configuration.\n"
+            "Set it in a YAML file and pass it with "
+            "'bids_inventory update --config <file>' "
+            f"or with the {CONFIG_ENV_VAR} environment variable.\n"
+            f"See {_data_dir() / 'config.yml'} for the available settings."
+        )
+    return Path(value).expanduser()
+
+
+def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> None:
     """Install unknown openneuro datasets.
 
     This script installs all the datasets from openneuro:
@@ -70,6 +117,9 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
     ----------
     use_superdataset : bool
        Set to ``True`` to only use datasets from the datalad superdatasets as known.
+
+    jobs : int
+       Number of datasets to install in parallel.
     """
     unknown_datasets = list_openneuro_raw(use_superdataset)
 
@@ -80,42 +130,65 @@ def install_missing_datasets(use_superdataset: bool = False) -> None:
     if os.getenv("CI"):
         output_dir = _data_dir() / "tmp"
     else:
-        output_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
-    output_dir.mkdir(exist_ok=True)
+        output_dir = config_path("local_paths", "openneuro", OPENNEURO)
+    output_dir.mkdir(exist_ok=True, parents=True)
 
-    with Progress() as progress:
+    cc_log.info(f"Installing {len(unknown_datasets)} datasets in {output_dir} ({jobs} at a time)")
+
+    with (
+        Progress() as progress,
+        ThreadPoolExecutor(max_workers=jobs) as executor,
+    ):
         task = progress.add_task("[green]Installing...", total=len(unknown_datasets))
-
-        for dataset in unknown_datasets:
-            data_pth = output_dir / dataset
-
-            if data_pth.exists():
-                cc_log.info(f"  data already present at {data_pth}")
-                progress.update(task, advance=1)
-                continue
-
-            source = f"https://github.com/{OPENNEURO}/{dataset}.git"
-            response = requests.get(source)
-            if response.status_code != 200:
-                cc_log.warning(f"error {response.status_code} for dataset {source}")
-                progress.update(task, advance=1)
-                continue
-
-            cc_log.info(f"installing: {data_pth}")
-            try:
-                api.install(
-                    path=data_pth,
-                    source=source,
-                    recursive=False,
-                )
-            except IncompleteResultsError:
-                cc_log.error(f" could not install: {data_pth}")
+        futures = {
+            executor.submit(_install_openneuro_dataset, output_dir / dataset): dataset
+            for dataset in sorted(unknown_datasets)
+        }
+        for future in as_completed(futures):
+            status, message = future.result()
+            log = cc_log.error if status == "failed" else cc_log.info
+            log(f"{status}: {futures[future]} {message}".rstrip())
             progress.update(task, advance=1)
+
+
+def _datalad_executable() -> str:
+    """Return the datalad executable of the current environment, if any."""
+    in_env = Path(sys.executable).parent / "datalad"
+    return str(in_env) if in_env.exists() else (shutil.which("datalad") or "datalad")
+
+
+def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
+    """Install one openneuro dataset.
+
+    Runs ``datalad install`` in a subprocess
+    so that several datasets can be installed in parallel.
+
+    Returns
+    -------
+    The status ("already present", "not found", "installed" or "failed")
+    and a message with more details.
+    """
+    if data_pth.exists():
+        return "already present", ""
+
+    source = f"https://github.com/{OPENNEURO}/{data_pth.name}.git"
+    response = requests.get(source)
+    if response.status_code != 200:
+        return "not found", f"(error {response.status_code} for {source})"
+
+    result = subprocess.run(
+        [_datalad_executable(), "install", "--source", source, str(data_pth)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return "failed", result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
+    return "installed", ""
 
 
 def list_openneuro_raw(use_superdataset: bool) -> set[str]:
     if use_superdataset:
-        path_known_datasets = Path(config()["local_paths"]["datalad"][OPENNEURO])
+        path_known_datasets = config_path("local_paths", "datalad", OPENNEURO)
         known_datasets = [x.name for x in path_known_datasets.glob("*")]
     else:
         known_datasets = known_datasets_df()["name"].values.tolist()
@@ -145,7 +218,7 @@ def list_openneuro_derivatives() -> None:
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
-def update_openneuro(reset: bool = False, debug: bool = True) -> None:
+def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
     """Update list of datasets on openneuro and overwrite old tsv file.
 
     - this will add new datasets,
@@ -165,10 +238,16 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
         str(k): v for k, v in datasets_df.to_dict(orient="list").items()
     }
 
+    output_file = _openneuro_listing()
+    if debug:
+        output_file = Path.cwd() / output_file.name
+
     if reset:
         datasets = init_dataset()
-        input_dir = Path(config()["local_paths"]["datalad"][OPENNEURO])
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
+        input_dir = config_path("local_paths", "datalad", OPENNEURO)
+        datasets = list_datasets_in_dir(
+            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+        )
 
     input_file = _data_dir() / f"{OPENNEURO}.tsv"
     new_openneuro_datasets = pd.read_csv(input_file, sep="\t")
@@ -176,14 +255,13 @@ def update_openneuro(reset: bool = False, debug: bool = True) -> None:
         if os.getenv("CI"):
             input_dir = _data_dir() / "tmp"
         else:
-            input_dir = Path(config()["local_paths"]["openneuro"][OPENNEURO])
-        datasets = list_datasets_in_dir(datasets, input_dir, debug=debug)
+            input_dir = config_path("local_paths", "openneuro", OPENNEURO)
+        datasets = list_datasets_in_dir(
+            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+        )
 
     datasets_df = pd.DataFrame.from_dict(datasets)
 
-    output_file = _openneuro_listing()
-    if debug:
-        output_file = Path.cwd() / output_file.name
     cc_log.info(f"Saving to {output_file}")
     save_known_datasets(datasets_df, output_file)
 
@@ -215,26 +293,30 @@ def get_list_of_datasets(gh_orga: str) -> list[str]:
     return datasets
 
 
-# TODO adatp to pass token from CLI
 def get_auth() -> tuple[str, str] | None:
-    import os
+    """Return credentials for the GitHub API.
 
-    if os.getenv("CI"):
-        # unauthenticated requests quickly hit the GitHub API rate limit
-        token = os.getenv("GITHUB_TOKEN")
-        return None if token is None else ("github-actions", token)
+    Unauthenticated requests quickly hit the GitHub API rate limit.
+    Uses the GITHUB_TOKEN environment variable if set,
+    otherwise the token file from the configuration.
+    """
+    username = config()["auth"].get("username") or "bids-inventory"
 
-    username = config()["auth"]["username"]
-    token_file = Path(config()["auth"]["token_file"])
+    if token := os.getenv("GITHUB_TOKEN"):
+        return (username, token)
 
-    token = None
-    if token_file.exists():
-        with open(token_file) as f:
-            token = f.read().strip()
-    else:
-        cc_log.warning(f"Token file not found.\n{str(token_file)}")
-    auth = None if username is None or token is None else (username, token)
-    return auth
+    if not config()["auth"].get("token_file"):
+        cc_log.warning(
+            "No GitHub token: the GitHub API may rate limit the update.\n"
+            "Set the GITHUB_TOKEN environment variable or 'auth.token_file' in the configuration."
+        )
+        return None
+
+    token_file = config_path("auth", "token_file")
+    if not token_file.exists():
+        cc_log.warning(f"Token file not found: {token_file}")
+        return None
+    return (username, token_file.read_text().strip())
 
 
 def request_list_of_repos(
@@ -324,6 +406,8 @@ def list_datasets_in_dir(
     study_prefix: str = "",
     include: None | list[str] = None,
     update_merge: bool = False,
+    jobs: int = 1,
+    output_file: Path | None = None,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -343,6 +427,16 @@ def list_datasets_in_dir(
         _description_, by default None
     update_merge: bool, default = False
         Pull latest version of each dataset before collecting its metadata
+
+    jobs : int, default = 1
+        Number of NIfTI headers to read in parallel.
+
+    output_file : Path | None, default = None
+        If set, the listing is saved to this file after each dataset is indexed,
+        so that an interrupted update does not lose its progress.
+
+    Datasets already in ``datasets`` are skipped:
+    restarting an interrupted update only indexes the remaining datasets.
 
     Returns
     -------
@@ -370,53 +464,64 @@ def list_datasets_in_dir(
 
     derivatives = known_derivatives()
 
+    known = set(datasets["name"])
     failed: list[str] = []
-    with progress_bar(text="Updating") as progress:
-        task = progress.add_task(description="updating", total=len(raw_datasets))
+    try:
+        with progress_bar(text="Updating") as progress:
+            task = progress.add_task(description="updating", total=len(raw_datasets))
 
-        i = 0
-        for dataset_pth in raw_datasets:
-            print()
-            cc_log.info(f"{dataset_pth.name}")
+            i = 0
+            for index, dataset_pth in enumerate(raw_datasets, start=1):
+                print()
+                cc_log.info(f"{dataset_pth.name}")
+                set_current_dataset(f"{dataset_pth.name} {index}/{len(raw_datasets)}")
 
-            if not _check_dataset(dataset_pth):
+                if f"{study_prefix}{dataset_pth.name}" in known:
+                    cc_log.info("  already in the listing: skipping")
+                    progress.update(task, advance=1)
+                    continue
+
+                if not _check_dataset(dataset_pth):
+                    progress.update(task, advance=1)
+                    continue
+                i += 1
+                if debug and i > MIN_NB_DATASETS:
+                    break
+
+                # update dataset to make sure we get the latest version
+                ds = api.Dataset(dataset_pth)
+                if update_merge:
+                    ds.update(how="merge", result_renderer="disabled")
+                try:
+                    _get_file(ds, dataset_pth / "dataset_description.json")
+                except IncompleteResultsError:
+                    cc_log.warning("Could not get dataset_description.json or is missing.")
+
+                # for openneuro datasets try to eanabe annex remote on S3
+                # to allow using datalad fsspec
+                # if dataset_pth.name.startswith('ds'):
+                enable_S3_remote(dataset_pth)
+
+                try:
+                    dataset = get_info_dataset(dataset_pth, study_prefix, jobs=jobs)
+                    dataset = add_derivatives(dataset, dataset_pth, derivatives)
+                except Exception:
+                    cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
+                    failed.append(dataset_pth.name)
+                    progress.update(task, advance=1)
+                    continue
+
+                for keys in datasets:
+                    datasets[keys].append(dataset[keys])
+                known.add(dataset["name"])
+
+                if output_file is not None:
+                    save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+
                 progress.update(task, advance=1)
-                continue
-            i += 1
-            if debug and i > MIN_NB_DATASETS:
-                break
 
-            # update dataset to make sure we get the latest version
-            ds = api.Dataset(dataset_pth)
-            if update_merge:
-                ds.update(how="merge")
-            try:
-                ds.get(dataset_pth / "dataset_description.json")
-            except IncompleteResultsError:
-                cc_log.warning("Could not get dataset_description.json or is missing.")
-
-            # for openneuro datasets try to eanabe annex remote on S3
-            # to allow using datalad fsspec
-            # if dataset_pth.name.startswith('ds'):
-            enable_S3_remote(dataset_pth)
-
-            try:
-                dataset = get_info_dataset(dataset_pth, study_prefix)
-                dataset = add_derivatives(dataset, dataset_pth, derivatives)
-            except Exception:
-                cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
-                failed.append(dataset_pth.name)
-                progress.update(task, advance=1)
-                continue
-
-            if dataset["name"] in datasets["name"]:
-                # raise ValueError(f"dataset {dataset['name']} already in datasets")
-                cc_log.warning(f"dataset {dataset['name']} already in datasets")
-
-            for keys in datasets:
-                datasets[keys].append(dataset[keys])
-
-            progress.update(task, advance=1)
+    finally:
+        set_current_dataset(None)
 
     if failed:
         cc_log.error(f"{len(failed)} datasets could not be indexed: {sorted(failed)}")
@@ -464,7 +569,7 @@ def get_raw_url(dataset_pth: Path) -> str:
         return api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
 
 
-def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
+def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> DATASET_TYPE:
     dataset_name = dataset_pth.name
 
     dataset = new_dataset(f"{study_prefix}{dataset_name}")
@@ -516,7 +621,7 @@ def get_info_dataset(dataset_pth: Path, study_prefix: str) -> DATASET_TYPE:
 
     dataset["institutions"] = get_institutions(dataset_pth)
 
-    dataset["duration"] = get_duration(dataset_pth, datatypes, tasks)
+    dataset["duration"] = get_duration(dataset_pth, datatypes, tasks, jobs=jobs)
 
     return dataset
 
@@ -540,10 +645,10 @@ def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
         df = pd.read_csv(participant_tsv, sep="\t")
         return df.columns.tolist()
     except pd.errors.ParserError:
-        warn(f"Could not parse: {participant_tsv}")
+        cc_log.warning(f"Could not parse: {participant_tsv}")
         return ["cannot be parsed"]
     except UnicodeDecodeError:
-        warn(f"Could not parse: {participant_tsv}")
+        cc_log.warning(f"Could not parse: {participant_tsv}")
         return ["cannot be parsed"]
 
 
@@ -582,19 +687,36 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     if "nii" in filepath.suffix or "gz" in filepath.suffix:
         script_path = _data_dir() / "read_nb_vols"
 
-        cmd = f"   datalad fsspec-head -d {dataset_pth} -c 1024 {filepath.relative_to(dataset_pth)} | python {script_path}"
-        cc_log.debug(cmd)
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # only stream the beginning of the file and read the header from it
+        head_cmd = [
+            _datalad_executable(),
+            "fsspec-head",
+            "-d",
+            str(dataset_pth),
+            "-c",
+            "1024",
+            str(filepath.relative_to(dataset_pth)),
+        ]
+        # use the python of this environment (with nibabel) whatever the PATH
+        read_cmd = [sys.executable, str(script_path)]
+        cc_log.debug(f"{' '.join(head_cmd)} | {' '.join(read_cmd)}")
+        with subprocess.Popen(head_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as head:
+            result = subprocess.run(
+                read_cmd, stdin=head.stdout, capture_output=True, text=True, check=False
+            )
+            assert head.stdout is not None
+            head.stdout.close()
+            head_stderr = head.stderr.read().decode() if head.stderr else ""
 
-        if not result.stderr:
+        try:
             tmp = result.stdout.replace("\n", "").split(" ")
             n_samples: int = int(tmp[0])
             repetition_time: float = float(tmp[1])
             return (n_samples, repetition_time)
-
-        cc_log.error(f"   Could not get duration for: {filepath.relative_to(dataset_pth)}")
-        cc_log.debug(result.stderr)
-        return (0, np.nan)
+        except (ValueError, IndexError):
+            cc_log.error(f"Could not get duration for: {filepath.relative_to(dataset_pth)}")
+            cc_log.debug(f"{head_stderr}\n{result.stderr}")
+            return (0, np.nan)
 
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
@@ -605,37 +727,49 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     return (0, np.nan)
 
 
+def _get_file(ds: api.Dataset, filepath: Path) -> None:
+    """Get the content of a file without datalad printing its results."""
+    ds.get(filepath, result_renderer="disabled")
+    cc_log.debug(f"  got {filepath}")
+
+
 def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], int]:
     ds = api.Dataset(dataset_pth)
     try:
-        ds.get(filepath)
-        ds.get(filepath.with_suffix(".vmrk"))
-        (
-            info,
-            _,
-            _,
-            _,
-            n_samples,
-            _,
-            _,
-            _,
-        ) = _get_hdr_info(
-            filepath,
-            eog=("HEOGL", "HEOGR", "VEOGb"),
-            misc="auto",
-            scale=1.0,
-        )
+        _get_file(ds, filepath)
+        _get_file(ds, filepath.with_suffix(".vmrk"))
+        # MNE reports problems with the header as python warnings:
+        # log them instead of printing them
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            (
+                info,
+                _,
+                _,
+                _,
+                n_samples,
+                _,
+                _,
+                _,
+            ) = _get_hdr_info(
+                filepath,
+                eog=("HEOGL", "HEOGR", "VEOGb"),
+                misc="auto",
+                scale=1.0,
+            )
+        for w in caught:
+            cc_log.warning(f"{filepath.relative_to(dataset_pth)}: {w.message}")
         return info, n_samples
     except IncompleteResultsError:
-        warn(f"IncompleteResultsError for {filepath}", stacklevel=2)
+        cc_log.warning(f"Could not get {filepath.relative_to(dataset_pth)}")
         return None, 0
     except FileNotFoundError:
-        warn(f"FileNotFoundError for {filepath}", stacklevel=2)
+        cc_log.warning(f"File not found: {filepath.relative_to(dataset_pth)}")
         return None, 0
     except Exception as e:
         # headers in third party datasets can be malformed in many ways:
         # one bad file should not stop the update
-        warn(f"Could not read header of {filepath}: {e!r}", stacklevel=2)
+        cc_log.warning(f"Could not read header of {filepath.relative_to(dataset_pth)}: {e!r}")
         return None, 0
 
 
@@ -698,27 +832,56 @@ def get_number_meeg_channels(dataset_pth: Path, datatypes: list[str]) -> list[in
 
 
 def get_duration(
-    dataset_pth: Path, datatypes: list[str], tasks: list[str] | None
+    dataset_pth: Path, datatypes: list[str], tasks: list[str] | None, jobs: int = 1
 ) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+    """Get the duration of each run of the first subject.
+
+    Parameters
+    ----------
+    jobs : int
+        Number of NIfTI headers to read in parallel.
+    """
     first_sub = list_participants_in_dataset(dataset_pth)[0]
 
     cc_log.info(f" Getting 'scan' duration for {first_sub}")
 
+    files_per_datatype = _files_for_duration(dataset_pth, first_sub, datatypes, tasks)
+
+    # then read all the headers at once
+    all_files = []
+    for value in files_per_datatype.values():
+        for files in value.values() if isinstance(value, dict) else [value]:
+            all_files.extend(files)
+    durations = get_scan_durations(dataset_pth, all_files, jobs=jobs)
+
     duration_all_datatypes: dict[
         str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]
     ] = {}
+    for datatype, value in files_per_datatype.items():
+        if isinstance(value, dict):
+            duration_all_datatypes[datatype] = {
+                task: [durations[x] for x in files] for task, files in value.items()
+            }
+        else:
+            duration_all_datatypes[datatype] = [durations[x] for x in value]
+    return duration_all_datatypes
 
+
+def _files_for_duration(
+    dataset_pth: Path, first_sub: str, datatypes: list[str], tasks: list[str] | None
+) -> dict[str, list[Path] | dict[str, list[Path]]]:
+    """List the files to read to get the duration of each datatype (and task)."""
+    files_per_datatype: dict[str, list[Path] | dict[str, list[Path]]] = {}
     for target_datatype in ["func", "pet", "ieeg", "eeg"]:
         if target_datatype in datatypes:
             if tasks is None:
                 tasks = []
                 if target_datatype == "pet":
-                    files = glob_files(dataset_pth, f"{first_sub}/**/pet/{first_sub}*_pet.nii*")
-                    duration_all_datatypes[target_datatype] = get_duration_for_datatype(
-                        dataset_pth, files
+                    files_per_datatype[target_datatype] = glob_files(
+                        dataset_pth, f"{first_sub}/**/pet/{first_sub}*_pet.nii*"
                     )
-                    return duration_all_datatypes
-            duration_per_task: dict[str, Iterable[tuple[int, float]]] = {}
+                    break
+            files_per_task: dict[str, list[Path]] = {}
             for task_ in tasks:
                 if target_datatype == "func":
                     files = glob_files(
@@ -733,20 +896,45 @@ def get_duration(
                         dataset_pth,
                         f"{first_sub}/**/{target_datatype}/{first_sub}*task-{task_}*_{target_datatype}.vhdr",
                     )
-                duration_per_task[task_] = get_duration_for_datatype(dataset_pth, files)
-            if duration_per_task:
-                duration_all_datatypes[target_datatype] = duration_per_task
-    return duration_all_datatypes
+                files_per_task[task_] = files
+            if files_per_task:
+                files_per_datatype[target_datatype] = files_per_task
+    return files_per_datatype
+
+
+def get_scan_durations(
+    dataset_pth: Path, files: Iterable[Path], jobs: int = 1
+) -> dict[Path, tuple[int, float]]:
+    """Get the duration of several runs.
+
+    NIfTI headers are read in parallel (each in its own subprocess).
+    M/EEG headers are read one after the other
+    as they are read with the datalad python API that is not guaranteed to be thread safe.
+    """
+    files = list(dict.fromkeys(files))
+    for filepath in files:
+        cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
+
+    nifti = [x for x in files if "nii" in x.suffix or "gz" in x.suffix]
+    others = [x for x in files if x not in nifti]
+
+    durations: dict[Path, tuple[int, float]] = {}
+    with ThreadPoolExecutor(max_workers=jobs) as executor:
+        for filepath, duration in zip(
+            nifti, executor.map(lambda x: get_scan_duration(dataset_pth, x), nifti)
+        ):
+            durations[filepath] = duration
+    for filepath in others:
+        durations[filepath] = get_scan_duration(dataset_pth, filepath)
+    return durations
 
 
 def get_duration_for_datatype(
-    dataset_pth: Path, files: Iterable[Path]
+    dataset_pth: Path, files: Iterable[Path], jobs: int = 1
 ) -> Iterable[tuple[int, float]]:
-    scan_duration = []
-    for filepath in files:
-        cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
-        scan_duration.append(get_scan_duration(dataset_pth, filepath))
-    return scan_duration
+    files = list(files)
+    durations = get_scan_durations(dataset_pth, files, jobs=jobs)
+    return [durations[x] for x in files]
 
 
 def get_authors(dataset_pth: Path) -> list[str]:
@@ -795,7 +983,7 @@ def get_institutions(dataset_pth: Path) -> list[str]:
 
         cc_log.debug(f"  {json_file}")
         try:
-            ds.get(json_file)
+            _get_file(ds, Path(json_file))
             with open(json_file) as f:
                 json_dict = json.load(f)
                 if tmp := construct_institution_string(json_dict).strip(", "):
@@ -855,7 +1043,7 @@ def check_task(
         any(mod in datatypes for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
         and not tasks
     ):
-        warn(
+        cc_log.warning(
             f"no tasks found in {dataset_pth} "
             f"with datatypes {datatypes} "
             f"and files {list_data_files(dataset_pth, sessions)}"
@@ -897,10 +1085,13 @@ def count_physio_files(dataset_pth: Path) -> int:
     return len(list(glob_files(dataset_pth, "sub-*/**/*physio.tsv.gz")))
 
 
-def update(reset: bool = False, debug: bool = True) -> None:
-    install_missing_datasets(use_superdataset=False)
+def update(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
+    if not os.getenv("CI"):
+        # fail early if the folder where to install new datasets is not set
+        config_path("local_paths", "openneuro", OPENNEURO)
+    install_missing_datasets(use_superdataset=False, jobs=jobs)
     list_openneuro_derivatives()
-    update_openneuro(reset=reset, debug=debug)
+    update_openneuro(reset=reset, debug=debug, jobs=jobs)
 
 
 if __name__ == "__main__":

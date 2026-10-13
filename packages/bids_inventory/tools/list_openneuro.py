@@ -13,7 +13,7 @@ import pandas as pd
 
 from bids_inventory._update import (
     OPENNEURO,
-    config,
+    config_path,
     init_dataset,
     install_missing_datasets,
     list_datasets_in_dir,
@@ -36,10 +36,10 @@ def main() -> None:
 
     datasets = init_dataset()
 
-    path = Path(config()["local_paths"]["datalad"][OPENNEURO])
+    path = config_path("local_paths", "datalad", OPENNEURO)
     datasets = list_datasets_in_dir(datasets, path, debug=DEBUG)
 
-    path = Path(config()["local_paths"]["openneuro"][OPENNEURO])
+    path = config_path("local_paths", "openneuro", OPENNEURO)
     datasets = list_datasets_in_dir(datasets, path, debug=DEBUG)
 
     datasets_df = pd.DataFrame.from_dict(datasets)

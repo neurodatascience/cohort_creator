@@ -74,12 +74,20 @@ def save_known_datasets(df: pd.DataFrame, output_file: Path) -> None:
     """
     df = df.copy()
     df["duration"] = df["duration"].apply(_convert_duration)
-    df["created_on"] = pd.to_datetime(df["created_on"], utc=True, errors="coerce")
+    # dates can come in different formats (from the listing or from git):
+    # parse them one by one to avoid pandas guessing a single format
+    df["created_on"] = df["created_on"].apply(
+        lambda x: pd.to_datetime(x, utc=True, errors="coerce")
+    )
     records = sorted(df.to_dict(orient="records"), key=lambda x: str(x["name"]))
-    with open(output_file, "w", encoding="utf-8") as f:
+    # write to a temporary file first so that an interrupted save
+    # cannot leave a truncated listing behind
+    tmp_file = output_file.with_name(f"{output_file.name}.tmp")
+    with open(tmp_file, "w", encoding="utf-8") as f:
         for record in records:
             record = {str(k): _to_json_value(v) for k, v in record.items()}
             f.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + "\n")
+    tmp_file.replace(output_file)
 
 
 def _to_json_value(value: Any) -> Any:

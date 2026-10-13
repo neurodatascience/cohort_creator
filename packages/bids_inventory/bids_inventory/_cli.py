@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from pathlib import Path
 
 from rich_argparse import RichHelpFormatter
 
 from bids_inventory._version import __version__
-from bids_inventory.logger import bi_logger
+from bids_inventory.logger import add_log_files, bi_logger
 
 bi_log = bi_logger()
 
@@ -57,6 +59,33 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         "--debug",
         action="store_true",
         help="Only runs the update for a few subset of datasets.",
+    )
+    update_parser.add_argument(
+        "--jobs",
+        help="Number of new datasets to install, and of NIfTI headers to read, in parallel.",
+        required=False,
+        default=4,
+        type=int,
+    )
+    update_parser.add_argument(
+        "--log-dir",
+        help="""
+        Folder where to save the warnings and the errors of the update,
+        in 2 separate files.
+        """,
+        required=False,
+        default=Path("logs"),
+        type=Path,
+    )
+    update_parser.add_argument(
+        "--config",
+        help="""
+        YAML file with local settings (paths to datasets, GitHub token file...).
+        See bids_inventory/data/config.yml for the available settings.
+        Can also be set with the BIDS_INVENTORY_CONFIG environment variable.
+        """,
+        required=False,
+        type=Path,
     )
     _add_verbosity(update_parser)
 
@@ -113,6 +142,22 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
     elif args.command == "update":
         with _check_extra("update"):
-            from bids_inventory._update import update
+            from bids_inventory._update import CONFIG_ENV_VAR, update
 
-        update(debug=args.debug)
+        if args.jobs < 1:
+            bi_log.error(f"--jobs must be at least 1, got {args.jobs}")
+            sys.exit(1)
+
+        if args.config is not None:
+            if not args.config.is_file():
+                bi_log.error(f"Config file not found: {args.config}")
+                sys.exit(1)
+            os.environ[CONFIG_ENV_VAR] = str(args.config.resolve())
+
+        warnings_log, errors_log = add_log_files(args.log_dir)
+        try:
+            update(debug=args.debug, jobs=args.jobs)
+        finally:
+            for log_file in [warnings_log, errors_log]:
+                if log_file.exists():
+                    bi_log.info(f"See {log_file}")

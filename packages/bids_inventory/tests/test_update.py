@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 # needs the 'update' extra
@@ -148,13 +147,12 @@ def test_get_info_dataset_smoke(install_dataset):
 
 
 def test_get_duration(install_dataset):
+    """ds001339 has uncompressed .nii files."""
     ds001339 = install_dataset("ds001339")
     sessions = list_sessions(ds001339)
     datatypes = list_datatypes(ds001339, sessions=sessions)
     tasks = list_tasks(ds001339, sessions=sessions)
-    assert get_duration(ds001339, datatypes, tasks) == {
-        "func": {"iaps": [(0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan), (0, np.nan)]}
-    }
+    assert get_duration(ds001339, datatypes, tasks) == {"func": {"iaps": [(120, 2.0)] * 5}}
 
 
 def test_get_duration_ds000002(install_dataset):
@@ -177,6 +175,17 @@ def test_get_duration_ds000002(install_dataset):
     }
 
 
+def test_get_duration_parallel(install_dataset):
+    """Reading headers in parallel must give the same durations in the same order."""
+    ds000002 = install_dataset("ds000002")
+    sessions = list_sessions(ds000002)
+    datatypes = list_datatypes(ds000002, sessions=sessions)
+    tasks = list_tasks(ds000002, sessions=sessions)
+    assert get_duration(ds000002, datatypes, tasks, jobs=4) == get_duration(
+        ds000002, datatypes, tasks, jobs=1
+    )
+
+
 def test_get_duration_ds002041(install_dataset):
     ds002041 = install_dataset("ds002041")
     sessions = list_sessions(ds002041)
@@ -185,7 +194,7 @@ def test_get_duration_ds002041(install_dataset):
     get_duration(ds002041, datatypes, tasks)
 
 
-def test_get_meeg_header_unreadable(tmp_path):
+def test_get_meeg_header_unreadable(tmp_path, caplog):
     """A malformed header should be skipped with a warning, not stop the update."""
     from datalad import api
 
@@ -197,5 +206,109 @@ def test_get_meeg_header_unreadable(tmp_path):
     header.with_suffix(".vmrk").write_bytes(b"")
     ds.save(result_renderer="disabled")
 
-    with pytest.warns(UserWarning, match="Could not read header"):
-        assert get_meeg_header(ds.pathobj, header) == (None, 0)
+    assert get_meeg_header(ds.pathobj, header) == (None, 0)
+    assert "Could not read header of sub-01/eeg/sub-01_task-rest_eeg.vhdr" in caplog.text
+
+
+def test_get_meeg_header_mne_warnings_are_logged(tmp_path, caplog, recwarn):
+    """Warnings raised by MNE while reading a header are logged, not printed."""
+    from datalad import api
+
+    ds = api.create(tmp_path / "ds", result_renderer="disabled")
+    eeg = ds.pathobj / "sub-01" / "eeg"
+    eeg.mkdir(parents=True)
+    header = eeg / "sub-01_task-rest_eeg.vhdr"
+    header.write_text(
+        "Brain Vision Data Exchange Header File Version 1.0\n"
+        "[Common Infos]\n"
+        "Codepage=UTF-8\n"
+        "DataFile=sub-01_task-rest_eeg.eeg\n"
+        "MarkerFile=sub-01_task-rest_eye_closed_eeg.vmrk\n"
+        "DataFormat=BINARY\n"
+        "DataOrientation=MULTIPLEXED\n"
+        "NumberOfChannels=1\n"
+        "SamplingInterval=1000\n"
+        "[Binary Infos]\n"
+        "BinaryFormat=INT_16\n"
+        "[Channel Infos]\n"
+        "Ch1=Fp1,,0.1,µV\n"
+    )
+    header.with_suffix(".vmrk").write_text("Brain Vision Data Exchange Marker File, Version 1.0\n")
+    header.with_suffix(".eeg").write_bytes(b"\x00" * 20)
+    ds.save(result_renderer="disabled")
+    caplog.set_level("WARNING", logger="bids_inventory")
+
+    info, n_samples = get_meeg_header(ds.pathobj, header)
+
+    assert info["sfreq"] == 1000
+    assert "MarkerFile 'sub-01_task-rest_eye_closed_eeg.vmrk' not found" in caplog.text
+    assert not [w for w in recwarn if "MarkerFile" in str(w.message)]
+
+
+def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, caplog):
+    from bids_inventory import _update
+
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr(
+        _update, "list_openneuro_raw", lambda use_superdataset: {"ds000001", "ds000002", "ds999999"}
+    )
+    monkeypatch.setattr(_update, "config_path", lambda *keys: tmp_path)
+    (tmp_path / "ds000002").mkdir()
+    caplog.set_level("INFO", logger="bids_inventory")
+
+    _update.install_missing_datasets(jobs=3)
+
+    assert (tmp_path / "ds000001" / "dataset_description.json").exists()
+    assert "installed: ds000001" in caplog.text
+    assert "already present: ds000002" in caplog.text
+    assert "not found: ds999999" in caplog.text
+    # datalad output must not mess up the progress bar
+    assert "install(ok)" not in capsys.readouterr().out
+
+
+def test_list_datasets_in_dir_can_resume(tmp_path, monkeypatch):
+    """An interrupted update keeps the datasets indexed so far and resumes after them."""
+    from bids_inventory import _update
+    from bids_inventory.listing import _load_known_datasets
+
+    input_dir = tmp_path / "openneuro"
+    for name in ["ds000001", "ds000002", "ds000003"]:
+        (input_dir / name).mkdir(parents=True)
+    output_file = tmp_path / "openneuro.jsonl"
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        if dataset_pth.name == "ds000003" and "stop" in indexed:
+            raise KeyboardInterrupt  # someone stops the update
+        indexed.append(dataset_pth.name)
+        dataset = {key: [] for key in _update.init_dataset()}
+        dataset.update(_update.new_dataset(dataset_pth.name))
+        return dataset
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+
+    # first run is interrupted while indexing ds000003
+    indexed.append("stop")
+    with pytest.raises(KeyboardInterrupt):
+        _update.list_datasets_in_dir(
+            _update.init_dataset(), input_dir, debug=False, output_file=output_file
+        )
+    assert _load_known_datasets(output_file)["name"].tolist() == ["ds000001", "ds000002"]
+
+    # the restart only indexes what is missing
+    indexed.clear()
+    datasets = _load_known_datasets(output_file).to_dict(orient="list")
+    _update.list_datasets_in_dir(datasets, input_dir, debug=False, output_file=output_file)
+    assert indexed == ["ds000003"]
+    assert _load_known_datasets(output_file)["name"].tolist() == [
+        "ds000001",
+        "ds000002",
+        "ds000003",
+    ]
+    assert not output_file.with_name("openneuro.jsonl.tmp").exists()
