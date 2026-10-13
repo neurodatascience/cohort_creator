@@ -582,3 +582,33 @@ def _load_or_empty(load, listing):
     if listing.stat().st_size == 0:
         return pd.DataFrame(init_dataset())
     return load(listing)
+
+
+@pytest.mark.parametrize(
+    "stdout, stderr, expected",
+    [
+        (
+            "",
+            "[INFO] Attempting a clone\n"
+            "[ERROR] could not create work tree dir: No space left on device\n"
+            "[INFO] Completed clone attempts for Dataset(/data/ds000001)\n",
+            "could not create work tree dir: No space left on device",
+        ),
+        (
+            "install(error): /data/ds000001 (dataset) [Failed to clone from any source]\n",
+            "[INFO] Completed clone attempts for Dataset(/data/ds000001)\n",
+            "install(error): /data/ds000001 (dataset) [Failed to clone from any source]",
+        ),
+        (
+            "",
+            "[INFO] init: 1 failed\ngit-annex: fd:19: Data.ByteString.hGetLine: end of file\n",
+            "git-annex: fd:19: Data.ByteString.hGetLine: end of file",
+        ),
+        ("", "", ""),
+    ],
+)
+def test_error_reason(stdout, stderr, expected):
+    """The reason of a failure is the error, not datalad's last progress message."""
+    from bids_inventory._update import _error_reason
+
+    assert _error_reason(stdout, stderr) == expected
