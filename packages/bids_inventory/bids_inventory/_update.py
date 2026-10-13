@@ -44,6 +44,7 @@ DATASET_TYPE = dict[
     | bool
     | list[str]
     | list[int]
+    | list[float]
     | dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]
     | dict[str, int],
 ]
@@ -52,6 +53,7 @@ OPENNEURO = "OpenNeuroDatasets"
 OPENNEURO_DERIVATIVES = "OpenNeuroDerivatives"
 URL_OPENNEURO = f"https://github.com/{OPENNEURO}/"
 URL_OPENNEURO_DERIVATIVES = f"https://github.com/{OPENNEURO_DERIVATIVES}/"
+URL_RAW_OPENNEURO_DERIVATIVES = f"https://raw.githubusercontent.com/{OPENNEURO_DERIVATIVES}/"
 
 cc_log = bi_logger()
 
@@ -109,7 +111,9 @@ def config_path(*keys: str) -> Path:
     return Path(value).expanduser()
 
 
-def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> None:
+def install_missing_datasets(
+    use_superdataset: bool = False, jobs: int = 1, reindex: bool = False
+) -> None:
     """Install unknown openneuro datasets.
 
     This script installs all the datasets from openneuro:
@@ -123,8 +127,12 @@ def install_missing_datasets(use_superdataset: bool = False, jobs: int = 1) -> N
 
     jobs : int
        Number of datasets to install in parallel.
+
+    reindex : bool
+       Install all the datasets missing locally,
+       not only those missing from the listing.
     """
-    unknown_datasets = list_openneuro_raw(use_superdataset)
+    unknown_datasets = list_openneuro_raw(use_superdataset, reindex=reindex)
 
     if not unknown_datasets:
         cc_log.info("No new dataset found")
@@ -189,8 +197,10 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
     return "installed", ""
 
 
-def list_openneuro_raw(use_superdataset: bool) -> set[str]:
-    if use_superdataset:
+def list_openneuro_raw(use_superdataset: bool, reindex: bool = False) -> set[str]:
+    if reindex:
+        known_datasets = []
+    elif use_superdataset:
         path_known_datasets = config_path("local_paths", "datalad", OPENNEURO)
         known_datasets = [x.name for x in path_known_datasets.glob("*")]
     else:
@@ -225,7 +235,9 @@ def list_openneuro_derivatives() -> None:
     df.to_csv(_data_dir() / f"{OPENNEURO_DERIVATIVES}.tsv", sep="\t", index=False)
 
 
-def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
+def update_openneuro(
+    reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False
+) -> None:
     """Update list of datasets on openneuro and overwrite old tsv file.
 
     - this will add new datasets,
@@ -241,9 +253,7 @@ def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> 
     """
     datasets_df = _load_known_datasets(_openneuro_listing())
     datasets_df.replace({pd.NA: "n/a"}, inplace=True)
-    datasets: dict[str, list[Any]] = {
-        str(k): v for k, v in datasets_df.to_dict(orient="list").items()
-    }
+    datasets = listing_to_dict(datasets_df)
 
     output_file = _openneuro_listing()
     if debug:
@@ -264,13 +274,31 @@ def update_openneuro(reset: bool = False, debug: bool = True, jobs: int = 1) -> 
         else:
             input_dir = config_path("local_paths", "openneuro", OPENNEURO)
         datasets = list_datasets_in_dir(
-            datasets, input_dir, debug=debug, jobs=jobs, output_file=output_file
+            datasets,
+            input_dir,
+            debug=debug,
+            jobs=jobs,
+            output_file=output_file,
+            reindex=reindex,
         )
 
     datasets_df = pd.DataFrame.from_dict(datasets)
 
     cc_log.info(f"Saving to {output_file}")
     save_known_datasets(datasets_df, output_file)
+
+    if reindex and (reindex_file := reindex_progress_file(output_file)):
+        not_reindexed = set(datasets["name"]) - _read_reindex_progress(reindex_file)
+        if not_reindexed:
+            # for example datasets not installed locally or that failed:
+            # keep the progress file so that running the re-index again retries them
+            cc_log.warning(
+                f"{len(not_reindexed)} datasets were not re-indexed "
+                f"and keep their previous entry: {sorted(not_reindexed)}"
+            )
+        else:
+            reindex_file.unlink(missing_ok=True)
+            cc_log.info("All datasets re-indexed")
 
 
 def known_derivatives() -> list[str]:
@@ -363,13 +391,29 @@ def init_dataset() -> dict[str, list[Any]]:
         "license": [],
         "authors": [],
         "institutions": [],
+        "field_strength": [],  # MagneticFieldStrength found in the JSON sidecars
+        "bids_version": [],
         "duration": [],  # duration of recoding of each modality
         "references_and_links": [],
         "raw": [],  # link to raw dataset
         "fmriprep": [],  # link to fmriprep dataset if exists
         "freesurfer": [],  # link to freesurfer dataset if exists
         "mriqc": [],  # link to mriqc dataset if exists
+        "fmriprep_version": [],
+        "freesurfer_version": [],
+        "mriqc_version": [],
     }
+
+
+def listing_to_dict(df: pd.DataFrame) -> dict[str, list[Any]]:
+    """Convert a listing to the dict used during the update.
+
+    Columns added since the listing was saved are filled with "n/a".
+    """
+    datasets: dict[str, list[Any]] = {str(k): v for k, v in df.to_dict(orient="list").items()}
+    for key in init_dataset():
+        datasets.setdefault(key, ["n/a"] * len(df))
+    return datasets
 
 
 def new_dataset(name: str) -> DATASET_TYPE:
@@ -396,19 +440,62 @@ def new_dataset(name: str) -> DATASET_TYPE:
         "license": "n/a",
         "authors": [],
         "institutions": [],
+        "field_strength": [],
+        "bids_version": "n/a",
         "duration": "n/a",
         "references_and_links": [],
         "raw": "n/a",
         "fmriprep": "n/a",
         "freesurfer": "n/a",
         "mriqc": "n/a",
+        "fmriprep_version": "n/a",
+        "freesurfer_version": "n/a",
+        "mriqc_version": "n/a",
     }
+
+
+def _add_or_replace(datasets: dict[str, list[Any]], dataset: DATASET_TYPE) -> None:
+    """Add a dataset to the listing, or replace its entry if it is already there."""
+    if dataset["name"] in datasets["name"]:
+        index = datasets["name"].index(dataset["name"])
+        for keys in datasets:
+            datasets[keys][index] = dataset[keys]
+    else:
+        for keys in datasets:
+            datasets[keys].append(dataset[keys])
+
+
+def _save_progress(
+    datasets: dict[str, list[Any]],
+    name: str,
+    output_file: Path | None,
+    reindex_file: Path | None,
+) -> None:
+    """Save the listing after the dataset ``name`` was indexed."""
+    if output_file is not None:
+        save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+    if reindex_file is not None:
+        with open(reindex_file, "a") as f:
+            f.write(f"{name}\n")
+
+
+def reindex_progress_file(output_file: Path | None) -> Path | None:
+    """File listing the datasets re-indexed so far (one per line)."""
+    if output_file is None:
+        return None
+    return output_file.with_name(f"{output_file.name}.reindexed")
+
+
+def _read_reindex_progress(reindex_file: Path | None) -> set[str]:
+    if reindex_file is None or not reindex_file.exists():
+        return set()
+    return {x.strip() for x in reindex_file.read_text().splitlines() if x.strip()}
 
 
 def _skip_reason(name: str, study_prefix: str, known: set[str], skipped: dict[str, str]) -> str:
     """Return why a dataset must not be indexed (empty if it must be)."""
     if f"{study_prefix}{name}" in known:
-        return "already in the listing"
+        return "already indexed"
     if name in skipped:
         return f"in skipped_datasets.csv ({skipped[name]})"
     return ""
@@ -424,6 +511,7 @@ def list_datasets_in_dir(
     update_merge: bool = False,
     jobs: int = 1,
     output_file: Path | None = None,
+    reindex: bool = False,
 ) -> dict[str, list[Any]]:
     """List datasets in a directory.
 
@@ -451,7 +539,12 @@ def list_datasets_in_dir(
         If set, the listing is saved to this file after each dataset is indexed,
         so that an interrupted update does not lose its progress.
 
-    Datasets already in ``datasets`` are skipped:
+    reindex : bool, default = False
+        Index again the datasets already in ``datasets`` and replace their entry.
+        The datasets re-indexed so far are tracked in ``<output_file>.reindexed``
+        so that an interrupted re-index can be resumed.
+
+    Otherwise datasets already in ``datasets`` are skipped:
     restarting an interrupted update only indexes the remaining datasets.
 
     Returns
@@ -481,6 +574,11 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     known = set(datasets["name"])
+    reindex_file = reindex_progress_file(output_file) if reindex else None
+    if reindex:
+        known = _read_reindex_progress(reindex_file)
+        cc_log.info(f"Re-indexing: {len(known)} datasets already re-indexed")
+
     skipped = skipped_datasets()
     failed: list[str] = []
     try:
@@ -528,12 +626,9 @@ def list_datasets_in_dir(
                     progress.update(task, advance=1)
                     continue
 
-                for keys in datasets:
-                    datasets[keys].append(dataset[keys])
-                known.add(dataset["name"])
-
-                if output_file is not None:
-                    save_known_datasets(pd.DataFrame.from_dict(datasets), output_file)
+                _add_or_replace(datasets, dataset)
+                known.add(str(dataset["name"]))
+                _save_progress(datasets, str(dataset["name"]), output_file, reindex_file)
 
                 progress.update(task, advance=1)
 
@@ -636,7 +731,11 @@ def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> DAT
     dataset["license"] = get_license(dataset_pth)
     dataset["references_and_links"] = get_references_and_links(dataset_pth)
 
-    dataset["institutions"] = get_institutions(dataset_pth)
+    dataset["bids_version"] = get_bids_version(dataset_pth)
+
+    sidecars = read_sidecars(dataset_pth)
+    dataset["institutions"] = get_institutions(dataset_pth, sidecars)
+    dataset["field_strength"] = get_field_strength(sidecars)
 
     dataset["duration"] = get_duration(dataset_pth, datatypes, tasks, jobs=jobs)
 
@@ -1016,6 +1115,15 @@ def get_authors(dataset_pth: Path) -> list[str]:
         return dataset_description.get("Authors", [])
 
 
+def get_bids_version(dataset_pth: Path) -> str:
+    if not (dataset_pth / "dataset_description.json").exists():
+        return "n/a"
+    with open(dataset_pth / "dataset_description.json") as f:
+        version = str(json.load(f).get("BIDSVersion", "")).strip()
+    # some datasets use "v1.2.2"
+    return version.lstrip("vV") or "n/a"
+
+
 def get_license(dataset_pth: Path) -> str:
     if not (dataset_pth / "dataset_description.json").exists():
         return "n/a"
@@ -1036,17 +1144,16 @@ def get_references_and_links(dataset_pth: Path) -> list[str]:
         return dataset_description.get("ReferencesAndLinks", [])
 
 
-def get_institutions(dataset_pth: Path) -> list[str]:
-    """List institutions in JSON files in root folder and first subject.
+def read_sidecars(dataset_pth: Path) -> list[dict[str, Any]]:
+    """Read the JSON files in the root folder and of the first subject.
 
     Assumes that first subject is representative of the dataset.
     """
-    cc_log.info(" Getting institution")
     json_files = list(glob_files(dataset_pth, "*.json"))
     first_subject = list_participants_in_dataset(dataset_pth)[0]
     json_files.extend(list(glob_files(dataset_pth, f"{first_subject}/**/*.json")))
 
-    institutions = []
+    sidecars = []
     ds = api.Dataset(dataset_pth)
     for json_file in json_files:
         if Path(json_file).name.startswith("."):
@@ -1057,19 +1164,41 @@ def get_institutions(dataset_pth: Path) -> list[str]:
             _get_file(ds, Path(json_file))
             with open(json_file) as f:
                 json_dict = json.load(f)
-                if tmp := construct_institution_string(json_dict).strip(", "):
-                    institutions.append(tmp)
-
-        except json.decoder.JSONDecodeError:
+        except (json.decoder.JSONDecodeError, UnicodeDecodeError):
             cc_log.warning(f"Could not parse: {json_file}", stacklevel=2)
-        except UnicodeDecodeError:
-            cc_log.warning(f"Could not parse: {json_file}", stacklevel=2)
+            continue
         except FileNotFoundError:
             cc_log.warning(f"Could not find: {json_file}", stacklevel=2)
+            continue
         except IncompleteResultsError:
             cc_log.warning(f"Could not get: {json_file}", stacklevel=2)
+            continue
+        if isinstance(json_dict, dict):
+            sidecars.append(json_dict)
+    return sidecars
 
-    return sorted(list({x for x in institutions if x}))
+
+def get_institutions(dataset_pth: Path, sidecars: list[dict[str, Any]] | None = None) -> list[str]:
+    """List institutions in JSON files in root folder and first subject."""
+    cc_log.info(" Getting institution")
+    if sidecars is None:
+        sidecars = read_sidecars(dataset_pth)
+    institutions = [construct_institution_string(x).strip(", ") for x in sidecars]
+    return sorted({x for x in institutions if x})
+
+
+def get_field_strength(sidecars: list[dict[str, Any]]) -> list[float]:
+    """List the unique MagneticFieldStrength (in Tesla) found in the JSON sidecars."""
+    field_strengths = set()
+    for sidecar in sidecars:
+        value = sidecar.get("MagneticFieldStrength")
+        if isinstance(value, str):
+            # for example "3T"
+            match = re.search(r"\d+(\.\d+)?", value)
+            value = float(match.group()) if match else None
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and value > 0:
+            field_strengths.add(round(float(value), 2))
+    return sorted(field_strengths)
 
 
 def construct_institution_string(json_dict: Any) -> str:
@@ -1124,11 +1253,15 @@ def check_task(
 def add_derivatives(
     dataset: DATASET_TYPE, dataset_pth: Path, derivatives: list[str]
 ) -> DATASET_TYPE:
-    """Update dict with links to derivatives if they exist."""
+    """Update dict with links to derivatives and their pipeline version if they exist."""
     dataset_name = dataset["name"]
     for der in ["fmriprep", "mriqc"]:
         if f"{dataset_name}-{der}" in derivatives:
             dataset[der] = f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}"
+            description = _remote_dataset_description(
+                f"{URL_RAW_OPENNEURO_DERIVATIVES}{dataset_name}-{der}/main/dataset_description.json"
+            )
+            dataset[f"{der}_version"] = pipeline_version(description, der)
 
     for der in [
         "fmriprep",
@@ -1140,8 +1273,57 @@ def add_derivatives(
         if der_datasets := glob_files(dataset_pth, f"derivatives/*{der}*"):
             for i in der_datasets:
                 dataset[der] = f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
+            description = _local_dataset_description(dataset_pth, i)
+            dataset[f"{der}_version"] = pipeline_version(description, der)
 
     return dataset
+
+
+def pipeline_version(description: dict[str, Any] | None, pipeline: str) -> str:
+    """Return the version of the pipeline that generated a derivative dataset.
+
+    Uses ``GeneratedBy`` (BIDS >= 1.4) or ``PipelineDescription`` (BIDS < 1.4)
+    from its dataset_description.json.
+    """
+    if not description:
+        return "n/a"
+    generated_by = description.get("GeneratedBy") or []
+    if isinstance(generated_by, dict):
+        generated_by = [generated_by]
+    if not isinstance(generated_by, list):
+        generated_by = []
+    if isinstance(description.get("PipelineDescription"), dict):
+        generated_by.append(description["PipelineDescription"])
+    generated_by = [x for x in generated_by if isinstance(x, dict) and x.get("Version")]
+    # prefer the entry about the pipeline, if there are several
+    matching = [x for x in generated_by if pipeline in str(x.get("Name", "")).lower()]
+    for entry in matching or generated_by:
+        return str(entry["Version"]).strip()
+    return "n/a"
+
+
+def _remote_dataset_description(url: str) -> dict[str, Any] | None:
+    try:
+        response = requests.get(url, timeout=30)
+        if response.status_code == 200:
+            description = response.json()
+            return description if isinstance(description, dict) else None
+        cc_log.warning(f"Could not get {url}: error {response.status_code}")
+    except (requests.RequestException, ValueError) as e:
+        cc_log.warning(f"Could not get {url}: {e!r}")
+    return None
+
+
+def _local_dataset_description(dataset_pth: Path, derivative_pth: Path) -> dict[str, Any] | None:
+    description_file = derivative_pth / "dataset_description.json"
+    try:
+        _get_file(api.Dataset(dataset_pth), description_file)
+        with open(description_file) as f:
+            description = json.load(f)
+            return description if isinstance(description, dict) else None
+    except (OSError, json.decoder.JSONDecodeError, UnicodeDecodeError, IncompleteResultsError):
+        cc_log.debug(f"Could not read {description_file}")
+    return None
 
 
 def count_sessions_tsv(dataset_pth: Path) -> int:
@@ -1156,13 +1338,21 @@ def count_physio_files(dataset_pth: Path) -> int:
     return len(list(glob_files(dataset_pth, "sub-*/**/*physio.tsv.gz")))
 
 
-def update(reset: bool = False, debug: bool = True, jobs: int = 1) -> None:
+def update(reset: bool = False, debug: bool = True, jobs: int = 1, reindex: bool = False) -> None:
+    """Update the listing of OpenNeuro datasets.
+
+    Parameters
+    ----------
+    reindex : bool
+        Index again all the datasets, not only those missing from the listing.
+        Can be resumed if interrupted.
+    """
     if not os.getenv("CI"):
         # fail early if the folder where to install new datasets is not set
         config_path("local_paths", "openneuro", OPENNEURO)
-    install_missing_datasets(use_superdataset=False, jobs=jobs)
+    install_missing_datasets(use_superdataset=False, jobs=jobs, reindex=reindex)
     list_openneuro_derivatives()
-    update_openneuro(reset=reset, debug=debug, jobs=jobs)
+    update_openneuro(reset=reset, debug=debug, jobs=jobs, reindex=reindex)
 
 
 if __name__ == "__main__":

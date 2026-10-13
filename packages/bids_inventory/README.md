@@ -105,6 +105,10 @@ bids_inventory update --config ~/bids_inventory_config.yml
 Useful options (see `bids_inventory update --help`):
 
 - `--jobs N`: number of datasets to install, and of NIfTI headers to read, in parallel (default: 4)
+- `--reindex`: index again all the datasets, not only those missing from the listing,
+  for example after new fields were added to the listing.
+  Each entry is replaced in place, so the listing stays complete.
+  If it is stopped, run the same command again to continue where it stopped.
 - `--log-dir DIR`: where warnings and errors are saved, in 2 separate files (default: `logs`).
   Each warning and error mentions the dataset it comes from, for example `[ds004000 171/1380]`.
 

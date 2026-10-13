@@ -7,6 +7,8 @@ datasets_results.tsv
 docs/source/data/*-results.csv
 OpenNeuroDatasets.tsv
 OpenNeuroDerivatives.tsv
+# progress of `bids_inventory update --reindex`
+*.jsonl.reindexed
 my_config.yml
 
 # Created by https://www.toptal.com/developers/gitignore/api/python

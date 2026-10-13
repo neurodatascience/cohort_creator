@@ -116,6 +116,16 @@
             "Format": "list[str]",
             "Assumptions": "Based on the JSON sidecars of the first participant only."
         },
+        "field_strength": {
+            "Description": "List of the unique MagneticFieldStrength (in Tesla) found in the JSON sidecars.",
+            "Format": "list[float]",
+            "Assumptions": "Based on the JSON sidecars in the root folder and of the first participant only."
+        },
+        "bids_version": {
+            "Description": "BIDSVersion in the dataset_description.json of the dataset.",
+            "Format": "str",
+            "Assumptions": ""
+        },
         "duration": {
             "Description": "Duration with tuples of (number of time points, sampling frequencies) for each run. Listing is done by datatypes and where possible split further by task.",
             "Format": "dict[str: list[tuple[int, float]] | dict[str, list[tuple[int, float]]]]",
@@ -143,6 +153,21 @@
         },
         "mriqc": {
             "Description": "Link datalad sibling of the mriqc dataset in the derivatives folder or on OpenneuroDerivatives.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "fmriprep_version": {
+            "Description": "Version of fMRIPrep that generated the 'fmriprep' derivative dataset, from 'GeneratedBy' (or 'PipelineDescription') in its dataset_description.json. Empty if there is no such derivative dataset or if the version is not recorded.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "freesurfer_version": {
+            "Description": "Version of FreeSurfer that generated the 'freesurfer' derivative dataset, from 'GeneratedBy' (or 'PipelineDescription') in its dataset_description.json. Empty if there is no such derivative dataset or if the version is not recorded.",
+            "Format": "str",
+            "Assumptions": ""
+        },
+        "mriqc_version": {
+            "Description": "Version of MRIQC that generated the 'mriqc' derivative dataset, from 'GeneratedBy' (or 'PipelineDescription') in its dataset_description.json. Empty if there is no such derivative dataset or if the version is not recorded.",
             "Format": "str",
             "Assumptions": ""
         }
