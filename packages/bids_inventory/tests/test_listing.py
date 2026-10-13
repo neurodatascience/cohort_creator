@@ -36,3 +36,13 @@ def test_save_known_datasets_round_trip(tmp_path):
     output_file = tmp_path / "openneuro.jsonl"
     save_known_datasets(_load_known_datasets(_openneuro_listing()), output_file)
     assert output_file.read_text() == _openneuro_listing().read_text()
+
+
+def test_skipped_datasets_not_in_listing():
+    """Datasets in the skip list have a reason and are not in the listing."""
+    from bids_inventory.listing import known_datasets_df, skipped_datasets
+
+    skipped = skipped_datasets()
+    assert skipped
+    assert all(reason for reason in skipped.values())
+    assert not set(skipped) & set(known_datasets_df()["name"])

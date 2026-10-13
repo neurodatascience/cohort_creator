@@ -33,6 +33,7 @@ from bids_inventory.listing import (
     _openneuro_listing,
     known_datasets_df,
     save_known_datasets,
+    skipped_datasets,
 )
 from bids_inventory.logger import bi_logger, set_current_dataset
 
@@ -209,6 +210,10 @@ def list_openneuro_raw(use_superdataset: bool, reindex: bool = False) -> set[str
     cc_log.info("Getting list of public openneuro raw datasets from the GitHub API.")
     datasets = get_list_of_datasets(OPENNEURO)
     unknown_datasets = set(datasets) - set(known_datasets)
+
+    if skipped := unknown_datasets & set(skipped_datasets()):
+        cc_log.info(f"Skipping {len(skipped)} datasets listed in skipped_datasets.csv")
+        unknown_datasets -= skipped
 
     cc_log.info(f"{len(unknown_datasets)} unknown datasets")
     cc_log.info(sorted(unknown_datasets))
@@ -487,6 +492,15 @@ def _read_reindex_progress(reindex_file: Path | None) -> set[str]:
     return {x.strip() for x in reindex_file.read_text().splitlines() if x.strip()}
 
 
+def _skip_reason(name: str, study_prefix: str, known: set[str], skipped: dict[str, str]) -> str:
+    """Return why a dataset must not be indexed (empty if it must be)."""
+    if f"{study_prefix}{name}" in known:
+        return "already indexed"
+    if name in skipped:
+        return f"in skipped_datasets.csv ({skipped[name]})"
+    return ""
+
+
 def list_datasets_in_dir(
     datasets: dict[str, list[Any]],
     path: Path,
@@ -564,6 +578,8 @@ def list_datasets_in_dir(
     if reindex:
         known = _read_reindex_progress(reindex_file)
         cc_log.info(f"Re-indexing: {len(known)} datasets already re-indexed")
+
+    skipped = skipped_datasets()
     failed: list[str] = []
     try:
         with progress_bar(text="Updating") as progress:
@@ -575,8 +591,8 @@ def list_datasets_in_dir(
                 cc_log.info(f"{dataset_pth.name}")
                 set_current_dataset(f"{dataset_pth.name} {index}/{len(raw_datasets)}")
 
-                if f"{study_prefix}{dataset_pth.name}" in known:
-                    cc_log.info("  already in the listing: skipping")
+                if reason := _skip_reason(dataset_pth.name, study_prefix, known, skipped):
+                    cc_log.info(f"  skipping: {reason}")
                     progress.update(task, advance=1)
                     continue
 
@@ -785,38 +801,15 @@ def list_tasks(bids_pth: Path, sessions: list[str]) -> list[str]:
 def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     """Get only header of a nifti file and compute its acquisition time."""
     if "nii" in filepath.suffix or "gz" in filepath.suffix:
-        script_path = _data_dir() / "read_nb_vols"
-
-        # only stream the beginning of the file and read the header from it
-        head_cmd = [
-            _datalad_executable(),
-            "fsspec-head",
-            "-d",
-            str(dataset_pth),
-            "-c",
-            "1024",
-            str(filepath.relative_to(dataset_pth)),
-        ]
-        # use the python of this environment (with nibabel) whatever the PATH
-        read_cmd = [sys.executable, str(script_path)]
-        cc_log.debug(f"{' '.join(head_cmd)} | {' '.join(read_cmd)}")
-        with subprocess.Popen(head_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as head:
-            result = subprocess.run(
-                read_cmd, stdin=head.stdout, capture_output=True, text=True, check=False
-            )
-            assert head.stdout is not None
-            head.stdout.close()
-            head_stderr = head.stderr.read().decode() if head.stderr else ""
-
-        try:
-            tmp = result.stdout.replace("\n", "").split(" ")
-            n_samples: int = int(tmp[0])
-            repetition_time: float = float(tmp[1])
-            return (n_samples, repetition_time)
-        except (ValueError, IndexError):
-            cc_log.error(f"Could not get duration for: {filepath.relative_to(dataset_pth)}")
-            cc_log.debug(f"{head_stderr}\n{result.stderr}")
-            return (0, np.nan)
+        duration, reason = _read_nifti_header(dataset_pth, filepath)
+        if duration is None:
+            # streaming from S3 can fail temporarily: try once more
+            cc_log.debug(f"Retrying {filepath.relative_to(dataset_pth)}: {reason}")
+            duration, reason = _read_nifti_header(dataset_pth, filepath)
+        if duration is not None:
+            return duration
+        cc_log.error(f"Could not get duration for: {filepath.relative_to(dataset_pth)} ({reason})")
+        return (0, np.nan)
 
     elif "vhdr" in filepath.suffix:
         info, n_samples = get_meeg_header(dataset_pth, filepath)
@@ -825,6 +818,56 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
             return (n_samples, 1 / float(info["sfreq"]))
 
     return (0, np.nan)
+
+
+def _read_nifti_header(dataset_pth: Path, filepath: Path) -> tuple[tuple[int, float] | None, str]:
+    """Stream the beginning of a nifti file and read its number of volumes and TR.
+
+    Returns
+    -------
+    ``(n_volumes, repetition_time)`` or ``None`` if the header could not be read,
+    and the reason why it could not be read.
+    """
+    script_path = _data_dir() / "read_nb_vols"
+
+    # only stream the beginning of the file and read the header from it
+    head_cmd = [
+        _datalad_executable(),
+        "fsspec-head",
+        "-d",
+        str(dataset_pth),
+        "-c",
+        "1024",
+        str(filepath.relative_to(dataset_pth)),
+    ]
+    # use the python of this environment (with nibabel) whatever the PATH
+    read_cmd = [sys.executable, str(script_path)]
+    cc_log.debug(f"{' '.join(head_cmd)} | {' '.join(read_cmd)}")
+    with subprocess.Popen(head_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as head:
+        result = subprocess.run(
+            read_cmd, stdin=head.stdout, capture_output=True, text=True, check=False
+        )
+        assert head.stdout is not None
+        head.stdout.close()
+        head_stderr = head.stderr.read().decode() if head.stderr else ""
+
+    try:
+        tmp = result.stdout.replace("\n", "").split(" ")
+        return (int(tmp[0]), float(tmp[1])), ""
+    except (ValueError, IndexError):
+        cc_log.debug(f"{head_stderr}\n{result.stderr}")
+        # the error from datalad (could not stream the file) explains
+        # the error from the header reader (nothing to read): report it first
+        reason = _last_line(head_stderr) or _last_line(result.stderr) or "unknown error"
+        # the file is already named in the error message: keep the reason short
+        for redundant in [f" within {dataset_pth}", f" for {filepath.relative_to(dataset_pth)}"]:
+            reason = reason.replace(redundant, "")
+        return None, reason.removeprefix("[ERROR] ")
+
+
+def _last_line(text: str) -> str:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return lines[-1] if lines else ""
 
 
 def _get_file(ds: api.Dataset, filepath: Path) -> None:

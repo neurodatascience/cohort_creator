@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 # needs the 'update' extra
@@ -468,3 +470,68 @@ def test_list_datasets_in_dir_reindex_can_resume(tmp_path, monkeypatch):
         "ds000001",
         "ds000002",
     }
+
+
+def test_skipped_datasets_are_not_indexed(tmp_path, monkeypatch):
+    from bids_inventory import _update
+
+    input_dir = tmp_path / "openneuro"
+    for name in ["ds000001", "ds000002"]:
+        (input_dir / name).mkdir(parents=True)
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        indexed.append(dataset_pth.name)
+        dataset = {key: [] for key in _update.init_dataset()}
+        dataset.update(_update.new_dataset(dataset_pth.name))
+        return dataset
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+    monkeypatch.setattr(_update, "skipped_datasets", lambda: {"ds000002": "deleted"})
+
+    datasets = _update.list_datasets_in_dir(_update.init_dataset(), input_dir, debug=False)
+
+    assert indexed == ["ds000001"]
+    assert datasets["name"] == ["ds000001"]
+
+
+def test_get_scan_duration_error_reason(tmp_path, caplog):
+    """The error says why the header could not be read."""
+    from datalad import api
+
+    from bids_inventory._update import get_scan_duration
+
+    ds = api.create(tmp_path / "ds", result_renderer="disabled")
+    bold = ds.pathobj / "sub-01" / "func" / "sub-01_task-rest_bold.nii.gz"
+    bold.parent.mkdir(parents=True)
+    bold.write_bytes(b"not really a nifti file")
+    ds.save(result_renderer="disabled")
+    # the content is not available anywhere anymore
+    ds.drop(bold, reckless="kill", result_renderer="disabled")
+
+    n_volumes, repetition_time = get_scan_duration(ds.pathobj, bold)
+    assert n_volumes == 0
+    assert math.isnan(repetition_time)
+    assert "Could not get duration for: sub-01/func/sub-01_task-rest_bold.nii.gz (" in caplog.text
+    assert "Could not find a usable URL" in caplog.text
+
+
+def test_get_scan_duration_retries_once(monkeypatch, tmp_path):
+    from bids_inventory import _update
+
+    calls = []
+
+    def flaky(dataset_pth, filepath):
+        calls.append(filepath)
+        return (None, "temporary error") if len(calls) == 1 else ((180, 2.0), "")
+
+    monkeypatch.setattr(_update, "_read_nifti_header", flaky)
+    bold = tmp_path / "sub-01_task-rest_bold.nii.gz"
+    assert _update.get_scan_duration(tmp_path, bold) == (180, 2.0)
+    assert len(calls) == 2
