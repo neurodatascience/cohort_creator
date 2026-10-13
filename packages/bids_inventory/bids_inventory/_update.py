@@ -34,18 +34,7 @@ from bids_inventory.listing import (
     skipped_datasets,
 )
 from bids_inventory.logger import bi_logger, set_current_dataset
-
-DATASET_TYPE = dict[
-    str,
-    str
-    | int
-    | bool
-    | list[str]
-    | list[int]
-    | list[float]
-    | dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]
-    | dict[str, int],
-]
+from bids_inventory.models import RUNS_DURATION, BidsDataset
 
 OPENNEURO = "OpenNeuroDatasets"
 OPENNEURO_DERIVATIVES = "OpenNeuroDerivatives"
@@ -365,42 +354,8 @@ def request_list_of_repos(
 
 
 def init_dataset() -> dict[str, list[Any]]:
-    return {
-        "name": [],
-        "created_on": [],
-        "nb_subjects": [],  # usually the number of subjects folder in raw dataset
-        "has_participant_tsv": [],
-        "has_participant_json": [],
-        "participant_columns": [],
-        "nb_sessions_tsv": [],
-        "nb_scans_tsv": [],
-        "nb_physio_files": [],
-        "nb_stim_files": [],
-        "has_phenotype_dir": [],
-        "has_stimuli_dir": [],
-        "eeg_file_formats": [],
-        "ieeg_file_formats": [],
-        "meg_file_formats": [],
-        "nb_meeg_channels": [],
-        "datatypes": [],
-        "sessions": [],  # list of sessions if exist
-        "tasks": [],
-        "size": [],
-        "license": [],
-        "authors": [],
-        "institutions": [],
-        "field_strength": [],  # MagneticFieldStrength found in the JSON sidecars
-        "bids_version": [],
-        "duration": [],  # duration of recoding of each modality
-        "references_and_links": [],
-        "raw": [],  # link to raw dataset
-        "fmriprep": [],  # link to fmriprep dataset if exists
-        "freesurfer": [],  # link to freesurfer dataset if exists
-        "mriqc": [],  # link to mriqc dataset if exists
-        "fmriprep_version": [],
-        "freesurfer_version": [],
-        "mriqc_version": [],
-    }
+    """Return an empty listing: one list per field of a dataset."""
+    return {key: [] for key in BidsDataset.model_fields}
 
 
 def listing_to_dict(df: pd.DataFrame) -> dict[str, list[Any]]:
@@ -414,53 +369,20 @@ def listing_to_dict(df: pd.DataFrame) -> dict[str, list[Any]]:
     return datasets
 
 
-def new_dataset(name: str) -> DATASET_TYPE:
-    return {
-        "name": name,
-        "created_on": "n/a",
-        "nb_subjects": "n/a",
-        "has_participant_tsv": "n/a",
-        "has_participant_json": "n/a",
-        "participant_columns": [],
-        "nb_sessions_tsv": "n/a",
-        "nb_scans_tsv": "n/a",
-        "nb_physio_files": "n/a",
-        "nb_stim_files": "n/a",
-        "has_phenotype_dir": "n/a",
-        "has_stimuli_dir": "n/a",
-        "eeg_file_formats": "n/a",
-        "ieeg_file_formats": "n/a",
-        "meg_file_formats": "n/a",
-        "nb_meeg_channels": "n/a",
-        "datatypes": "n/a",
-        "tasks": [],
-        "size": "n/a",
-        "license": "n/a",
-        "authors": [],
-        "institutions": [],
-        "field_strength": [],
-        "bids_version": "n/a",
-        "duration": "n/a",
-        "references_and_links": [],
-        "raw": "n/a",
-        "fmriprep": "n/a",
-        "freesurfer": "n/a",
-        "mriqc": "n/a",
-        "fmriprep_version": "n/a",
-        "freesurfer_version": "n/a",
-        "mriqc_version": "n/a",
-    }
+def new_dataset(name: str) -> BidsDataset:
+    return BidsDataset(name=name)
 
 
-def _add_or_replace(datasets: dict[str, list[Any]], dataset: DATASET_TYPE) -> None:
+def _add_or_replace(datasets: dict[str, list[Any]], dataset: BidsDataset) -> None:
     """Add a dataset to the listing, or replace its entry if it is already there."""
-    if dataset["name"] in datasets["name"]:
-        index = datasets["name"].index(dataset["name"])
+    row = dataset.model_dump()
+    if dataset.name in datasets["name"]:
+        index = datasets["name"].index(dataset.name)
         for keys in datasets:
-            datasets[keys][index] = dataset[keys]
+            datasets[keys][index] = row[keys]
     else:
         for keys in datasets:
-            datasets[keys].append(dataset[keys])
+            datasets[keys].append(row[keys])
 
 
 def _save_progress(
@@ -625,8 +547,8 @@ def list_datasets_in_dir(
                     continue
 
                 _add_or_replace(datasets, dataset)
-                known.add(str(dataset["name"]))
-                _save_progress(datasets, str(dataset["name"]), output_file, reindex_file)
+                known.add(dataset.name)
+                _save_progress(datasets, dataset.name, output_file, reindex_file)
 
                 progress.update(task, advance=1)
 
@@ -679,24 +601,24 @@ def get_raw_url(dataset_pth: Path) -> str:
         return api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
 
 
-def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> DATASET_TYPE:
+def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> BidsDataset:
     dataset_name = dataset_pth.name
 
     dataset = new_dataset(f"{study_prefix}{dataset_name}")
 
-    dataset["raw"] = get_raw_url(dataset_pth)
+    dataset.raw = get_raw_url(dataset_pth)
 
-    dataset["created_on"] = created_on(dataset_pth)
+    dataset.created_on = created_on(dataset_pth)
 
-    dataset["nb_subjects"] = get_nb_subjects(dataset_pth)
+    dataset.nb_subjects = get_nb_subjects(dataset_pth)
 
     sessions = list_sessions(dataset_pth)
-    dataset["sessions"] = sessions
+    dataset.sessions = sessions
 
     datatypes = list_datatypes(dataset_pth, sessions=sessions)
-    dataset["datatypes"] = datatypes
+    dataset.datatypes = datatypes
 
-    dataset["size"] = get_dataset_size(dataset_pth)
+    dataset.size = get_dataset_size(dataset_pth)
 
     tasks = None
     if any(
@@ -705,37 +627,37 @@ def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> DAT
     ):
         tasks = list_tasks(dataset_pth, sessions=sessions)
         check_task(tasks, datatypes, sessions, dataset_pth)
-        dataset["tasks"] = sorted(tasks)
+        dataset.tasks = sorted(tasks)
 
     tsv_status, json_status, columns = has_participant_tsv(dataset_pth)
-    dataset["has_participant_tsv"] = tsv_status
-    dataset["has_participant_json"] = json_status
-    dataset["participant_columns"] = columns
+    dataset.has_participant_tsv = tsv_status
+    dataset.has_participant_json = json_status
+    dataset.participant_columns = columns
 
-    dataset["nb_sessions_tsv"] = count_sessions_tsv(dataset_pth)
-    dataset["nb_scans_tsv"] = count_scans_tsv(dataset_pth)
-    dataset["nb_physio_files"] = count_physio_files(dataset_pth)
-    dataset["nb_stim_files"] = count_stim_files(dataset_pth)
+    dataset.nb_sessions_tsv = count_sessions_tsv(dataset_pth)
+    dataset.nb_scans_tsv = count_scans_tsv(dataset_pth)
+    dataset.nb_physio_files = count_physio_files(dataset_pth)
+    dataset.nb_stim_files = count_stim_files(dataset_pth)
 
-    dataset["has_phenotype_dir"] = bool((dataset_pth / "phenotype").exists())
-    dataset["has_stimuli_dir"] = bool((dataset_pth / "stimuli").exists())
+    dataset.has_phenotype_dir = bool((dataset_pth / "phenotype").exists())
+    dataset.has_stimuli_dir = bool((dataset_pth / "stimuli").exists())
 
-    dataset["eeg_file_formats"] = count_eeg_file_formats(dataset_pth)
-    dataset["ieeg_file_formats"] = count_ieeg_file_formats(dataset_pth)
-    dataset["meg_file_formats"] = count_meg_file_formats(dataset_pth)
-    dataset["nb_meeg_channels"] = get_number_meeg_channels(dataset_pth, datatypes)
+    dataset.eeg_file_formats = count_eeg_file_formats(dataset_pth)
+    dataset.ieeg_file_formats = count_ieeg_file_formats(dataset_pth)
+    dataset.meg_file_formats = count_meg_file_formats(dataset_pth)
+    dataset.nb_meeg_channels = get_number_meeg_channels(dataset_pth, datatypes)
 
-    dataset["authors"] = get_authors(dataset_pth)
-    dataset["license"] = get_license(dataset_pth)
-    dataset["references_and_links"] = get_references_and_links(dataset_pth)
+    dataset.authors = get_authors(dataset_pth)
+    dataset.license = get_license(dataset_pth)
+    dataset.references_and_links = get_references_and_links(dataset_pth)
 
-    dataset["bids_version"] = get_bids_version(dataset_pth)
+    dataset.bids_version = get_bids_version(dataset_pth)
 
     sidecars = read_sidecars(dataset_pth)
-    dataset["institutions"] = get_institutions(dataset_pth, sidecars)
-    dataset["field_strength"] = get_field_strength(sidecars)
+    dataset.institutions = get_institutions(dataset_pth, sidecars)
+    dataset.field_strength = get_field_strength(sidecars)
 
-    dataset["duration"] = get_duration(dataset_pth, datatypes, tasks, jobs=jobs)
+    dataset.duration = get_duration(dataset_pth, datatypes, tasks, jobs=jobs)
 
     return dataset
 
@@ -744,7 +666,7 @@ def get_nb_subjects(pth: Path) -> int:
     return len(list_participants_in_dataset(pth))
 
 
-def has_participant_tsv(pth: Path) -> tuple[bool, bool, str | list[str]]:
+def has_participant_tsv(pth: Path) -> tuple[bool, bool, list[str]]:
     tsv_status = bool((pth / "participants.tsv").exists())
     json_status = bool((pth / "participants.json").exists())
     if tsv_status:
@@ -1001,7 +923,7 @@ def get_number_meeg_channels(dataset_pth: Path, datatypes: list[str]) -> list[in
 
 def get_duration(
     dataset_pth: Path, datatypes: list[str], tasks: list[str] | None, jobs: int = 1
-) -> dict[str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]]:
+) -> dict[str, RUNS_DURATION | dict[str, RUNS_DURATION]]:
     """Get the duration of each run of the first subject.
 
     Parameters
@@ -1022,9 +944,7 @@ def get_duration(
             all_files.extend(files)
     durations = get_scan_durations(dataset_pth, all_files, jobs=jobs)
 
-    duration_all_datatypes: dict[
-        str, Iterable[tuple[int, float]] | dict[str, Iterable[tuple[int, float]]]
-    ] = {}
+    duration_all_datatypes: dict[str, RUNS_DURATION | dict[str, RUNS_DURATION]] = {}
     for datatype, value in files_per_datatype.items():
         if isinstance(value, dict):
             duration_all_datatypes[datatype] = {
@@ -1099,7 +1019,7 @@ def get_scan_durations(
 
 def get_duration_for_datatype(
     dataset_pth: Path, files: Iterable[Path], jobs: int = 1
-) -> Iterable[tuple[int, float]]:
+) -> RUNS_DURATION:
     files = list(files)
     durations = get_scan_durations(dataset_pth, files, jobs=jobs)
     return [durations[x] for x in files]
@@ -1248,31 +1168,31 @@ def check_task(
         )
 
 
-def add_derivatives(
-    dataset: DATASET_TYPE, dataset_pth: Path, derivatives: list[str]
-) -> DATASET_TYPE:
-    """Update dict with links to derivatives and their pipeline version if they exist."""
-    dataset_name = dataset["name"]
+def add_derivatives(dataset: BidsDataset, dataset_pth: Path, derivatives: list[str]) -> BidsDataset:
+    """Update dataset with links to derivatives and their pipeline version if they exist."""
+    dataset_name = dataset.name
     for der in ["fmriprep", "mriqc"]:
         if f"{dataset_name}-{der}" in derivatives:
-            dataset[der] = f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}"
+            setattr(dataset, der, f"{URL_OPENNEURO_DERIVATIVES}{dataset_name}-{der}")
             description = _remote_dataset_description(
                 f"{URL_RAW_OPENNEURO_DERIVATIVES}{dataset_name}-{der}/main/dataset_description.json"
             )
-            dataset[f"{der}_version"] = pipeline_version(description, der)
+            setattr(dataset, f"{der}_version", pipeline_version(description, der))
 
     for der in [
         "fmriprep",
         "freesurfer",
         "mriqc",
     ]:
-        if dataset[der] != "n/a":
+        if getattr(dataset, der) is not None:
             continue
         if der_datasets := glob_files(dataset_pth, f"derivatives/*{der}*"):
             for i in der_datasets:
-                dataset[der] = f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
+                setattr(
+                    dataset, der, f"{URL_OPENNEURO}{dataset_name}/tree/main/derivatives/{i.name}"
+                )
             description = _local_dataset_description(dataset_pth, i)
-            dataset[f"{der}_version"] = pipeline_version(description, der)
+            setattr(dataset, f"{der}_version", pipeline_version(description, der))
 
     return dataset
 

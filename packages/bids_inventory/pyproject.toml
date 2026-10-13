@@ -31,7 +31,7 @@ browse = ["dash", "dash-bootstrap-components", "kaleido", "matplotlib", "plotly"
 dev = ["bids-inventory[browse,test,update]", "pandas-stubs", "pre-commit"]
 test = ["pytest", "pytest-cov"]
 # update of the listing: `bids_inventory update`
-update = ["datalad", "datalad-fuse", "mne", "nibabel", "pyyaml", "requests"]
+update = ["datalad", "datalad-fuse", "mne", "nibabel", "pydantic>=2", "pyyaml", "requests"]
 
 [project.scripts]
 bids_inventory = "bids_inventory._cli:cli"

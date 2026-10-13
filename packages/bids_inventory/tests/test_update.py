@@ -286,8 +286,7 @@ def test_list_datasets_in_dir_can_resume(tmp_path, monkeypatch):
         if dataset_pth.name == "ds000003" and "stop" in indexed:
             raise KeyboardInterrupt  # someone stops the update
         indexed.append(dataset_pth.name)
-        dataset = {key: [] for key in _update.init_dataset()}
-        dataset.update(_update.new_dataset(dataset_pth.name))
+        dataset = _update.new_dataset(dataset_pth.name)
         return dataset
 
     monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
@@ -419,9 +418,7 @@ def test_list_datasets_in_dir_reindex_can_resume(tmp_path, monkeypatch):
     # listing indexed before a new field was added
     old = _update.init_dataset()
     for name in ["ds000001", "ds000002"]:
-        entry = {key: [] for key in old}
-        entry.update(_update.new_dataset(name))
-        _update._add_or_replace(old, entry)
+        _update._add_or_replace(old, _update.new_dataset(name))
     save_known_datasets(pd.DataFrame.from_dict(old), output_file)
 
     indexed = []
@@ -430,9 +427,8 @@ def test_list_datasets_in_dir_reindex_can_resume(tmp_path, monkeypatch):
         if dataset_pth.name == "ds000002" and "stop" in indexed:
             raise KeyboardInterrupt
         indexed.append(dataset_pth.name)
-        dataset = {key: [] for key in _update.init_dataset()}
-        dataset.update(_update.new_dataset(dataset_pth.name))
-        dataset["bids_version"] = "1.10.0"
+        dataset = _update.new_dataset(dataset_pth.name)
+        dataset.bids_version = "1.10.0"
         return dataset
 
     monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
@@ -481,8 +477,7 @@ def test_skipped_datasets_are_not_indexed(tmp_path, monkeypatch):
 
     def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
         indexed.append(dataset_pth.name)
-        dataset = {key: [] for key in _update.init_dataset()}
-        dataset.update(_update.new_dataset(dataset_pth.name))
+        dataset = _update.new_dataset(dataset_pth.name)
         return dataset
 
     monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
