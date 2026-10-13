@@ -1,7 +1,5 @@
 """Command line interface for bids_inventory."""
 
-from __future__ import annotations
-
 import logging
 import os
 import sys

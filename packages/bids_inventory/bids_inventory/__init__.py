@@ -1,7 +1,5 @@
 """Keep an inventory of publicly available BIDS datasets."""
 
-from __future__ import annotations
-
 import pandas as pd
 
 from bids_inventory.listing import known_datasets_df

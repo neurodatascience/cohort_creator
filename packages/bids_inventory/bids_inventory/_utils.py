@@ -1,7 +1,5 @@
 """General utilities."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from rich.progress import (

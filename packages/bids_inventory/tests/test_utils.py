@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from bids_inventory._utils import glob_files
 
 

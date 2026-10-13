@@ -1,7 +1,5 @@
 """General parser for the cohort_creator package."""
 
-from __future__ import annotations
-
 from argparse import ArgumentParser, HelpFormatter
 
 from ._version import __version__

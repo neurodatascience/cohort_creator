@@ -5,8 +5,6 @@ Also checks for derivatives folders for mriqc, frmiprep and freesurfer.
 Rerun to update values of "old" datasets.
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 
