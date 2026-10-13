@@ -101,3 +101,9 @@ pip install -e './packages/bids_inventory[update]'
 export GITHUB_TOKEN=...  # optional, avoids GitHub API rate limits
 bids_inventory update --config ~/bids_inventory_config.yml
 ```
+
+Useful options (see `bids_inventory update --help`):
+
+- `--jobs N`: number of datasets to install, and of NIfTI headers to read, in parallel (default: 4)
+- `--log-dir DIR`: where warnings and errors are saved, in 2 separate files (default: `logs`).
+  Each warning and error mentions the dataset it comes from, for example `[ds004000 171/1380]`.

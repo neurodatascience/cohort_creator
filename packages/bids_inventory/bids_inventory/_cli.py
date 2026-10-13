@@ -13,7 +13,7 @@ from pathlib import Path
 from rich_argparse import RichHelpFormatter
 
 from bids_inventory._version import __version__
-from bids_inventory.logger import bi_logger
+from bids_inventory.logger import add_log_files, bi_logger
 
 bi_log = bi_logger()
 
@@ -66,6 +66,16 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         required=False,
         default=4,
         type=int,
+    )
+    update_parser.add_argument(
+        "--log-dir",
+        help="""
+        Folder where to save the warnings and the errors of the update,
+        in 2 separate files.
+        """,
+        required=False,
+        default=Path("logs"),
+        type=Path,
     )
     update_parser.add_argument(
         "--config",
@@ -144,4 +154,10 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
                 sys.exit(1)
             os.environ[CONFIG_ENV_VAR] = str(args.config.resolve())
 
-        update(debug=args.debug, jobs=args.jobs)
+        warnings_log, errors_log = add_log_files(args.log_dir)
+        try:
+            update(debug=args.debug, jobs=args.jobs)
+        finally:
+            for log_file in [warnings_log, errors_log]:
+                if log_file.exists():
+                    bi_log.info(f"See {log_file}")

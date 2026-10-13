@@ -196,7 +196,7 @@ def test_get_duration_ds002041(install_dataset):
     get_duration(ds002041, datatypes, tasks)
 
 
-def test_get_meeg_header_unreadable(tmp_path):
+def test_get_meeg_header_unreadable(tmp_path, caplog):
     """A malformed header should be skipped with a warning, not stop the update."""
     from datalad import api
 
@@ -208,8 +208,43 @@ def test_get_meeg_header_unreadable(tmp_path):
     header.with_suffix(".vmrk").write_bytes(b"")
     ds.save(result_renderer="disabled")
 
-    with pytest.warns(UserWarning, match="Could not read header"):
-        assert get_meeg_header(ds.pathobj, header) == (None, 0)
+    assert get_meeg_header(ds.pathobj, header) == (None, 0)
+    assert "Could not read header of sub-01/eeg/sub-01_task-rest_eeg.vhdr" in caplog.text
+
+
+def test_get_meeg_header_mne_warnings_are_logged(tmp_path, caplog, recwarn):
+    """Warnings raised by MNE while reading a header are logged, not printed."""
+    from datalad import api
+
+    ds = api.create(tmp_path / "ds", result_renderer="disabled")
+    eeg = ds.pathobj / "sub-01" / "eeg"
+    eeg.mkdir(parents=True)
+    header = eeg / "sub-01_task-rest_eeg.vhdr"
+    header.write_text(
+        "Brain Vision Data Exchange Header File Version 1.0\n"
+        "[Common Infos]\n"
+        "Codepage=UTF-8\n"
+        "DataFile=sub-01_task-rest_eeg.eeg\n"
+        "MarkerFile=sub-01_task-rest_eye_closed_eeg.vmrk\n"
+        "DataFormat=BINARY\n"
+        "DataOrientation=MULTIPLEXED\n"
+        "NumberOfChannels=1\n"
+        "SamplingInterval=1000\n"
+        "[Binary Infos]\n"
+        "BinaryFormat=INT_16\n"
+        "[Channel Infos]\n"
+        "Ch1=Fp1,,0.1,µV\n"
+    )
+    header.with_suffix(".vmrk").write_text("Brain Vision Data Exchange Marker File, Version 1.0\n")
+    header.with_suffix(".eeg").write_bytes(b"\x00" * 20)
+    ds.save(result_renderer="disabled")
+    caplog.set_level("WARNING", logger="bids_inventory")
+
+    info, n_samples = get_meeg_header(ds.pathobj, header)
+
+    assert info["sfreq"] == 1000
+    assert "MarkerFile 'sub-01_task-rest_eye_closed_eeg.vmrk' not found" in caplog.text
+    assert not [w for w in recwarn if "MarkerFile" in str(w.message)]
 
 
 def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, caplog):

@@ -7,12 +7,13 @@ import os
 import shutil
 import subprocess
 import sys
+import warnings
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
-from warnings import warn
 
+import mne
 import numpy as np
 import pandas as pd
 import requests
@@ -31,7 +32,7 @@ from bids_inventory.listing import (
     known_datasets_df,
     save_known_datasets,
 )
-from bids_inventory.logger import bi_logger
+from bids_inventory.logger import bi_logger, set_current_dataset
 
 DATASET_TYPE = dict[
     str,
@@ -53,6 +54,8 @@ cc_log = bi_logger()
 
 logging.getLogger("datalad").setLevel(logging.WARNING)
 logging.getLogger("datalad.gitrepo").setLevel(logging.ERROR)
+# MNE prints info messages ("Setting channel info structure...") when reading headers
+mne.set_log_level("WARNING")
 
 
 CONFIG_ENV_VAR = "BIDS_INVENTORY_CONFIG"
@@ -446,52 +449,57 @@ def list_datasets_in_dir(
     derivatives = known_derivatives()
 
     failed: list[str] = []
-    with progress_bar(text="Updating") as progress:
-        task = progress.add_task(description="updating", total=len(raw_datasets))
+    try:
+        with progress_bar(text="Updating") as progress:
+            task = progress.add_task(description="updating", total=len(raw_datasets))
 
-        i = 0
-        for dataset_pth in raw_datasets:
-            print()
-            cc_log.info(f"{dataset_pth.name}")
+            i = 0
+            for index, dataset_pth in enumerate(raw_datasets, start=1):
+                print()
+                cc_log.info(f"{dataset_pth.name}")
+                set_current_dataset(f"{dataset_pth.name} {index}/{len(raw_datasets)}")
 
-            if not _check_dataset(dataset_pth):
+                if not _check_dataset(dataset_pth):
+                    progress.update(task, advance=1)
+                    continue
+                i += 1
+                if debug and i > MIN_NB_DATASETS:
+                    break
+
+                # update dataset to make sure we get the latest version
+                ds = api.Dataset(dataset_pth)
+                if update_merge:
+                    ds.update(how="merge", result_renderer="disabled")
+                try:
+                    _get_file(ds, dataset_pth / "dataset_description.json")
+                except IncompleteResultsError:
+                    cc_log.warning("Could not get dataset_description.json or is missing.")
+
+                # for openneuro datasets try to eanabe annex remote on S3
+                # to allow using datalad fsspec
+                # if dataset_pth.name.startswith('ds'):
+                enable_S3_remote(dataset_pth)
+
+                try:
+                    dataset = get_info_dataset(dataset_pth, study_prefix, jobs=jobs)
+                    dataset = add_derivatives(dataset, dataset_pth, derivatives)
+                except Exception:
+                    cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
+                    failed.append(dataset_pth.name)
+                    progress.update(task, advance=1)
+                    continue
+
+                if dataset["name"] in datasets["name"]:
+                    # raise ValueError(f"dataset {dataset['name']} already in datasets")
+                    cc_log.warning(f"dataset {dataset['name']} already in datasets")
+
+                for keys in datasets:
+                    datasets[keys].append(dataset[keys])
+
                 progress.update(task, advance=1)
-                continue
-            i += 1
-            if debug and i > MIN_NB_DATASETS:
-                break
 
-            # update dataset to make sure we get the latest version
-            ds = api.Dataset(dataset_pth)
-            if update_merge:
-                ds.update(how="merge")
-            try:
-                ds.get(dataset_pth / "dataset_description.json")
-            except IncompleteResultsError:
-                cc_log.warning("Could not get dataset_description.json or is missing.")
-
-            # for openneuro datasets try to eanabe annex remote on S3
-            # to allow using datalad fsspec
-            # if dataset_pth.name.startswith('ds'):
-            enable_S3_remote(dataset_pth)
-
-            try:
-                dataset = get_info_dataset(dataset_pth, study_prefix, jobs=jobs)
-                dataset = add_derivatives(dataset, dataset_pth, derivatives)
-            except Exception:
-                cc_log.exception(f"Could not index {dataset_pth.name}: skipping it.")
-                failed.append(dataset_pth.name)
-                progress.update(task, advance=1)
-                continue
-
-            if dataset["name"] in datasets["name"]:
-                # raise ValueError(f"dataset {dataset['name']} already in datasets")
-                cc_log.warning(f"dataset {dataset['name']} already in datasets")
-
-            for keys in datasets:
-                datasets[keys].append(dataset[keys])
-
-            progress.update(task, advance=1)
+    finally:
+        set_current_dataset(None)
 
     if failed:
         cc_log.error(f"{len(failed)} datasets could not be indexed: {sorted(failed)}")
@@ -615,10 +623,10 @@ def list_participants_tsv_columns(participant_tsv: Path) -> list[str]:
         df = pd.read_csv(participant_tsv, sep="\t")
         return df.columns.tolist()
     except pd.errors.ParserError:
-        warn(f"Could not parse: {participant_tsv}")
+        cc_log.warning(f"Could not parse: {participant_tsv}")
         return ["cannot be parsed"]
     except UnicodeDecodeError:
-        warn(f"Could not parse: {participant_tsv}")
+        cc_log.warning(f"Could not parse: {participant_tsv}")
         return ["cannot be parsed"]
 
 
@@ -684,7 +692,7 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
             repetition_time: float = float(tmp[1])
             return (n_samples, repetition_time)
         except (ValueError, IndexError):
-            cc_log.error(f"   Could not get duration for: {filepath.relative_to(dataset_pth)}")
+            cc_log.error(f"Could not get duration for: {filepath.relative_to(dataset_pth)}")
             cc_log.debug(f"{head_stderr}\n{result.stderr}")
             return (0, np.nan)
 
@@ -697,37 +705,49 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     return (0, np.nan)
 
 
+def _get_file(ds: api.Dataset, filepath: Path) -> None:
+    """Get the content of a file without datalad printing its results."""
+    ds.get(filepath, result_renderer="disabled")
+    cc_log.debug(f"  got {filepath}")
+
+
 def get_meeg_header(dataset_pth: Path, filepath: Path) -> tuple[None | dict[str, Any], int]:
     ds = api.Dataset(dataset_pth)
     try:
-        ds.get(filepath)
-        ds.get(filepath.with_suffix(".vmrk"))
-        (
-            info,
-            _,
-            _,
-            _,
-            n_samples,
-            _,
-            _,
-            _,
-        ) = _get_hdr_info(
-            filepath,
-            eog=("HEOGL", "HEOGR", "VEOGb"),
-            misc="auto",
-            scale=1.0,
-        )
+        _get_file(ds, filepath)
+        _get_file(ds, filepath.with_suffix(".vmrk"))
+        # MNE reports problems with the header as python warnings:
+        # log them instead of printing them
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            (
+                info,
+                _,
+                _,
+                _,
+                n_samples,
+                _,
+                _,
+                _,
+            ) = _get_hdr_info(
+                filepath,
+                eog=("HEOGL", "HEOGR", "VEOGb"),
+                misc="auto",
+                scale=1.0,
+            )
+        for w in caught:
+            cc_log.warning(f"{filepath.relative_to(dataset_pth)}: {w.message}")
         return info, n_samples
     except IncompleteResultsError:
-        warn(f"IncompleteResultsError for {filepath}", stacklevel=2)
+        cc_log.warning(f"Could not get {filepath.relative_to(dataset_pth)}")
         return None, 0
     except FileNotFoundError:
-        warn(f"FileNotFoundError for {filepath}", stacklevel=2)
+        cc_log.warning(f"File not found: {filepath.relative_to(dataset_pth)}")
         return None, 0
     except Exception as e:
         # headers in third party datasets can be malformed in many ways:
         # one bad file should not stop the update
-        warn(f"Could not read header of {filepath}: {e!r}", stacklevel=2)
+        cc_log.warning(f"Could not read header of {filepath.relative_to(dataset_pth)}: {e!r}")
         return None, 0
 
 
@@ -941,7 +961,7 @@ def get_institutions(dataset_pth: Path) -> list[str]:
 
         cc_log.debug(f"  {json_file}")
         try:
-            ds.get(json_file)
+            _get_file(ds, Path(json_file))
             with open(json_file) as f:
                 json_dict = json.load(f)
                 if tmp := construct_institution_string(json_dict).strip(", "):
@@ -1001,7 +1021,7 @@ def check_task(
         any(mod in datatypes for mod in ["func", "eeg", "ieeg", "meg", "beh", "motion"])
         and not tasks
     ):
-        warn(
+        cc_log.warning(
             f"no tasks found in {dataset_pth} "
             f"with datatypes {datatypes} "
             f"and files {list_data_files(dataset_pth, sessions)}"
