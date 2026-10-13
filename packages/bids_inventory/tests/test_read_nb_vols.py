@@ -13,10 +13,15 @@ nb = pytest.importorskip("nibabel")
 
 
 @pytest.mark.parametrize("extension", [".nii", ".nii.gz"])
-def test_read_nb_vols(tmp_path, extension):
+@pytest.mark.parametrize("image_class", ["Nifti1Image", "Nifti2Image"])
+@pytest.mark.parametrize("header_extension", [False, True])
+def test_read_nb_vols(tmp_path, extension, image_class, header_extension):
     """Only the beginning of the file is streamed to the script, compressed or not."""
-    img = nb.Nifti1Image(np.zeros((4, 4, 4, 7), dtype=np.int16), affine=np.eye(4))
+    img = getattr(nb, image_class)(np.zeros((4, 4, 4, 7), dtype=np.int16), affine=np.eye(4))
     img.header.set_zooms((2.0, 2.0, 2.0, 1.5))
+    if header_extension:
+        # extensions longer than what is streamed must not prevent reading the header
+        img.header.extensions.append(nb.nifti1.Nifti1Extension("comment", b"x" * 4000))
     filename = tmp_path / f"sub-01_task-rest_bold{extension}"
     nb.save(img, filename)
 

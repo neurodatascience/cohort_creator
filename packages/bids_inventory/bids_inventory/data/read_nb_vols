@@ -13,6 +13,7 @@ import sys
 import nibabel as nb
 
 GZIP_MAGIC = b"\x1f\x8b"
+HEADER_CLASSES = {348: nb.Nifti1Header, 540: nb.Nifti2Header}
 
 # Read the input only once:
 # trying to decompress the stream directly consumes its first bytes
@@ -20,10 +21,19 @@ GZIP_MAGIC = b"\x1f\x8b"
 # so the header would then be read from the wrong offset.
 data = sys.stdin.buffer.read()
 
-stream = io.BytesIO(data)
 if data.startswith(GZIP_MAGIC):
-    stream = gzip.GzipFile(fileobj=stream, mode="rb")
+    # only the beginning of the file is streamed: only decompress what is needed
+    data = gzip.GzipFile(fileobj=io.BytesIO(data), mode="rb").read(max(HEADER_CLASSES))
 
-header = nb.Nifti1Image.from_stream(stream).header
+# Only parse the fixed size header and not the header extensions
+# that can be longer than what was streamed (and are not needed here).
+for byteorder in ("little", "big"):
+    sizeof_hdr = int.from_bytes(data[:4], byteorder)
+    if sizeof_hdr in HEADER_CLASSES:
+        break
+else:
+    sys.exit(f"Not a NIfTI-1 or NIfTI-2 header (sizeof_hdr={data[:4]!r})")
+
+header = HEADER_CLASSES[sizeof_hdr].from_fileobj(io.BytesIO(data[:sizeof_hdr]))
 
 print(header["dim"][4], header.get_zooms()[3])
