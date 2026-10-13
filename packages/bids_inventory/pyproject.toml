@@ -10,9 +10,11 @@ classifiers = [
     "License :: OSI Approved",
     "Programming Language :: Python",
     "Topic :: Scientific/Engineering",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15"
 ]
 dependencies = ["numpy", "pandas", "rich", "rich_argparse"]
 description = "Keeps an inventory of publicly available BIDS datasets."
@@ -21,7 +23,7 @@ license = { text = "MIT" }
 maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
 name = "bids-inventory"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 # dash app to browse the listing: `bids_inventory browse`
