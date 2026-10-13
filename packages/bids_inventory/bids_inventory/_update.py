@@ -180,7 +180,8 @@ def _install_openneuro_dataset(data_pth: Path) -> tuple[str, str]:
         text=True,
     )
     if result.returncode != 0:
-        return "failed", result.stderr.strip().splitlines()[-1] if result.stderr.strip() else ""
+        cc_log.debug(f"{result.stdout}\n{result.stderr}")
+        return "failed", _error_reason(result.stdout, result.stderr)
     return "installed", ""
 
 
@@ -778,16 +779,32 @@ def _read_nifti_header(dataset_pth: Path, filepath: Path) -> tuple[tuple[int, fl
         cc_log.debug(f"{head_stderr}\n{result.stderr}")
         # the error from datalad (could not stream the file) explains
         # the error from the header reader (nothing to read): report it first
-        reason = _last_line(head_stderr) or _last_line(result.stderr) or "unknown error"
+        reason = _error_reason(head_stderr) or _error_reason(result.stderr) or "unknown error"
         # the file is already named in the error message: keep the reason short
         for redundant in [f" within {dataset_pth}", f" for {filepath.relative_to(dataset_pth)}"]:
             reason = reason.replace(redundant, "")
-        return None, reason.removeprefix("[ERROR] ")
+        return None, reason
 
 
-def _last_line(text: str) -> str:
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    return lines[-1] if lines else ""
+def _error_reason(*outputs: str) -> str:
+    """Find the line explaining why a datalad command failed.
+
+    datalad also reports progress as "[INFO] ..." lines on stderr,
+    so the last line is often not the error:
+    prefer error lines, then any line that is not information.
+    """
+    lines = [line.strip() for output in outputs for line in output.splitlines() if line.strip()]
+    is_error = re.compile(r"^\[ERROR\]|^(error|fatal):|\((error|impossible)\):", re.IGNORECASE)
+    errors = [line for line in lines if is_error.search(line)]
+    not_info = [
+        line
+        for line in lines
+        if not line.startswith(("[INFO]", "|")) and not re.search(r"\((ok|notneeded)\):", line)
+    ]
+    for candidates in (errors, not_info, lines):
+        if candidates:
+            return candidates[-1].removeprefix("[ERROR]").strip()
+    return ""
 
 
 def _get_file(ds: api.Dataset, filepath: Path) -> None:
