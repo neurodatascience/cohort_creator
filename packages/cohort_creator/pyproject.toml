@@ -15,9 +15,11 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: Unix",
     "Operating System :: MacOS",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15"
 ]
 dependencies = [
     "bids-inventory",
@@ -33,7 +35,7 @@ license = { text = "MIT" }
 maintainers = [{ name = "Rémi Gau", email = "remi.gau@gmail.com" }]
 name = "cohort_creator"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [project.optional-dependencies]
 dev = [
