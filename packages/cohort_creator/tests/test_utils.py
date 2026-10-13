@@ -86,7 +86,7 @@ def test_get_dataset_url():
     [
         ("ds000001", "mriqc", False),
         ("ds000001", "fmriprep", False),
-        ("ds002158", "fmriprep", True),
+        ("ds002785", "fmriprep", True),
     ],
 )
 def test_derivative_in_subfolder(dataset_name, dataset_type, expected):
