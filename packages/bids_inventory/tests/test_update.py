@@ -254,7 +254,7 @@ def test_install_missing_datasets_in_parallel(tmp_path, monkeypatch, capsys, cap
     monkeypatch.setattr(
         _update,
         "list_openneuro_raw",
-        lambda use_superdataset, reindex=False: {"ds000001", "ds000002", "ds999999"},
+        lambda reindex=False: {"ds000001", "ds000002", "ds999999"},
     )
     monkeypatch.setattr(_update, "config_path", lambda *keys: tmp_path)
     (tmp_path / "ds000002").mkdir()
@@ -528,3 +528,57 @@ def test_get_scan_duration_retries_once(monkeypatch, tmp_path):
     bold = tmp_path / "sub-01_task-rest_bold.nii.gz"
     assert _update.get_scan_duration(tmp_path, bold) == (180, 2.0)
     assert len(calls) == 2
+
+
+def test_update_non_openneuro(tmp_path, monkeypatch, caplog):
+    """Datasets not on OpenNeuro are indexed with a prefix, and only once."""
+    from bids_inventory import _update
+    from bids_inventory.listing import _load_known_datasets
+
+    base_dir = tmp_path / "non_openneuro"
+    for folder in ["abide/Caltech", "abide/NYU", "cneuromod/friends", "cneuromod/code"]:
+        (base_dir / folder).mkdir(parents=True)
+    listing = tmp_path / "non_openneuro.jsonl"
+    listing.write_text("")
+
+    indexed = []
+
+    def fake_get_info_dataset(dataset_pth, study_prefix, jobs=1):
+        indexed.append(f"{study_prefix}{dataset_pth.name}")
+        return _update.new_dataset(f"{study_prefix}{dataset_pth.name}")
+
+    monkeypatch.setattr(_update, "get_info_dataset", fake_get_info_dataset)
+    monkeypatch.setattr(_update, "add_derivatives", lambda dataset, *args: dataset)
+    monkeypatch.setattr(_update, "known_derivatives", lambda: [])
+    monkeypatch.setattr(_update, "_check_dataset", lambda dataset_pth: True)
+    monkeypatch.setattr(_update, "enable_S3_remote", lambda dataset_pth: None)
+    monkeypatch.setattr(_update, "_get_file", lambda ds, filepath: None)
+    monkeypatch.setattr(_update, "config_path", lambda *keys: base_dir)
+    monkeypatch.setattr(_update, "_non_openneuro_listing", lambda: listing)
+    monkeypatch.setattr(
+        _update, "_load_known_datasets", lambda f: _load_or_empty(_load_known_datasets, f)
+    )
+
+    _update.update(debug=False, source="non-openneuro")
+
+    # only the cneuromod datasets that are listed are indexed
+    assert indexed == ["ABIDE_Caltech", "ABIDE_NYU", "CNEUROMOD_friends"]
+    assert _load_known_datasets(listing)["name"].tolist() == indexed
+    # missing collections are skipped with a warning
+    assert "corr not found" in caplog.text
+
+    # a second run does not index them again
+    indexed.clear()
+    _update.update(debug=False, source="non-openneuro")
+    assert indexed == []
+
+
+def _load_or_empty(load, listing):
+    """Load a listing, or return an empty one if the file is empty."""
+    import pandas as pd
+
+    from bids_inventory._update import init_dataset
+
+    if listing.stat().st_size == 0:
+        return pd.DataFrame(init_dataset())
+    return load(listing)

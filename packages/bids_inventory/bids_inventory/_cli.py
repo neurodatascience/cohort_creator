@@ -66,6 +66,16 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
         type=int,
     )
     update_parser.add_argument(
+        "--source",
+        help="""
+        Which listing to update: datasets on OpenNeuro,
+        or other datasets (ABIDE, ABIDE 2, ADHD-200, CoRR, CNeuroMod)
+        installed in the folder set by 'local_paths.non_openneuro' in the configuration.
+        """,
+        choices=["openneuro", "non-openneuro"],
+        default="openneuro",
+    )
+    update_parser.add_argument(
         "--reindex",
         help="""
         Index again all the datasets, not only those missing from the listing,
@@ -163,7 +173,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
 
         warnings_log, errors_log = add_log_files(args.log_dir)
         try:
-            update(debug=args.debug, jobs=args.jobs, reindex=args.reindex)
+            update(debug=args.debug, jobs=args.jobs, reindex=args.reindex, source=args.source)
         finally:
             for log_file in [warnings_log, errors_log]:
                 if log_file.exists():

@@ -50,70 +50,95 @@ pip install -e './packages/bids_inventory[update]'
 bids_inventory update
 ```
 
-The listing is updated every week by the `update_listing.yml` GitHub workflow.
+The OpenNeuro listing is updated every week by the `update_listing.yml` GitHub workflow.
 
-See `tools/README.md` to regenerate the listing from scratch.
+Everything is done with `bids_inventory update` (see `bids_inventory update --help`):
 
-## Running the update locally
+| command | what it does |
+|---|---|
+| `bids_inventory update` | installs and indexes the OpenNeuro datasets that are not in the listing yet |
+| `bids_inventory update --reindex` | indexes again all the OpenNeuro datasets, for example after new fields were added to the listing (also installs the datasets missing locally) |
+| `bids_inventory update --source non-openneuro` | indexes the datasets that are not on OpenNeuro (ABIDE, ABIDE 2, ADHD-200, CoRR, CNeuroMod) that are not in `non_openneuro.jsonl` yet |
+| `bids_inventory update --source non-openneuro --reindex` | indexes again all of them |
 
-### Install all OpenNeuro datasets
+Useful options:
 
-The datasets are installed with [datalad](https://www.datalad.org/)
-from the datalad superdataset.
-Only the git history and file names are downloaded (not the data),
-but there are a lot of datasets, so this takes a while.
-
-```bash
-# where to install the superdataset, for example ~/datalad
-cd ~/datalad
-datalad install ///
-cd datasets.datalad.org
-
-# raw datasets: install all of them, 10 at a time
-datalad install openneuro
-cd openneuro
-datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
-cd ..
-
-# derivatives (fmriprep, mriqc...): same thing
-datalad install openneuro-derivatives
-cd openneuro-derivatives
-datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
-```
-
-### Configure and run the update
-
-Tell the update where those datasets are
-in a configuration file outside of the repository
-(see `tools/README.md` for all the settings):
-
-```yaml
-# ~/bids_inventory_config.yml
-local_paths:
-    datalad:
-        OpenNeuroDatasets: ~/datalad/datasets.datalad.org/openneuro
-        OpenNeuroDerivatives: ~/datalad/datasets.datalad.org/openneuro-derivatives
-    openneuro:
-        # where new datasets (not yet in the listing) are installed
-        OpenNeuroDatasets: ~/openneuro
-```
-
-```bash
-pip install -e './packages/bids_inventory[update]'
-export GITHUB_TOKEN=...  # optional, avoids GitHub API rate limits
-bids_inventory update --config ~/bids_inventory_config.yml
-```
-
-Useful options (see `bids_inventory update --help`):
-
-- `--jobs N`: number of datasets to install, and of NIfTI headers to read, in parallel (default: 4)
-- `--reindex`: index again all the datasets, not only those missing from the listing,
-  for example after new fields were added to the listing.
-  Each entry is replaced in place, so the listing stays complete.
-  If it is stopped, run the same command again to continue where it stopped.
+- `--config FILE`: your local settings (see below).
+- `--jobs N`: number of datasets to install, and of NIfTI headers to read, in parallel (default: 4).
 - `--log-dir DIR`: where warnings and errors are saved, in 2 separate files (default: `logs`).
   Each warning and error mentions the dataset it comes from, for example `[ds004000 171/1380]`.
 
 The listing is saved after each dataset is indexed:
-if the update is stopped, run the same command again
-and it continues with the datasets that are not in the listing yet.
+if an update is stopped, run the same command again to continue where it stopped.
+With `--reindex`, each entry is replaced in place, so the listing stays complete.
+
+### Configuration
+
+The update needs a few local settings.
+Do not edit `bids_inventory/data/config.yml`:
+it only contains the default (empty) settings and documents each of them.
+Instead create your own YAML file, outside of the repository,
+with only the settings you need:
+
+```yaml
+# ~/bids_inventory_config.yml
+auth:
+    # text file containing a GitHub token (or set the GITHUB_TOKEN environment variable)
+    token_file: ~/tokens/github_token.txt
+local_paths:
+    openneuro:
+        # where the OpenNeuro datasets are installed
+        OpenNeuroDatasets: ~/openneuro
+    # where the datasets that are not on OpenNeuro are installed
+    # (only needed for --source non-openneuro)
+    non_openneuro: ~/non_openneuro
+```
+
+and pass it with `--config ~/bids_inventory_config.yml`,
+or set the `BIDS_INVENTORY_CONFIG` environment variable to its path.
+If a setting needed by the update is missing, the error message says which one.
+
+### Installing the datasets
+
+The datasets are installed with [datalad](https://www.datalad.org/):
+only their git history and file names are downloaded, not the data.
+
+- **OpenNeuro**: `bids_inventory update` installs the datasets it needs
+  in `local_paths.openneuro.OpenNeuroDatasets`.
+  To install all of them faster beforehand, you can use the datalad superdataset
+  and point `local_paths.openneuro.OpenNeuroDatasets` to its `openneuro` folder:
+
+  ```bash
+  cd ~/datalad
+  datalad install ///
+  cd datasets.datalad.org
+  datalad install openneuro
+  cd openneuro
+  datalad -f '{path}' subdatasets | xargs -n 1 -P 10 datalad install
+  ```
+
+- **Other datasets**: install them with `tools/install_extra_datasets.sh`,
+  in the folder set by `local_paths.non_openneuro`:
+
+  ```bash
+  packages/bids_inventory/tools/install_extra_datasets.sh ~/non_openneuro
+  ```
+
+There are many datasets: make sure you have enough disk space.
+
+### Skipping datasets
+
+Datasets listed in `bids_inventory/data/skipped_datasets.csv` are never installed or indexed,
+for example datasets deleted from OpenNeuro that are still mirrored on GitHub
+(their file contents cannot be downloaded).
+Each dataset is listed with the reason why it is skipped.
+
+### GitHub API tokens
+
+Listing the datasets of the OpenNeuro GitHub organizations needs several calls to the GitHub API,
+which limits the number of requests per hour.
+To increase this limit, create a GitHub API token and either:
+
+- set the `GITHUB_TOKEN` environment variable (it takes precedence),
+- or save it to a text file (not in the repository)
+  and set `auth.token_file` to its path in your configuration file.
