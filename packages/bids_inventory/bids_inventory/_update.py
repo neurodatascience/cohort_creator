@@ -1358,15 +1358,30 @@ def construct_institution_string(json_dict: Any) -> str:
 
 
 def get_dataset_size(dataset_pth: Path) -> str:
+    """Return the total size of the annexed files, for example "2.2 GB".
+
+    Read from the summary line of ``datalad status --annex all``:
+    "3235 annex'd files (0.0 B/54.0 GB present/total size)".
+    """
     result = subprocess.run(
-        f"datalad status -d {dataset_pth} --annex all", shell=True, capture_output=True, text=True
+        [_datalad_executable(), "status", "-d", str(dataset_pth), "--annex", "all"],
+        capture_output=True,
+        text=True,
     )
-    size = result.stdout.split("/")
-    if len(size) > 1:
-        size = result.stdout.split("/")[1].split(" ")[:2]
-        return " ".join(size)
-    else:
-        return "n/a"
+    return parse_dataset_size(result.stdout)
+
+
+def parse_dataset_size(status_output: str) -> str:
+    """Parse the total size from the output of ``datalad status --annex all``.
+
+    The output can also list modified or untracked files,
+    so only the summary line is used.
+    """
+    if match := re.search(
+        r"\(([0-9.]+ ?[KMGTP]?B)/([0-9.]+ ?[KMGTP]?B) present/total size\)", status_output
+    ):
+        return match.group(2)
+    return "n/a"
     # TODO
     # possible to get for each folder by doing
     # datalad -f '{bytesize}' status --annex -- <paths> | paste -sd+ | bc

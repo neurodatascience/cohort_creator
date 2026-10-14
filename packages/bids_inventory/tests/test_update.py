@@ -792,6 +792,27 @@ def test_update_openneuro_indexes_superdataset(superdataset, tmp_path, monkeypat
     assert _load_known_datasets(listing)["name"].tolist() == ["ds000001", "ds000002", "ds000004"]
 
 
+@pytest.mark.parametrize(
+    "output, expected",
+    [
+        ("3235 annex'd files (0.0 B/54.0 GB present/total size)\nnothing to save", "54.0 GB"),
+        # other files can be listed before the summary
+        (
+            "untracked: /data/ds003816/ses-01 (directory)\n"
+            " modified: config (file)\n"
+            "3235 annex'd files (0.0 B/54.0 GB present/total size)\n",
+            "54.0 GB",
+        ),
+        ("12 annex'd files (1.2 MB/740.5 KB present/total size)", "740.5 KB"),
+        ("nothing to save, working tree clean", "n/a"),
+    ],
+)
+def test_parse_dataset_size(output, expected):
+    from bids_inventory._update import parse_dataset_size
+
+    assert parse_dataset_size(output) == expected
+
+
 def test_get_list_of_datasets_ignores_empty_repositories(monkeypatch):
     """OpenNeuro creates empty repositories for datasets that are not public."""
     from bids_inventory import _update

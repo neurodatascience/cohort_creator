@@ -44,3 +44,12 @@ def test_skipped_datasets_not_in_listing():
     assert skipped
     assert all(reason for reason in skipped.values())
     assert not set(skipped) & set(known_datasets_df()["name"])
+
+
+def test_sizes_are_sizes():
+    """The size of each dataset is a size, for example '2.2 GB', or missing."""
+    from bids_inventory.listing import known_datasets_df
+
+    sizes = known_datasets_df()["size"].dropna()
+    not_sizes = sizes[~sizes.astype(str).str.fullmatch(r"[0-9.]+ ?[KMGTP]?B")]
+    assert not_sizes.empty, not_sizes.tolist()[:10]
