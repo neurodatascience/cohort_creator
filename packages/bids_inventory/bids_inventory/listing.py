@@ -2,6 +2,7 @@
 
 import functools
 import json
+from collections.abc import Iterable
 from math import isnan
 from pathlib import Path
 from typing import Any
@@ -68,6 +69,34 @@ def skipped_datasets() -> dict[str, str]:
     """
     df = pd.read_csv(_skipped_datasets_file(), dtype=str, keep_default_na=False)
     return dict(zip(df["name"], df["reason"]))
+
+
+def remove_datasets(names: Iterable[str], listing: Path) -> list[str]:
+    """Remove datasets from a listing, for example so that the next update indexes them again.
+
+    The other entries are kept as they are.
+    If a re-index is in progress (``<listing>.reindexed``),
+    the datasets are also removed from it so that it indexes them again.
+
+    Returns
+    -------
+    The names of the datasets that were removed.
+    """
+    to_remove = set(names)
+    lines = listing.read_text(encoding="utf-8").splitlines(keepends=True)
+    kept = [line for line in lines if json.loads(line)["name"] not in to_remove]
+    removed = sorted({json.loads(line)["name"] for line in lines} & to_remove)
+    if removed:
+        tmp_file = listing.with_name(f"{listing.name}.tmp")
+        tmp_file.write_text("".join(kept), encoding="utf-8")
+        tmp_file.replace(listing)
+
+    reindex_file = listing.with_name(f"{listing.name}.reindexed")
+    if reindex_file.exists():
+        done = reindex_file.read_text().splitlines()
+        reindex_file.write_text("".join(f"{x}\n" for x in done if x.strip() not in to_remove))
+
+    return removed
 
 
 def _load_known_datasets(listing: Path) -> pd.DataFrame:
