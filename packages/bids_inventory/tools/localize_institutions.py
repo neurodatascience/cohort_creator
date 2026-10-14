@@ -1,12 +1,14 @@
 """Plot institutions locations.
 
 Geocodes the institutions found in the inventory with Nominatim (OpenStreetMap)
-and saves them to locations.tsv: one row per location,
-with all the institution names found at this location in the ``names`` column
-(as a JSON list).
+and saves them to locations.tsv: one row per location.
 
-Institutions already in locations.tsv are not geocoded again:
-delete the file to geocode all of them again.
+The same institution is often written differently by different datasets:
+``bids_inventory/data/institutions.json`` lists, for each institution of locations.tsv,
+all the institution names of the inventory found at the same location.
+
+Institutions already in these files are not geocoded again:
+delete them to geocode all the institutions again.
 
 Usage: python localize_institutions.py
 (needs geopy: pip install geopy)
@@ -24,8 +26,10 @@ from geopy.location import Location
 from rich import print
 
 from bids_inventory import load_inventory
+from bids_inventory.listing import _data_dir
 
 LOCATIONS_FILE = Path(__file__).parent / "locations.tsv"
+INSTITUTIONS_FILE = _data_dir() / "institutions.json"
 FIGURE_FILE = Path(__file__).parent / "locations.html"
 
 COLUMNS = [
@@ -37,7 +41,6 @@ COLUMNS = [
     "nb_subjects",
     "latitude",
     "longitude",
-    "names",
 ]
 LOCATION_COLUMNS = ["address", "city", "country", "latitude", "longitude"]
 
@@ -56,9 +59,13 @@ DEBUG = False
 
 
 def main() -> None:
-    locations = get_all_locations(load_inventory())
+    locations, institutions = get_all_locations(load_inventory())
     locations.to_csv(LOCATIONS_FILE, index=False, sep="\t", lineterminator="\n")
     print(f"Saved {len(locations)} locations to {LOCATIONS_FILE}")
+    with open(INSTITUTIONS_FILE, "w", encoding="utf-8") as f:
+        json.dump(institutions, f, indent=4, ensure_ascii=False, sort_keys=True)
+        f.write("\n")
+    print(f"Saved to {INSTITUTIONS_FILE}")
 
     located = locations.dropna(subset=["latitude", "longitude"])
     fig = px.scatter_geo(
@@ -116,10 +123,15 @@ def clean_address(institution: str) -> str:
     return ", ".join(parts)
 
 
-def get_all_locations(df: pd.DataFrame) -> pd.DataFrame:
+def get_all_locations(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, list[str]]]:
     """Geocode the institutions of the inventory and merge those at the same location.
 
     Reuses the locations of the institutions already in locations.tsv.
+
+    Returns
+    -------
+    The locations (one row per location),
+    and the institution names found at each of them.
     """
     institutions = count_institutions(df)
     known = _known_locations()
@@ -168,14 +180,21 @@ def get_all_locations(df: pd.DataFrame) -> pd.DataFrame:
     return merge_locations(pd.DataFrame(rows))
 
 
-def merge_locations(institutions: pd.DataFrame) -> pd.DataFrame:
+def merge_locations(
+    institutions: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict[str, list[str]]]:
     """Merge the institutions found at the same location.
 
     The name of a location is the name of its institution found in most datasets.
     Institutions without location are kept as they are.
+
+    Returns
+    -------
+    The locations, and for each of them the institution names found there.
     """
     located = institutions.dropna(subset=["address"])
     rows = []
+    names: dict[str, list[str]] = {}
     for _, group in located.groupby("address", sort=False):
         group = group.sort_values(["count", "name"], ascending=[False, True])
         first = group.iloc[0]
@@ -185,25 +204,31 @@ def merge_locations(institutions: pd.DataFrame) -> pd.DataFrame:
                 "count": group["count"].sum(),
                 "nb_subjects": group["nb_subjects"].sum(),
                 **{k: first[k] for k in LOCATION_COLUMNS},
-                "names": json.dumps(sorted(group["name"]), ensure_ascii=False),
             }
         )
+        names[first["name"]] = sorted(group["name"])
     for _, row in institutions[institutions["address"].isna()].iterrows():
-        rows.append({**row.to_dict(), "names": json.dumps([row["name"]], ensure_ascii=False)})
-    return pd.DataFrame(rows, columns=COLUMNS).sort_values("name", ignore_index=True)
+        rows.append(row.to_dict())
+        names[row["name"]] = [row["name"]]
+    locations = pd.DataFrame(rows, columns=COLUMNS).sort_values("name", ignore_index=True)
+    return locations, names
 
 
 def _known_locations() -> dict[str, dict[str, object]]:
-    """Return the location of each institution name already in locations.tsv."""
+    """Return the location of each institution name already in locations.tsv.
+
+    Including the other names of each institution listed in institutions.json.
+    """
     if not LOCATIONS_FILE.exists():
         return {}
     locations = pd.read_csv(LOCATIONS_FILE, sep="\t")
-    if "names" not in locations:  # file saved before institutions were merged
-        locations["names"] = locations["name"].apply(lambda x: json.dumps([x]))
+    names: dict[str, list[str]] = {}
+    if INSTITUTIONS_FILE.exists():
+        names = json.loads(INSTITUTIONS_FILE.read_text(encoding="utf-8"))
     known = {}
     for _, row in locations.iterrows():
         location = {k: (None if pd.isna(row[k]) else row[k]) for k in LOCATION_COLUMNS}
-        for name in json.loads(row["names"]):
+        for name in [row["name"], *names.get(row["name"], [])]:
             known[name] = location
     return known
 
