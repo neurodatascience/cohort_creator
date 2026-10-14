@@ -929,14 +929,19 @@ def list_tasks(bids_pth: Path, sessions: list[str]) -> list[str]:
     return sorted(tasks)
 
 
+# datalad cannot stream files that have no public URL
+# (for example datasets with restricted access)
+NO_USABLE_URL = "Could not find a usable URL"
+
+
+def _is_nifti(filepath: Path) -> bool:
+    return "nii" in filepath.suffix or "gz" in filepath.suffix
+
+
 def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
     """Get only header of a nifti file and compute its acquisition time."""
-    if "nii" in filepath.suffix or "gz" in filepath.suffix:
-        duration, reason = _read_nifti_header(dataset_pth, filepath)
-        if duration is None:
-            # streaming from S3 can fail temporarily: try once more
-            cc_log.debug(f"Retrying {filepath.relative_to(dataset_pth)}: {reason}")
-            duration, reason = _read_nifti_header(dataset_pth, filepath)
+    if _is_nifti(filepath):
+        duration, reason = _nifti_duration(dataset_pth, filepath)
         if duration is not None:
             return duration
         cc_log.error(f"Could not get duration for: {filepath.relative_to(dataset_pth)} ({reason})")
@@ -949,6 +954,19 @@ def get_scan_duration(dataset_pth: Path, filepath: Path) -> tuple[int, float]:
             return (n_samples, 1 / float(info["sfreq"]))
 
     return (0, np.nan)
+
+
+def _nifti_duration(dataset_pth: Path, filepath: Path) -> tuple[tuple[int, float] | None, str]:
+    """Read the duration of a nifti file, trying twice.
+
+    Returns the duration (``None`` if it could not be read) and the reason why.
+    """
+    duration, reason = _read_nifti_header(dataset_pth, filepath)
+    if duration is None:
+        # streaming from S3 can fail temporarily: try once more
+        cc_log.debug(f"Retrying {filepath.relative_to(dataset_pth)}: {reason}")
+        duration, reason = _read_nifti_header(dataset_pth, filepath)
+    return duration, reason
 
 
 def _read_nifti_header(dataset_pth: Path, filepath: Path) -> tuple[tuple[int, float] | None, str]:
@@ -1230,10 +1248,29 @@ def get_scan_durations(
     for filepath in files:
         cc_log.info(f"  {filepath.relative_to(dataset_pth)}")
 
-    nifti = [x for x in files if "nii" in x.suffix or "gz" in x.suffix]
+    nifti = [x for x in files if _is_nifti(x)]
     others = [x for x in files if x not in nifti]
 
     durations: dict[Path, tuple[int, float]] = {}
+    if nifti:
+        # read the first run alone: if its file has no public URL,
+        # the other files of the dataset will not have one either
+        first = nifti.pop(0)
+        duration, reason = _nifti_duration(dataset_pth, first)
+        if duration is None and NO_USABLE_URL in reason:
+            cc_log.error(
+                f"Could not get duration for the {len(nifti) + 1} runs of {dataset_pth.name}: "
+                f"no usable URL for {first.relative_to(dataset_pth)} "
+                "(the files are probably not publicly available)"
+            )
+            for filepath in [first, *nifti]:
+                durations[filepath] = (0, np.nan)
+            nifti = []
+        elif duration is None:
+            cc_log.error(f"Could not get duration for: {first.relative_to(dataset_pth)} ({reason})")
+            durations[first] = (0, np.nan)
+        else:
+            durations[first] = duration
     with ThreadPoolExecutor(max_workers=jobs) as executor:
         for filepath, duration in zip(
             nifti, executor.map(lambda x: get_scan_duration(dataset_pth, x), nifti)

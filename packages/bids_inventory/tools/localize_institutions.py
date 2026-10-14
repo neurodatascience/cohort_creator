@@ -1,10 +1,20 @@
-"""Plot institutions locations."""
+"""Plot institutions locations.
 
+Geocodes the institutions found in the inventory with Nominatim (OpenStreetMap)
+and saves them to locations.tsv.
+Institutions already in locations.tsv are not geocoded again:
+delete the file to geocode all of them again.
+
+Usage: python localize_institutions.py
+(needs geopy: pip install geopy)
+"""
+
+import re
 from pathlib import Path
-from typing import TypedDict
 
 import pandas as pd
 import plotly.express as px
+from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 from geopy.location import Location
 from rich import print
@@ -12,120 +22,144 @@ from rich import print
 from bids_inventory import load_inventory
 
 LOCATIONS_FILE = Path(__file__).parent / "locations.tsv"
+FIGURE_FILE = Path(__file__).parent / "locations.html"
 
+COLUMNS = ["name", "count", "address", "city", "country", "nb_subjects", "latitude", "longitude"]
+
+# values that are not part of an address
+PLACEHOLDERS = re.compile(
+    r"^(n/?a|none|null|unknown|anon(ymous|ymized)?|value was not specified|not specified|-)$",
+    re.IGNORECASE,
+)
+# address templates that were not filled in, for example "Street StreetNo, City, ZIP"
+TEMPLATE_WORDS = re.compile(
+    r"^((street|streetno|street ?number|city|district|state|zip|zip ?code|postal ?code)\s*)+$",
+    re.IGNORECASE,
+)
+
+# only geocode a few institutions, for testing
 DEBUG = False
 
 
 def main() -> None:
-    df = load_inventory()
+    locations = get_all_locations(load_inventory())
+    locations.to_csv(LOCATIONS_FILE, index=False, sep="\t")
+    print(f"Saved to {LOCATIONS_FILE}")
 
-    _get_all_locations(df)
-
-    locations = pd.read_csv(LOCATIONS_FILE, sep="\t")
-
+    located = locations.dropna(subset=["latitude", "longitude"])
     fig = px.scatter_geo(
-        locations,
-        lat=locations.latitude,
-        lon=locations.longitude,
+        located,
+        lat="latitude",
+        lon="longitude",
         hover_name="address",
         projection="natural earth",
         size="count",
     )
+    fig.write_html(FIGURE_FILE)
+    print(f"Saved to {FIGURE_FILE}")
     fig.show()
 
 
-class INSTITUTION(TypedDict):
-    name: None | str
-    count: int
-    address: None | str
-    city: None | str
-    country: None | str
-    latitude: None | str
-    longitude: None | str
-    nb_subjects: int
-
-
-def _get_all_locations(df: pd.DataFrame) -> None:
-    institutions_list = []
+def count_institutions(df: pd.DataFrame) -> pd.DataFrame:
+    """Count the datasets and subjects of each institution of the inventory."""
+    counts: dict[str, dict[str, int]] = {}
     for row in df.itertuples():
-        institutions_list.extend(iter(row.institutions))
+        for institution in row.institutions or []:
+            if not isinstance(institution, str) or not clean_address(institution):
+                continue
+            counts.setdefault(institution, {"count": 0, "nb_subjects": 0})
+            counts[institution]["count"] += 1
+            if pd.notna(row.nb_subjects):
+                counts[institution]["nb_subjects"] += int(row.nb_subjects)
+    return pd.DataFrame(
+        [{"name": name, **values} for name, values in sorted(counts.items())],
+        columns=["name", "count", "nb_subjects"],
+    )
 
-    institutions: dict[str, INSTITUTION] = {
-        i: {
-            "name": None,
-            "count": 0,
-            "address": None,
-            "city": None,
-            "country": None,
-            "latitude": None,
-            "longitude": None,
-            "nb_subjects": 0,
-        }
-        for i in sorted(list(set(institutions_list)))
-    }
-    for row in df.itertuples():
-        for i in row.institutions:
-            institutions[i]["count"] += 1
-            institutions[i]["nb_subjects"] += row.nb_subjects
-    print(institutions)
 
-    # calling the Nominatim tool and create Nominatim class
-    geolocator = Nominatim(user_agent="bids-institutions")
+def clean_address(institution: str) -> str:
+    """Turn an institution string into an address to geocode.
 
-    i = 0
-    for key in institutions:
-        # entering the location name
-        address = key.replace("_", " ").replace("/", " ")
+    Removes the placeholders that some datasets use ("n/a", "Anon"...).
+    """
+    tokens = [x.strip() for x in institution.split(",")]
+    tokens = [x for x in tokens if x and not PLACEHOLDERS.match(x) and not TEMPLATE_WORDS.match(x)]
+    return ", ".join(x.replace("_", " ").replace("/", " ") for x in tokens)
+
+
+def get_all_locations(df: pd.DataFrame) -> pd.DataFrame:
+    """Geocode the institutions of the inventory, reusing those in locations.tsv."""
+    institutions = count_institutions(df)
+
+    known = pd.DataFrame(columns=COLUMNS)
+    if LOCATIONS_FILE.exists():
+        known = pd.read_csv(LOCATIONS_FILE, sep="\t")
+    known = known.drop_duplicates("name").set_index("name")
+
+    to_geocode = [x for x in institutions["name"] if x not in known.index]
+    print(f"{len(institutions)} institutions, {len(to_geocode)} not geocoded yet")
+    if DEBUG:
+        to_geocode = to_geocode[:3]
+
+    geolocator = Nominatim(user_agent="bids-inventory-institutions", timeout=10)
+    # Nominatim usage policy: at most 1 request per second
+    geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1, max_retries=2)
+
+    new = {}
+    for name in to_geocode:
+        address = clean_address(name)
         print(f"[blue]{address}")
-        if location := _get_location(geolocator, address):
-            i += 1
-            print(f"    [green]{location.address}")
-            print(f"    [green]{(location.latitude, location.longitude)}")
-            institutions[key]["address"] = location.address
-            institutions[key]["city"] = location.raw.get("address").get("city")
-            institutions[key]["country"] = location.raw.get("address").get("country")
-            institutions[key]["latitude"] = location.latitude
-            institutions[key]["longitude"] = location.longitude
-            if DEBUG and i > 3:
-                break
+        location = _get_location(geocode, address)
+        if location is None:
+            print("    [red]not found")
+            new[name] = {}
+            continue
+        print(f"    [green]{location.address}")
+        details = location.raw.get("address", {})
+        new[name] = {
+            "address": location.address,
+            "city": details.get("city") or details.get("town") or details.get("village"),
+            "country": details.get("country"),
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+        }
 
-    data: dict[str, list[str | int | None]] = {
-        "name": [],
-        "count": [],
-        "address": [],
-        "city": [],
-        "country": [],
-        "nb_subjects": [],
-        "latitude": [],
-        "longitude": [],
-    }
-    for key, value in institutions.items():
-        data["name"].append(key)
-        for k, v in data.items():
-            if k != "name":
-                v.append(value[k])
-    df = pd.DataFrame(data)
-    df = df.replace(r"^\s*$", "n/a", regex=True)
-    df.to_csv(LOCATIONS_FILE, index=False, sep="\t")
+    rows = []
+    for institution in institutions.itertuples():
+        if institution.name in new:
+            location = new[institution.name]
+        elif institution.name in known.index:
+            location = known.loc[institution.name].to_dict()
+        else:  # not geocoded in debug mode
+            location = {}
+        rows.append(
+            {
+                "name": institution.name,
+                "count": institution.count,
+                "address": location.get("address"),
+                "city": location.get("city"),
+                "country": location.get("country"),
+                "nb_subjects": institution.nb_subjects,
+                "latitude": location.get("latitude"),
+                "longitude": location.get("longitude"),
+            }
+        )
+    return pd.DataFrame(rows, columns=COLUMNS)
 
 
-def _get_location(geolocator: Nominatim, address: str) -> None | Location:
-    print(f"   {address}")
-    location = None
-    try:
-        location = geolocator.geocode(address, addressdetails=True)
-    except Exception:
-        ...
-    if location:
-        return location
-    if "," not in address:
+def _get_location(geocode: RateLimiter, address: str) -> None | Location:
+    """Geocode an address, then parts of it if it is not found."""
+    if not address:
         return None
-
-    tokens = address.split(",")
-    if len(address) > 1:
-        tmp = " ".join(tokens[1:])
-        if location := _get_location(geolocator, tmp) or _get_location(geolocator, tokens[0]):
+    try:
+        if location := geocode(address, addressdetails=True):
             return location
+    except Exception as e:
+        print(f"    [red]{e!r}")
+    tokens = [x.strip() for x in address.split(",")]
+    if len(tokens) > 1:
+        # try without the first part (often a department), then only with it
+        return _get_location(geocode, ", ".join(tokens[1:])) or _get_location(geocode, tokens[0])
     return None
 
 

@@ -894,3 +894,48 @@ def test_get_raw_url_non_openneuro(tmp_path):
         check=True,
     )
     assert result.stdout.strip().splitlines() == [f"URL {source.path}"]
+
+
+def test_get_scan_durations_no_usable_url(tmp_path, monkeypatch, caplog):
+    """If the first run has no public URL, the other runs of the dataset are not tried."""
+    import math
+
+    from bids_inventory import _update
+
+    calls = []
+
+    def no_url(dataset_pth, filepath):
+        calls.append(filepath.name)
+        return None, f"Could not find a usable URL for {filepath.relative_to(dataset_pth)}"
+
+    monkeypatch.setattr(_update, "_read_nifti_header", no_url)
+    files = [
+        tmp_path / "sub-01" / "func" / f"sub-01_task-rest_run-{i}_bold.nii.gz" for i in (1, 2, 3)
+    ]
+
+    durations = _update.get_scan_durations(tmp_path, files, jobs=2)
+
+    # the first run is tried twice, the others not at all
+    assert calls == [files[0].name, files[0].name]
+    assert all(n == 0 and math.isnan(t) for n, t in durations.values())
+    assert set(durations) == set(files)
+    assert caplog.text.count("Could not get duration") == 1
+    assert "the 3 runs" in caplog.text
+
+
+def test_get_scan_durations_other_errors(tmp_path, monkeypatch):
+    """Other errors on the first run do not prevent reading the others."""
+    from bids_inventory import _update
+
+    def flaky(dataset_pth, filepath):
+        if "run-1" in filepath.name:
+            return None, "fsspec.exceptions.FSTimeoutError"
+        return (180, 2.0), ""
+
+    monkeypatch.setattr(_update, "_read_nifti_header", flaky)
+    files = [tmp_path / f"sub-01_task-rest_run-{i}_bold.nii.gz" for i in (1, 2)]
+
+    durations = _update.get_scan_durations(tmp_path, files)
+
+    assert durations[files[0]][0] == 0
+    assert durations[files[1]] == (180, 2.0)
