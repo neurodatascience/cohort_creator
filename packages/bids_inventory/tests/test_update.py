@@ -868,3 +868,29 @@ def test_check_dataset_skips_empty_repository(tmp_path, monkeypatch):
         check=True,
     )
     assert not _update._is_empty_repository(empty)
+
+
+def test_get_raw_url_non_openneuro(tmp_path):
+    """The URL of datasets that are not on OpenNeuro is read without printing anything."""
+    import subprocess
+    import sys
+
+    from datalad import api
+
+    source = api.create(tmp_path / "source", result_renderer="disabled")
+    api.clone(source.path, tmp_path / "Leuven_2", result_renderer="disabled")
+
+    # in a separate process: datalad does not print its results the same way under pytest
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from pathlib import Path; from bids_inventory._update import get_raw_url; "
+            "url = get_raw_url(Path(sys.argv[1])); print('URL', url)",
+            str(tmp_path / "Leuven_2"),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.strip().splitlines() == [f"URL {source.path}"]

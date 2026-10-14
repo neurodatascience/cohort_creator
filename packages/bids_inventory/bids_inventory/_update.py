@@ -808,7 +808,8 @@ def get_raw_url(dataset_pth: Path) -> str:
     if dataset_name.startswith("ds"):
         return f"{URL_OPENNEURO}{dataset_name}"
     else:
-        return api.Dataset.siblings(dataset_pth, name="origin")[0]["url"]
+        siblings = api.Dataset(dataset_pth).siblings(name="origin", result_renderer="disabled")
+        return siblings[0]["url"]
 
 
 def get_info_dataset(dataset_pth: Path, study_prefix: str, jobs: int = 1) -> BidsDataset:
