@@ -790,3 +790,60 @@ def test_update_openneuro_indexes_superdataset(superdataset, tmp_path, monkeypat
         "openneuro/ds000004",
     ]
     assert _load_known_datasets(listing)["name"].tolist() == ["ds000001", "ds000002", "ds000004"]
+
+
+def test_get_list_of_datasets_ignores_empty_repositories(monkeypatch):
+    """OpenNeuro creates empty repositories for datasets that are not public."""
+    from bids_inventory import _update
+
+    pages = [
+        [
+            {"name": "ds000001", "size": 331},
+            {"name": "ds008759", "size": 0},
+            {"name": ".github", "size": 5},
+        ],
+        [{"name": "ds000002", "size": 12}],
+        [],
+    ]
+    monkeypatch.setattr(_update, "get_auth", lambda: None)
+    monkeypatch.setattr(
+        _update, "request_list_of_repos", lambda gh_orga, page, auth=None: pages[page - 1]
+    )
+
+    assert _update.get_list_of_datasets("OpenNeuroDatasets") == ["ds000001", "ds000002"]
+
+
+def test_check_dataset_skips_empty_repository(tmp_path, monkeypatch):
+    import subprocess
+
+    from bids_inventory import _update
+
+    empty = tmp_path / "ds008759"
+    subprocess.run(["git", "init", "-q", str(empty)], check=True)
+    assert _update._is_empty_repository(empty)
+    assert not _update._is_empty_repository(tmp_path / "not_a_repo")
+
+    def no_network(*args, **kwargs):
+        raise AssertionError("an empty repository should be skipped without a request")
+
+    monkeypatch.setattr(_update.requests, "get", no_network)
+    assert _update._check_dataset(empty) is False
+
+    (empty / "README").write_text("dataset")
+    subprocess.run(["git", "-C", str(empty), "add", "README"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(empty),
+            "-c",
+            "user.name=a",
+            "-c",
+            "user.email=a@b.c",
+            "commit",
+            "-qm",
+            "init",
+        ],
+        check=True,
+    )
+    assert not _update._is_empty_repository(empty)
