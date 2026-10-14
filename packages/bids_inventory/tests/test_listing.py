@@ -53,3 +53,40 @@ def test_sizes_are_sizes():
     sizes = known_datasets_df()["size"].dropna()
     not_sizes = sizes[~sizes.astype(str).str.fullmatch(r"[0-9.]+ ?[KMGTP]?B")]
     assert not_sizes.empty, not_sizes.tolist()[:10]
+
+
+def _write_listing(path, names):
+    path.write_text("".join(f'{{"name": "{x}", "size": "1.0 GB"}}\n' for x in names))
+
+
+def test_remove_datasets(tmp_path):
+    from bids_inventory.listing import remove_datasets
+
+    listing = tmp_path / "openneuro.jsonl"
+    _write_listing(listing, ["ds000001", "ds000002", "ds000003"])
+    reindexed = tmp_path / "openneuro.jsonl.reindexed"
+    reindexed.write_text("ds000001\nds000002\n")
+
+    assert remove_datasets(["ds000002", "ds999999"], listing) == ["ds000002"]
+
+    # the other entries are kept as they are
+    assert listing.read_text() == (
+        '{"name": "ds000001", "size": "1.0 GB"}\n{"name": "ds000003", "size": "1.0 GB"}\n'
+    )
+    # a re-index in progress indexes them again
+    assert reindexed.read_text() == "ds000001\n"
+
+
+def test_cli_remove(tmp_path, monkeypatch, caplog):
+    from bids_inventory import listing as listing_module
+    from bids_inventory._cli import cli
+
+    listing = tmp_path / "openneuro.jsonl"
+    _write_listing(listing, ["ds000001", "ds000002"])
+    monkeypatch.setattr(listing_module, "_openneuro_listing", lambda: listing)
+
+    cli(["bids_inventory", "remove", "ds000001", "ds999999"])
+
+    assert listing.read_text() == '{"name": "ds000002", "size": "1.0 GB"}\n'
+    assert "Removed 1 datasets" in caplog.text
+    assert "Not in the listing: ds999999" in caplog.text

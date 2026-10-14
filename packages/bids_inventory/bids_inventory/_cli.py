@@ -48,6 +48,25 @@ It will also create a datasets_results.tsv with the filtered list of datasets.""
     )
     _add_verbosity(browse_parser)
 
+    remove_parser = subparsers.add_parser(
+        "remove",
+        help="""Remove datasets from the listing,
+for example so that the next 'bids_inventory update' indexes them again.""",
+        formatter_class=parser.formatter_class,
+    )
+    remove_parser.add_argument(
+        "datasets",
+        nargs="+",
+        help="Names of the datasets to remove, for example: ds000001 ds000002.",
+    )
+    remove_parser.add_argument(
+        "--source",
+        help="Which listing to remove them from.",
+        choices=["openneuro", "non-openneuro"],
+        default="openneuro",
+    )
+    _add_verbosity(remove_parser)
+
     update_parser = subparsers.add_parser(
         "update",
         help="Update listing of known BIDS datasets.",
@@ -156,6 +175,19 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             from bids_inventory._browse import browse
 
         browse(debug=args.debug)
+
+    elif args.command == "remove":
+        from bids_inventory.listing import (
+            _non_openneuro_listing,
+            _openneuro_listing,
+            remove_datasets,
+        )
+
+        listing = _openneuro_listing() if args.source == "openneuro" else _non_openneuro_listing()
+        removed = remove_datasets(args.datasets, listing)
+        bi_log.info(f"Removed {len(removed)} datasets from {listing}: {' '.join(removed)}")
+        if not_found := sorted(set(args.datasets) - set(removed)):
+            bi_log.warning(f"Not in the listing: {' '.join(not_found)}")
 
     elif args.command == "update":
         with _check_extra("update"):
