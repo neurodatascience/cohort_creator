@@ -6,10 +6,16 @@ def test_wrangle_data():
 
 
 def test_filter_data():
+    """The default configuration keeps all the datasets with at least one BIDS datatype.
+
+    Datasets that are not valid BIDS can have none,
+    for example with data files directly in the session folders.
+    """
     df = wrangle_data(known_datasets_df())
     fitlered_df = filter_data(df, config=None)
 
-    assert len(df) == len(fitlered_df)
+    with_datatypes = df[df["datatypes"].apply(len) > 0]
+    assert len(fitlered_df) == len(with_datatypes)
 
 
 def test_filter_data_no_datasets():
