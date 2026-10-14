@@ -1,2 +1,2 @@
 [codespell]
-skip = ./.git,env,venv,.venv,outputs,htmlcov,bids-examples,*openneuro.jsonl,*locations.tsv
+skip = ./.git,env,venv,.venv,outputs,htmlcov,bids-examples,*openneuro.jsonl,*locations.tsv,*institutions.json
