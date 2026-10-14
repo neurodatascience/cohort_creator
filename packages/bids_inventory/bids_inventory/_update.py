@@ -488,18 +488,26 @@ def gh_api_base_url() -> str:
 
 
 def get_list_of_datasets(gh_orga: str) -> list[str]:
+    """List the datasets of a GitHub organization.
+
+    Empty repositories are left out: OpenNeuro creates them for datasets
+    that are not public (yet), or that were deleted.
+    """
     auth = get_auth()
-    datasets: list[str] = []
-    resp: dict[str, str] | bool | None = True
+    repos: list[dict[str, Any]] = []
+    resp: list[dict[str, Any]] | bool | None = True
     page = 1
     while resp:
         resp = request_list_of_repos(gh_orga, page=page, auth=auth)
         if resp is None:
             break
-        datasets.extend(repo["name"] for repo in resp)  # type: ignore[index]
+        repos.extend(resp)
         page += 1
-    datasets = [x for x in datasets if x.startswith("ds")]
-    return datasets
+    repos = [x for x in repos if str(x["name"]).startswith("ds")]
+    if empty := sorted(str(x["name"]) for x in repos if x.get("size") == 0):
+        cc_log.info(f"Ignoring {len(empty)} empty repositories (datasets not public on OpenNeuro)")
+        cc_log.debug(empty)
+    return [str(x["name"]) for x in repos if x.get("size") != 0]
 
 
 def get_auth() -> tuple[str, str] | None:
@@ -530,7 +538,7 @@ def get_auth() -> tuple[str, str] | None:
 
 def request_list_of_repos(
     gh_orga: str, page: int, auth: tuple[str, str] | None = None
-) -> dict[str, str] | None:
+) -> list[dict[str, Any]] | None:
     url = f"{gh_api_base_url()}{gh_orga}/repos?per_page=100&page={page}"
     cc_log.info(url)
     response = requests.get(url, auth=auth)
@@ -748,7 +756,22 @@ def list_datasets_in_dir(
     return datasets
 
 
+def _is_empty_repository(dataset_pth: Path) -> bool:
+    """Return True for a git repository without any commit."""
+    if not (dataset_pth / ".git").exists():
+        return False
+    result = subprocess.run(
+        ["git", "-C", str(dataset_pth), "rev-parse", "--quiet", "--verify", "HEAD"],
+        capture_output=True,
+    )
+    return result.returncode != 0
+
+
 def _check_dataset(dataset_pth: Path) -> bool:
+    if _is_empty_repository(dataset_pth):
+        # for example datasets that are not public on OpenNeuro
+        cc_log.info(f"  empty repository: skipping {dataset_pth.name}")
+        return False
     raw_url = get_raw_url(dataset_pth)
     if not raw_url.startswith("git@"):
         try:
