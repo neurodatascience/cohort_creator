@@ -18,7 +18,6 @@ def _():
     from pathlib import Path
 
     import marimo as mo
-    from bids_inventory._version import version
 
     from bids_inventory._plotting import (
         datatypes_histogram,
@@ -26,6 +25,7 @@ def _():
         plot_dataset_size_vs_time,
         scatter_subject_vs,
     )
+    from bids_inventory._version import version
     from bids_inventory.listing import KNOWN_DATATYPES, known_datasets_df
     from bids_inventory.wrangling import filter_data, save_dataset_listing, wrangle_data
 
