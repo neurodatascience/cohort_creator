@@ -26,8 +26,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
-# dash app to browse the listing: `bids_inventory browse`
-browse = ["dash", "dash-bootstrap-components", "kaleido", "matplotlib", "plotly"]
+# marimo app to browse the listing: `bids_inventory browse`
+browse = ["marimo", "plotly"]
 dev = ["bids-inventory[browse,test,update]", "pandas-stubs", "pre-commit"]
 test = ["pytest", "pytest-cov"]
 # update of the listing: `bids_inventory update`

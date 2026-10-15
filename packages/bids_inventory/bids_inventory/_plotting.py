@@ -3,7 +3,6 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-from matplotlib import figure
 from plotly.subplots import make_subplots
 
 from bids_inventory.listing import KNOWN_DATATYPES
@@ -27,7 +26,7 @@ def scatter_subject_vs(
     log_x: bool = True,
     log_y: bool = True,
     marginal: None | str | bool = "box",
-) -> figure:
+) -> go.Figure:
     return px.scatter(
         df,
         x="nb_subjects",
@@ -44,7 +43,7 @@ def scatter_subject_vs(
     )
 
 
-def histogram_tasks(df: pd.DataFrame) -> figure:
+def histogram_tasks(df: pd.DataFrame) -> go.Figure:
     tasks = []
     for x in df.tasks:
         tasks.extend(x)
@@ -58,7 +57,7 @@ def histogram_tasks(df: pd.DataFrame) -> figure:
     )
 
 
-def plot_dataset_size_vs_time(df: pd.DataFrame) -> figure:
+def plot_dataset_size_vs_time(df: pd.DataFrame) -> go.Figure:
     df = df.sort_values(by=["created_on"])
 
     y = []
@@ -88,7 +87,7 @@ def plot_dataset_size_vs_time(df: pd.DataFrame) -> figure:
     return fig
 
 
-def datatypes_histogram(df: pd.DataFrame) -> figure:
+def datatypes_histogram(df: pd.DataFrame) -> go.Figure:
     datatypes_df = df[KNOWN_DATATYPES].sum()
     fig = px.bar(
         datatypes_df,

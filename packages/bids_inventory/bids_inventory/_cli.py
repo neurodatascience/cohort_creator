@@ -36,15 +36,15 @@ def global_parser(formatter_class: type[HelpFormatter] = HelpFormatter) -> Argum
 
     browse_parser = subparsers.add_parser(
         "browse",
-        help="""Launch a dash app in the browser
+        help="""Open a dashboard (a marimo app) in the browser
 to browse, visualize and filter the listing of known datasets.
-It will also create a datasets_results.tsv with the filtered list of datasets.""",
+The filtered list of datasets can be downloaded as datasets_results.tsv.""",
         formatter_class=parser.formatter_class,
     )
     browse_parser.add_argument(
-        "--debug",
+        "--edit",
         action="store_true",
-        help="Runs the Dash app in debug mode.",
+        help="Open the dashboard notebook in marimo's edit mode.",
     )
     _add_verbosity(browse_parser)
 
@@ -174,7 +174,7 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
         with _check_extra("browse"):
             from bids_inventory._browse import browse
 
-        browse(debug=args.debug)
+        browse(edit=args.edit)
 
     elif args.command == "remove":
         from bids_inventory.listing import (
