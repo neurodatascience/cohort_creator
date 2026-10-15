@@ -97,3 +97,22 @@ def datatypes_histogram(df: pd.DataFrame) -> go.Figure:
         title="datatypes in datasets",
     )
     return fig
+
+
+def institutions_map(locations: pd.DataFrame) -> go.Figure:
+    """Plot the located institutions on a world map.
+
+    ``locations``: as returned by ``bids_inventory.institutions.institutions_locations``.
+    The size of each marker is the number of datasets of the institution.
+    """
+    located = locations.dropna(subset=["latitude", "longitude"])
+    return px.scatter_geo(
+        located,
+        lat="latitude",
+        lon="longitude",
+        hover_name="name",
+        hover_data=["address", "count", "nb_subjects"],
+        projection="natural earth",
+        size="count",
+        title="institutions",
+    )
