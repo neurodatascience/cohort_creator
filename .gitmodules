@@ -2,3 +2,6 @@
 	path = packages/cohort_creator/tests/data/bids-examples
 	url = https://github.com/bids-standard/bids-examples.git
 	datalad-url = https://github.com/bids-standard/bids-examples.git
+[submodule "packages/bids_inventory"]
+	path = packages/bids_inventory
+	url = https://github.com/neurodatascience/bids_inventory.git

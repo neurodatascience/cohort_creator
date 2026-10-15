@@ -1,4 +1,4 @@
-extend-exclude = ["docs/source/conf.py", "packages/*/tests/data", "packages/*/*/_version.py"]
+extend-exclude = ["docs/source/conf.py", "packages/*/tests/data", "packages/*/*/_version.py", "packages/bids_inventory"]
 line-length = 100
 src = ["packages/bids_inventory", "packages/cohort_creator"]
 target-version = "py311"

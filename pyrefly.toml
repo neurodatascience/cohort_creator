@@ -1,5 +1,6 @@
 ignore-missing-imports = [
     "bids.*",
+    "bids_inventory.*",
     "bids_inventory._version",
     "cohort_creator._version",
     "datalad.*",
@@ -14,5 +15,5 @@ ignore-missing-imports = [
     "unidecode"
 ]
 project-excludes = ["packages/*/*/_version.py"]
-project-includes = ["packages/bids_inventory/bids_inventory", "packages/cohort_creator/cohort_creator"]
+project-includes = ["packages/cohort_creator/cohort_creator"]
 search-path = ["packages/bids_inventory", "packages/cohort_creator"]
