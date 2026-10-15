@@ -28,7 +28,9 @@ requires-python = ">=3.11"
 [project.optional-dependencies]
 # dash app to browse the listing: `bids_inventory browse`
 browse = ["dash", "dash-bootstrap-components", "kaleido", "matplotlib", "plotly"]
-dev = ["bids-inventory[browse,test,update]", "pandas-stubs", "pre-commit"]
+dev = ["bids-inventory[browse,notebook,test,update]", "pandas-stubs", "pre-commit"]
+# marimo notebook to browse the listing: notebooks/browse.py
+notebook = ["bids-inventory[browse]", "marimo"]
 test = ["pytest", "pytest-cov"]
 # update of the listing: `bids_inventory update`
 update = ["datalad", "datalad-fuse", "mne", "nibabel", "pydantic>=2", "pyyaml", "requests"]
