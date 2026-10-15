@@ -1,0 +1,187 @@
+score	institution_1	institution_2	reasons	city_1	city_2	accept
+100	BBL - University of Geneva, Rue Michel-Servet 1,Geneve,District,CH,1211	Fondation_Campus_Biotech_Geneva, Chemin_des_Mines_9_Geneve_District_CH_1211	similar names (100); same postal code and street number	Commugny
+100	CIC - Unidad RMF - Sede CIMCYC, Paseo de la Cartuja StreetNo,Granada,Granada,ES,ZIP	University of Granada, Campus de Cartuja, Granada, ES	similar names (100); 0.3 km apart	Granada	Granada
+100	CIC - Unidad RMF - Sede CIMCYC, Paseo de la Cartuja StreetNo,Granada,Granada,ES,ZIP	University of Granada, Granada, Spain	similar names (100); 1.2 km apart	Granada	Granada
+100	CMR of Peking Univeristy, Yiheyuan Road 5,Beijing  0FCA35,Haidian,CN,100871	Peking_Univeristy, Yiheyuan_Road_5_Beijing3cd14b_Haidian_CN_100871	similar names (100); same postal code and street number	海淀区
+100	CNI	cni	similar names (100); 0.0 km apart	Madrid	Madrid
+100	Curie Blvd. 422,Philadelphia,PA,US,19104	University of Pennsylvania, 425 S University Ave, Philadelphia, PA 19104	similar names (100); same postal code; 0.2 km apart	Philadelphia	Philadelphia
+100	Curie Blvd. 422,Philadelphia,PA,US,19104	University of Pennsylvania, Philadelphia, PA 19104	similar names (100); same postal code; 0.4 km apart	Philadelphia	Philadelphia
+100	Department of Neurosurgery, University Hospital Zurich, Frauenklinikstrasse 10, 8091 Zurich	Department of Neurosurgery, University Hospital Zurich, Rämistrasse 100, 8091 Zurich	similar names (100); same postal code; 0.1 km apart	Zürich	Zürich
+100	Department of Neurosurgery, University Hospital Zurich, Rämistrasse 100, 8091 Zurich	Neurochirurgie, UniversitätsSpital Zürich, Rämistrasse 100, 8091 Zurich	same postal code and street number; 0.1 km apart	Zürich	Zürich
+100	E 24th St. 100,Austin,Southmiddle,US,78712	The_Univ._of_Texas_at_Austin_IRC, E_24th_St._100_Austin_Southmiddle_US_78712	similar names (100); same postal code and street number; austin in the name	Austin
+100	E 24th St. 100,Austin,Southmiddle,US,78712	University of Texas at Austin, Bellmont Hall, Austin	similar names (100); 0.5 km apart	Austin	Austin
+100	Emory University, Eagle Row 36,Atlanta,GA,US,30322	Emory_University, Clifton_Rd_NE_1481_Atlanta_GA_US_30322	similar names (100); same postal code; 0.6 km apart	Atlanta	Atlanta
+100	FIU Center For Imaging Science, SW 8TH ST, OE116 11200,MIAMI,Med-Lab,US,33199	FIU_Center_For_Imaging_Science, SW_8TH_ST_OE116_11200_MIAMI_Med-Lab_US_33199	similar names (100); same postal code and street number	Palm Bay
+100	Freie Universitaet, Habelschwerdter Allee 45,Berlin,District,DE,14195	Freie_Universitaet, Habelschwerdter_Allee_45_Berlin_District_DE_14195	similar names (100); same postal code and street number; 11.9 km apart	Berlin	Berlin
+100	Hong Kong Polytechnic University	The Hong Kong Polytechnic University, Street StreetNo,CP7ZM-RJHXA,Hung Hom,HK,ZIP	similar names (100); 1.0 km apart	香港 Hong Kong	香港 Hong Kong
+100	Insitute of Noetic Sciences (IONS), Petaluma, CA, USA	Institute of Noetic Sciences, Petaluma, CA, USA	similar names (100); 0.6 km apart	Petaluma	Petaluma
+100	Institute for Psychology and Ergonomics, Fasanenstr. 1, 10623 Berlin	Technische Universitaet Berlin, Fasanenstr. 1, 10623, Berlin, Germany	same postal code and street number; 0.0 km apart	Berlin	Berlin
+100	Leibniz Research Centre for Working Environment and Human Factors, Ardeystrasse 67, 44139 Dortmund, North-Rhine Westphalia, Germany	Leibniz Research Centre for Working Environment and Human Factors, Dortmund, Germany	similar names (100); 2.7 km apart	Dortmund	Dortmund
+100	Lewis Center for Neuroimaging, University of Oregon, Franklin Blvd 1440, Eugene, Oregon, 97403, USA	University_of_Oregon, Franklin_Blvd_1440_Eugene_District_US_97403	similar names (100); same postal code; 0.2 km apart	Eugene	Eugene
+100	Malopolskie Centrum Biotechnologii	Malopolskie_Centrum_Biotechnologii, Gronostajowa_7_Krakow_Malopolska_PL_30-387	similar names (100); 0.2 km apart	Kraków	Kraków
+100	NIH	National Institutes of Health	similar names (100); 0.0 km apart	Bethesda	Bethesda
+100	NIH 7T Research, Center Drive 10,Bethesda, Maryland, US,20892	NIH Clinical Center	same postal code and street number; 0.4 km apart	Bethesda	Bethesda
+100	NIH 7T Research, Center Drive 10,Bethesda, Maryland, US,20892	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	similar names (100); same postal code and street number; 2.4 km apart	Bethesda	Bethesda
+100	NeuroSpin, RD306_-_SACLAY_-_FR_91400	NeuroSpin, Street N306,SACLAY,IdF,FR,91400	similar names (100); same postal code; 1.4 km apart	Saclay	Saclay
+100	NeuroSpin, RD306_-_SACLAY_-_FR_91400	NeuroSpin, Street_N306_SACLAY_IdF_FR_91400	similar names (100); same postal code; 0.6 km apart	Saclay	Saint-Aubin
+100	NeuroSpin, Street N306,SACLAY,IdF,FR,91400	NeuroSpin, Street_N306_SACLAY_IdF_FR_91400	similar names (100); same postal code; 2.0 km apart	Saclay	Saint-Aubin
+100	Nottingham University, University Park	University of Nottingham, University Park, Nottingham, United Kingdom	similar names (100); 1.9 km apart	City of Nottingham	City of Nottingham
+100	PSU-SLEIC	PSU-SLEIC, University_Park_Chandlee_Laboratory_State_College_PA_US_16802	similar names (100)
+100	Penn State SLEIC, University Park Chandlee Laboratory,State College,PA,US,16802	Penn_State_SLEIC, University_Park_Chandlee_Laboratory_State_College_Great_Lakes_U	similar names (100); state college in the name	State College
+100	Princeton University, Washington Rd, Princeton, NJ 08540	Princeton_University	similar names (100); 1.3 km apart	Princeton	Princeton
+100	Princeton University, Washington Rd, Princeton, NJ 08540	Princeton_University, Stadium_1952_Princeton_NJ_US_08544	similar names (100); 1.1 km apart	Princeton	Princeton
+100	Princeton_University	Princeton_University, Stadium_1952_Princeton_NJ_US_08544	similar names (100); 0.6 km apart	Princeton	Princeton
+100	Princeton_University_-_Neuroscience_Institute	Princeton_University_-_Neuroscience_Institute, Washington_and_Faculty_Rd._-_Building_25_25_Princeton_NJ_US_085	similar names (100)
+100	Queensland Brain Institute, The University of Queensland	University of Queensland, Research Road Bld 57,Brisbane,Queensland,AU,4072	similar names (100); 3.3 km apart	Brisbane	Brisbane
+100	Queensland Brain Institute, The University of Queensland	University_of_Queensland, Research_Road_Bld_57_Brisbane_Queensland_AU_4072	similar names (100); 0.2 km apart	Brisbane	Brisbane
+100	Rigshospitalet, Blegdamsvej  9,Kobenhavn,District,DK,DK-2100	Rigshospitalet, Blegdamsvej_9_Copenhagen_District_DK_2100	similar names (100); same postal code and street number; 2.7 km apart	København	København
+100	Sabanci University, Orta, Üniversite Cd. No: 27, 34956 Tuzla/İstanbul, Türkiye	Sabanci University, Tuzla/İstanbul, Türkiye	similar names (100); 0.7 km apart	Tuzla	Tuzla
+100	School of Psychology and Counselling, Queensland University of Technology	School of Psychology and Counselling, Queensland University of Technology, 149 Victoria Park Rd, Kelvin Grove QLD 4059, Australia	similar names (100); 10.9 km apart	Brisbane	Brisbane
+100	Technische Universitaet Berlin, Fasanenstr. 1, 10623, Berlin, Germany	Technische Universitaet zu Berlin, Strasse des 17. Juni 135, 10623, Berlin, Germany	similar names (95); same postal code; 0.2 km apart	Berlin	Berlin
+100	Technische Universitaet zu Berlin, Strasse des 17. Juni 135, 10623, Berlin, Germany	Technische Universitaet zu Berlin, Strasse des 17. Juni, Berlin, Germany	similar names (100); 0.9 km apart	Berlin	Berlin
+100	Tecnologico de Monterrey, Ave. Eugenio Garza Sada 2501, Monterrey, N.L., Mexico, 64849	Tecnologico de Monterrey, Monterrey, Mexico	similar names (100); 2.5 km apart	Monterrey	Monterrey
+100	The University of Melbourne, Redmond Barry Building, University of Melbourne, VIC 3010, Australia	University_of_Melbourne_-_Brain_Institute, Royal_Parade_30_Parkville_Victoria_AU_3052	similar names (100); 0.6 km apart	Melbourne	Melbourne
+100	U of M FMRI	U of M FMRi	similar names (100)
+100	UC Berkeley	UC Berkeley, Oxford Street 1951,Berkeley,SFO,US,94720	similar names (100); 30.9 km apart	Oakland	San Francisco
+100	UC Berkeley	UC_Berkeley, Street_StreetNo_Berkeley_District_US_ZIP	similar names (100); 2.3 km apart	Oakland	Berkeley
+100	UC Berkeley, Oxford Street 1951,Berkeley,SFO,US,94720	UC_Berkeley, Street_StreetNo_Berkeley_District_US_ZIP	similar names (100); 29.6 km apart	San Francisco	Berkeley
+100	UCSB Brain Imaging Center, UCEN Rd 551   Bldg 251,Isla Vista,Los Angeles,US,93117	UCSB_Brain_Imaging_Center, UCEN_Rd_551_Bldg_251_Isla_Vista_Los_Angeles_US_93117	similar names (100); same postal code and street number; los angeles in the name	Los Angeles
+100	UCSB Brain Imaging Center, UCEN Rd 551   Bldg 251,Isla Vista,Los Angeles,US,93117	UCSB_Psychology_and_Brain_Imaging	similar names (100)	Los Angeles
+100	UCSB Brain Imaging Center, UCEN Rd 551   Bldg 251,Isla Vista,Los Angeles,US,93117	UCSB_Psychology_and_Brain_Imaging, UCEN_Rd_551_Bldg_251_Isla_Vista_Los_Angeles_US_93117	similar names (100); same postal code and street number; los angeles in the name	Los Angeles
+100	UCSB_Psychology_and_Brain_Imaging	UCSB_Psychology_and_Brain_Imaging, UCEN_Rd_551_Bldg_251_Isla_Vista_Los_Angeles_US_93117	similar names (100)
+100	USC Neuroimaging	USC Neuroimaging, Zonal Ave 2025,Los Angeles,Los Angeles,US,90033	similar names (100)		Los Angeles
+100	USC, McClintock_3520A_Los_Angeles_CA_US_90089	USC, McClintock_3520A_Los_Angeles_SVC0e0594213b1104_CA_US_90089	similar names (100); same postal code; 0.6 km apart	Los Angeles	Los Angeles
+100	USC, McClintock_3520A_Los_Angeles_SVC0e0594213b1104_CA_US_90089	University of Southern California, 3715 McClintock Ave. Los Angeles, CA 90089	similar names (100); 0.5 km apart	Los Angeles	Los Angeles
+100	UT Southwestern, Dallas, Texas	UT_Southwestern, Dallas_75390_Wyche_6110	similar names (100); 17.7 km apart	Dallas	Dallas
+100	UZ Gent, Corneel Heymanslaan 10,Gent,,BE,9000	UZ_Gent, De_Pintelaan_185_Gent_9C4B6E_District_BE_9000	similar names (100); same postal code; 0.1 km apart	Gent	Gent
+100	University Hospital Zurich, Neurosurgery Department, Zurich, Switzerland	the University of Zurich, Binzmühlestrasse 14, Box 17, CH-8050 Zurich	similar names (100); 4.2 km apart	Zürich	Zürich
+100	University of California Merced	University of California Merced, 5200 North Lake Rd., Merced, CA 95343	similar names (100); 8.8 km apart	Merced	Merced
+100	University of Chicago, 5835 S. Cottage Grove Ave	University of Chicago, Chicago, IL 60637, USA	similar names (100); 0.4 km apart	Chicago	Chicago
+100	University of Granada, Campus de Cartuja, Granada, ES	University of Granada, Granada, Spain	similar names (100); 1.3 km apart	Granada	Granada
+100	University of Maryland, South Paca St 110,Baltimore,District,US,21201	University_of_Maryland, Greenmead_Drive_8770_College_Park_Maryland_US_20742	similar names (100); 1.8 km apart	College Park	Adelphi
+100	University of Michigan, Ann Arbor, MI, USA	University of Michigan, Ann Arbor, Michigan 48109, USA	similar names (100); 0.0 km apart	Ann Arbor	Ann Arbor
+100	University of Oxford, Institute of Biomedical Engineering, Department of Engineering Science, Old Road Campus Research Building, University of Oxford, Headington, Oxford OX3 7DQ, UK	University of Oxford, Warneford Hospital, Oxford, OX3 7JX	similar names (100); 1.3 km apart	Oxford	Oxford
+100	University of Oxford, Institute of Biomedical Engineering, Department of Engineering Science, Old Road Campus Research Building, University of Oxford, Headington, Oxford OX3 7DQ, UK	University of Oxford, Warneford Hospital, Warneford Lane	similar names (100); 1.1 km apart	Oxford	Oxford
+100	University of Oxford, Warneford Hospital, Oxford, OX3 7JX	University of Oxford, Warneford Hospital, Warneford Lane	similar names (100); 0.2 km apart	Oxford	Oxford
+100	University of Pennsylvania, 425 S University Ave, Philadelphia, PA 19104	University of Pennsylvania, Philadelphia, PA 19104	similar names (100); same postal code; 0.5 km apart	Philadelphia	Philadelphia
+100	University of Queensland, Research Road Bld 57,Brisbane,Queensland,AU,4072	University_of_Queensland, Research_Road_Bld_57_Brisbane_Queensland_AU_4072	similar names (100); same postal code and street number; 3.5 km apart	Brisbane	Brisbane
+100	WUSTL_bay1, Scott St. 4525,St. Louis,Missouri,US,63110	Washington Univ., Duncan Ave 4370,St. Louis,MO,US,63110	similar names (100); same postal code; 0.5 km apart	Saint Louis	Saint Louis
+100	Weizmann Institute, Street StreetNo,City,District,IL,ZIP	Weizmann, Street_StreetNo_Rehovot_91E162_District_IL_ZIP	similar names (100); 1.0 km apart	רחובות	נס ציונה
+100	Western Sydney University, 160 Hawkesbury Rd, Westmead NSW 2145, Australia	Western Sydney University, Westmead Innovation Quarter Building U, Level 4/160 Hawkesbury Rd, Westmead NSW 2145 Australia	similar names (100); same postal code and street number; 0.1 km apart	Sydney	Sydney
+100	Yale University - Dunham Lab. Bldg., Hillhouse Ave. 10,New Haven ,Northeast,US,06519	Yale_University_-_Dunham_Lab._Bldg., Hillhouse_Ave._10_New_Haven_Northeast_US_06519	similar names (100); same postal code and street number	Hartford
+100	Yale_MRRC, Cedar_Street_333_New_Haven_Connecticut_US_06510	Yale_University_MRRC, Cedar_300_New_Haven_CT_US_06519	similar names (100); 0.2 km apart	New Haven	New Haven
+98	NIH	National Istitutes of Health, 9000 Rockville Pike, Bethesda, MD, USA	similar names (98); 0.5 km apart	Bethesda	Bethesda
+98	National Institutes of Health	National Istitutes of Health, 9000 Rockville Pike, Bethesda, MD, USA	similar names (98); 0.5 km apart	Bethesda	Bethesda
+97	Klinikum_recht_der_Isar, Ismaninger_Strasse_34	Klinikum_rechts_der_Isar	similar names (97); 30.5 km apart	Freising	München
+95	Aix-Marseille Université, 3 place Victor Hugo, 13003 Marseille, France	Institut de Neurosciences de la Timone, 27 Bd Jean Moulin, 13005 Marseille, France	same postal code and street number; 2.6 km apart	Marseille	Marseille
+95	BMMR, Brenneckestr._6_Magdeburg_District_DE_39118	IBMI, Brenneckestr._6_Magdeburg_District_DE_39118	same postal code and street number		Cuiabá
+95	BMMR, Brenneckestr._6_Magdeburg_District_DE_39118	IFN_Magdeburg, Brenneckestr._6_Magdeburg_District_DE_39118	same postal code and street number
+95	BMMR, Brenneckestr._6_Magdeburg_District_DE_39118	LIN, Brenneckestr._6_Magdeburg_District_DE_39118	same postal code and street number		Milano
+95	BMMR, Brenneckestr._6_Magdeburg_District_DE_39118	Leibniz Institute for Neurobiology, Brenneckestr. 6, 39118 Magdeburg, Germany	same postal code and street number; magdeburg in the name		Magdeburg
+95	Bern University Hospital, Freiburgstrasse 20, 3010 Bern	DIN, Freiburgstrasse 18,Bern,District,CH,3010	one name contains the other; same postal code; 0.1 km apart	Bern	Bern
+95	Brunel University, Street StreetNo,Egham,SE,GB,TW20 0EX	CUBIC_MRI_Unit, Street_StreetNo_Egham_SE_GB_TW20_0EX	same postal code and street number	Welwyn Hatfield
+95	CMRR 10.5T PTX, 6th Street SE 2021,Minneapolis,District,US,55455	CMRR 7T/PS, 6th Street SE 2021,Minneapolis/23c034/,Chicago,US,55455	same postal code and street number; 2.1 km apart	Minneapolis	Minneapolis
+95	CMRR 10.5T PTX, 6th Street SE 2021,Minneapolis,District,US,55455	CMRR_3T-A, 6th_SE_2021_Minneapolis_Minnesota_US_55455	same postal code and street number; 3.1 km apart	Minneapolis	Minneapolis
+95	CMRR 7T/PS, 6th Street SE 2021,Minneapolis/23c034/,Chicago,US,55455	CMRR_3T-A, 6th_SE_2021_Minneapolis_Minnesota_US_55455	same postal code and street number; 3.9 km apart	Minneapolis	Minneapolis
+95	FIL, Queen Square 12,London,Southeast,GB,WC1N 3BG	WTCN, Queen_Square_12_London_Southeast_GB_WC1N_3BG	same postal code and street number	Edmonton
+95	Freie Universitaet, Habelschwerdter Allee 45,Berlin,District,DE,14195	Freie Universität, Habelschwerdter Allee 45, 14195 Berlin, Germany	same postal code and street number; 11.3 km apart	Berlin	Berlin
+95	Freie Universität, Habelschwerdter Allee 45, 14195 Berlin, Germany	Freie_Universitaet, Habelschwerdter_Allee_45_Berlin_District_DE_14195	one name contains the other; same postal code and street number; 0.7 km apart	Berlin	Berlin
+95	IBMI, Brenneckestr._6_Magdeburg_District_DE_39118	IFN_Magdeburg, Brenneckestr._6_Magdeburg_District_DE_39118	same postal code and street number	Cuiabá
+95	IFN_Magdeburg, Brenneckestr._6_Magdeburg_District_DE_39118	LIN, Brenneckestr._6_Magdeburg_District_DE_39118	same postal code and street number		Milano
+95	IFN_Magdeburg, Brenneckestr._6_Magdeburg_District_DE_39118	Leibniz Institute for Neurobiology, Brenneckestr. 6, 39118 Magdeburg, Germany	same postal code and street number; magdeburg in the name		Magdeburg
+95	NIH 7T Research, Center Drive 10,Bethesda, Maryland, US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH 7T Research, Center Drive 10,Bethesda, Maryland, US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH 7T Research, Center Drive 10,Bethesda, Maryland, US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH Clinical Center	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	same postal code and street number; 2.1 km apart	Bethesda	Bethesda
+95	NIH Clinical Center	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH Clinical Center	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH Clinical Center	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	same postal code and street number; bethesda in the name	Bethesda
+95	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	same postal code and street number
+95	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	same postal code and street number
+95	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	NIMH	same postal code and street number		Den Haag
+95	NIH_7T_Research, Center_Drive_10_Bethesda.336812._Maryland_US_20892	NINDS, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number		Mourilyan
+95	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	same postal code and street number
+95	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	NIMH	same postal code and street number		Den Haag
+95	NIH_7T_Research, Center_Drive_10_Bethesda.3A6882.10JUN13_Maryland_US_20892	NINDS, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number		Mourilyan
+95	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	NIMH	same postal code and street number		Den Haag
+95	NIH_7T_Research, Center_Drive_10_Bethesda.ea6fdd._Maryland_US_20892	NINDS, Center_Drive_10_Bethesda.336812._Maryland_US_20892	same postal code and street number		Mourilyan
+95	Palmetto_Health_Richland, Medical_Center_Dr_5_Columbia_SC_US_29203	R, Medical Center Dr 5,Columbia,SC,US,29203	same postal code and street number; 3.0 km apart	Columbia	Columbia
+95	Robarts_Reserch_Institute, Richmond_Street_North_1151_London_409EF2_Ontario_CA_N6A_5B7	University of Western Ontario, Richmond Street North 1151,London,Ontario,CA,N6A 5B7	same postal code and street number; ontario in the name		Ontario
+95	Technische Universitaet Berlin, Fasanenstr. 1, 10623, Berlin, Germany	Technische Universitaet zu Berlin, Strasse des 17. Juni, Berlin, Germany	similar names (95); 0.7 km apart	Berlin	Berlin
+95	UCSB_Brain_Imaging_Center, UCEN_Rd_551_Bldg_251_Isla_Vista_Los_Angeles_US_93117	UCSB_Psychology_and_Brain_Imaging, UCEN_Rd_551_Bldg_251_Isla_Vista_Los_Angeles_US_93117	same postal code and street number
+95	UCSD	University of California, San Diego, 9500 Gilman Drive, La Jolla CA 92093, USA	one name contains the other; same postal code; 0.0 km apart	San Diego	San Diego
+95	UGent, De_Pintelaan_185_Gent_District_BE_9000	UZ_Gent, De_Pintelaan_185_Gent_9C4B6E_District_BE_9000	same postal code and street number; 1.3 km apart	Gent	Gent
+95	WTCN University College London, 12 Queen’s Square, London, WC1B 5JS	Wellcome Centre for Human Neuroimaging, 12 Queen Square, London, WC1B 5JS, UK	same postal code and street number; 5.2 km apart	Greater London	Greater London
+95	WUSTL_bay1, Scott St. 4525,St. Louis,Missouri,US,63110	Washington University School of Medicine, 660 S Euclid Ave, St. Louis, MO 63110, USA	one name contains the other; same postal code; 0.2 km apart	Saint Louis	Saint Louis
+90	Dartmouth Brain Imaging Center, Dartmouth College, 6207 Moore Hall, Hanover NH, 03755	Dartmouth_College_-_PBS, Maynard_3_Hanover_NH_US_03755	one name contains the other; same postal code; 0.7 km apart	Hanover	Hanover
+90	Maryland Neuroimaging Center, University of Maryland, 8077 Greenmead Drive, College Park, MD, USA	University_of_Maryland, Greenmead_Drive_8770_College_Park_Maryland_US_20742	one name contains the other; 0.1 km apart	Adelphi	Adelphi
+90	Mayo Clinic Rochester, MN	Mayo Clinic, 200 First St. SW, Rochester, MN 55905	one name contains the other; 0.3 km apart	Rochester	Rochester
+90	Stanford Hospital and Clinics, 300 Pasteur Dr, Stanford, CA 94305	Stanford University	one name contains the other; same postal code; 0.6 km apart	Palo Alto
+90	Stanford University	Stanford University - School of Medicine, 1201 Welch Road Stanford, CA 94305	one name contains the other; same postal code; 0.9 km apart
+90	Technische Universitaet Berlin, Fasanenstr. 1, 10623, Berlin, Germany	Technische Universitat Berlin	one name contains the other; 0.2 km apart	Berlin	Berlin
+90	Technische Universitaet zu Berlin, Strasse des 17. Juni 135, 10623, Berlin, Germany	Technische Universitat Berlin	one name contains the other; 0.1 km apart	Berlin	Berlin
+90	University College London	University College, Bedford Way 26,London,London,GB,WC1H 0AP	one name contains the other; 0.3 km apart	Greater London	Greater London
+90	Washington Univ., Duncan Ave 4370,St. Louis,MO,US,63110	Washington University School of Medicine, 660 S Euclid Ave, St. Louis, MO 63110, USA	one name contains the other; same postal code; 0.7 km apart	Saint Louis	Saint Louis
+85	Azinhaga Santa Comba StreetNo,Coimbra,District,PT,3000	University of Coimbra, Polo III - Health Sciences Campus • Azinhaga Santa Comba, Celas • 3000-548 Coimbra | PORTUGAL	one name contains the other; 1.4 km apart	Coimbra	Coimbra
+85	BNU_MRI_Center, Xinjiekouwai_Street_No_19_Beijing_Haidian_District_CN_100875	BeiJing_Normal_University, Street_StreetNo_Bei_Jing_District_CN_ZIP	one name contains the other; 0.9 km apart	海淀区	西城区
+85	BU, Commonwealth_Ave._610_Boston_Massachusetts_US_02215	Vassar_Street_43_Cambridge_Boston_US_02139	one name contains the other; boston in the name	Boston
+85	BeiJing_Normal_University, Street_StreetNo_Bei_Jing_District_CN_ZIP	Beijing University of Posts and Telecommunications	one name contains the other; 0.7 km apart	西城区	海淀区
+85	BeiJing_Normal_University, Street_StreetNo_Bei_Jing_District_CN_ZIP	Beijing_MRI_Center_for_Brain_Research, Datun_road_15_Beijing_29A426_Chaoyang_CN_100101	one name contains the other; 4.8 km apart	西城区	朝阳区
+85	California Institute of Technology, 1200 E. California Blvd., Pasadena, CA 91125, USA	Caltech_Tim32, Wilson_Avenue_340_Pasadena_California_US_91025	one name contains the other; 2.0 km apart	Pasadena	Pasadena
+85	ETH Zurich	University Hospital Zurich, Neurosurgery Department, Zurich, Switzerland	one name contains the other; 4.3 km apart	Zürich	Zürich
+85	ETH Zurich	the University of Zurich, Binzmühlestrasse 14, Box 17, CH-8050 Zurich	one name contains the other; 1.0 km apart	Zürich	Zürich
+85	Fondation Campus Biotech, ,Geneve,,CH	Fondation_Campus_Biotech_Geneva, Chemin_des_Mines_9_Geneve_District_CH_1211	one name contains the other; geneva in the name	Genève
+85	HFR_Hopital_Cantonal_Fribourg	University of Fribourg, Rue de Faucigny 2, CH-1700 Fribourg, Switzerland	one name contains the other; 1.4 km apart	Villars-sur-Glâne	Fribourg - Freiburg
+85	Iowa MRRF	Iowa_7T	one name contains the other; iowa in the name		Iowa
+85	Leibniz Institute for Neurobiology, Brenneckestr. 6, 39118 Magdeburg, Germany	Otto von Guericke University Magdeburg and Leibniz Institute for Neurobiology Magdeburg	one name contains the other; magdeburg in the name	Magdeburg
+85	Maryland Neuroimaging Center, University of Maryland, 8077 Greenmead Drive, College Park, MD, USA	University of Maryland, South Paca St 110,Baltimore,District,US,21201	one name contains the other; 1.8 km apart	Adelphi	College Park
+85	NIH	NIH Clinical Center	acronym (NIH); 0.2 km apart	Bethesda	Bethesda
+85	NIH Clinical Center	National Institutes of Health	acronym (NIH); 0.2 km apart	Bethesda	Bethesda
+85	NYU LANGONE CBI, First Avenue 660,New York,NYC,US,10016	NYU_-_CBI, Washington_Place_6_NYC_NYC_US_10003	one name contains the other; 1.3 km apart	New York	New York
+85	Neurochirurgie, UniversitätsSpital Zürich, Rämistrasse 100, 8091 Zurich	University Hospital Zurich, Neurosurgery Department, Zurich, Switzerland	one name contains the other; 0.9 km apart	Zürich	Zürich
+85	Neurochirurgie, UniversitätsSpital Zürich, Rämistrasse 100, 8091 Zurich	the University of Zurich, Binzmühlestrasse 14, Box 17, CH-8050 Zurich	one name contains the other; 3.8 km apart	Zürich	Zürich
+85	Nottingham Medical School	Nottingham University, University Park	one name contains the other; 1.1 km apart	City of Nottingham	City of Nottingham
+85	Nottingham Medical School	University of Nottingham, University Park, Nottingham, United Kingdom	one name contains the other; 1.1 km apart	City of Nottingham	City of Nottingham
+85	Otto von Guericke University Magdeburg and Leibniz Institute for Neurobiology Magdeburg	Otto-von-Guericke-Universität Magdeburg, Leipziger Strasse 44, 39120 Magdeburg, Germany	one name contains the other; magdeburg in the name		Magdeburg
+85	Princeton University, Washington Rd, Princeton, NJ 08540	Princeton_University_-_Neuroscience_Institute	one name contains the other; princeton in the name	Princeton
+85	Princeton University, Washington Rd, Princeton, NJ 08540	Princeton_University_-_Neuroscience_Institute, Washington_and_Faculty_Rd._-_Building_25_25_Princeton_NJ_US_085	one name contains the other; princeton in the name	Princeton
+85	Princeton_University	Princeton_University_-_Neuroscience_Institute	one name contains the other; princeton in the name	Princeton
+85	Princeton_University	Princeton_University_-_Neuroscience_Institute, Washington_and_Faculty_Rd._-_Building_25_25_Princeton_NJ_US_085	one name contains the other; princeton in the name	Princeton
+85	Princeton_University, Stadium_1952_Princeton_NJ_US_08544	Princeton_University_-_Neuroscience_Institute	one name contains the other; princeton in the name	Princeton
+85	Princeton_University, Stadium_1952_Princeton_NJ_US_08544	Princeton_University_-_Neuroscience_Institute, Washington_and_Faculty_Rd._-_Building_25_25_Princeton_NJ_US_085	one name contains the other; princeton in the name	Princeton
+85	"Psychiatric University Hospital Zurich (PUK), Psychiatrische Universitätsklinik Zürich
+ Lenggstrasse 31
+ 8032 Zürich
+ Switzerland"	University Hospital Zurich, Neurosurgery Department, Zurich, Switzerland	one name contains the other; 3.2 km apart	Zürich	Zürich
+85	Robarts_Research_Institute, Perth_Drive_100_London_Ontario_CA_N6A_5K8	Robarts_Reserch_Institute, Richmond_Street_North_1151_London_409EF2_Ontario_CA_N6A_5B7	one name contains the other; london in the name	London
+85	Technische Universitaet zu Berlin, Strasse des 17. Juni, Berlin, Germany	Technische Universitat Berlin	one name contains the other; 0.9 km apart	Berlin	Berlin
+85	The_Univ._of_Texas_at_Austin_IRC, E_24th_St._100_Austin_Southmiddle_US_78712	University of Texas at Austin, Bellmont Hall, Austin	one name contains the other; austin in the name		Austin
+85	Tierspital_Zuerich	University Hospital Zurich, Neurosurgery Department, Zurich, Switzerland	one name contains the other; 3.0 km apart	Zürich	Zürich
+85	Tierspital_Zuerich	the University of Zurich, Binzmühlestrasse 14, Box 17, CH-8050 Zurich	one name contains the other; 1.2 km apart	Zürich	Zürich
+85	USC, McClintock_3520A_Los_Angeles_CA_US_90089	University of Southern California, 3715 McClintock Ave. Los Angeles, CA 90089	acronym (USC); same postal code; 0.9 km apart	Los Angeles	Los Angeles
+85	University College London	WTCN University College London, 12 Queen’s Square, London, WC1B 5JS	one name contains the other; 4.9 km apart	Greater London	Greater London
+85	University of Florida, Gainesville, FL	Univesity of Florida, Gainesville	one name contains the other; 3.2 km apart	Gainesville	Gainesville
+85	WUSTL_bay1, Scott St. 4525,St. Louis,Missouri,US,63110	Washington University in St. Louis School of Medicine	one name contains the other; saint louis in the name	Saint Louis
+85	Washington Univ., Duncan Ave 4370,St. Louis,MO,US,63110	Washington University in St. Louis School of Medicine	one name contains the other; saint louis in the name	Saint Louis
+85	Washington University School of Medicine, 660 S Euclid Ave, St. Louis, MO 63110, USA	Washington University in St. Louis School of Medicine	one name contains the other; saint louis in the name	Saint Louis
+80	NBML, Street_StreetNo_City_District_IR_ZIP	National Brain mapping Lab, Tehran, Iran	acronym (NBML); 3.9 km apart	شهر تهران	شهر تهران
+80	NIH	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	acronym (NIH); 1.9 km apart	Bethesda	Bethesda
+80	NIH Clinical Center	National Istitutes of Health, 9000 Rockville Pike, Bethesda, MD, USA	acronym (NIH); 0.6 km apart	Bethesda	Bethesda
+80	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	National Institutes of Health	acronym (NIH); 1.9 km apart	Bethesda	Bethesda
+80	NIH, 10 Center Drive Building 10 Room B1D307,Bethesda--,Maryland,US,20892	National Istitutes of Health, 9000 Rockville Pike, Bethesda, MD, USA	acronym (NIH); 1.7 km apart	Bethesda	Bethesda
+80	OHSU	Oregon Health and Science University, 3181 SW Sam Jackson Park Rd, Portland, OR 97239, USA	acronym (OHSU); 1.2 km apart	Portland	Portland
+80	Univ. of North Carolina, 125 Mason Farm Rd. Chapel Hill NC 27599, USA	Univ. of North Carolina, Value was not specified	similar names (100); 3495.5 km apart	Chapel Hill	San Diego
+75	Brains Unlimited, Oxfordlaan 55,Maastricht,Limburg,NL,6229 EV	SCANNEXUS, Oxfordlaan 55,Maastricht,District,NL,6229 EV	same postal code and street number; 145.1 km apart	Maastricht	Utrecht
+75	CMRR 10.5T PTX, 6th Street SE 2021,Minneapolis,District,US,55455	CMRR 7T Terra, 6th Street SE 2021,Minneapolis 400-628709,Chicago,US,55455	same postal code and street number; 570.9 km apart	Minneapolis	Chicago
+75	CMRR 7T Terra, 6th Street SE 2021,Minneapolis 400-628709,Chicago,US,55455	CMRR 7T/PS, 6th Street SE 2021,Minneapolis/23c034/,Chicago,US,55455	same postal code and street number; 569.5 km apart	Chicago	Minneapolis
+75	CMRR 7T Terra, 6th Street SE 2021,Minneapolis 400-628709,Chicago,US,55455	CMRR_3T-A, 6th_SE_2021_Minneapolis_Minnesota_US_55455	same postal code and street number; 568.6 km apart	Chicago	Minneapolis
+75	Chong Qing Southwest Normal University Hospital, Tian Sheng 2,Chong Qing//464ed4/,Chong Qing,CN,400715	Southwest University, No.2 Tiansheng Road, BeibeiDistrict, Chongqing City, 400715, China	same postal code and street number; 143.7 km apart	南充市	重庆市
+75	De Pintelaan 185,Gent,District,BE,9000	UGent, De_Pintelaan_185_Gent_District_BE_9000	same postal code and street number; 50.1 km apart	Antwerpen	Gent
+75	De Pintelaan 185,Gent,District,BE,9000	UZ_Gent, De_Pintelaan_185_Gent_9C4B6E_District_BE_9000	same postal code and street number; 50.4 km apart	Antwerpen	Gent
+75	IUGM	IUGM, Chemin Queen-Mary 4565,Montreal,District,CA,H3W 1W5	same postal code and street number; 448.5 km apart	Montréal	South River
+75	Palmetto_Health_Richland, Medical_Center_Dr_5_Columbia_SC_US_29203	USC, McClintock_3520A_Los_Angeles_SVC0e0594213b1104_CA_US_90089	same postal code and street number; 3413.7 km apart	Columbia	Los Angeles
+75	R, Medical Center Dr 5,Columbia,SC,US,29203	USC, McClintock_3520A_Los_Angeles_SVC0e0594213b1104_CA_US_90089	same postal code and street number; 3414.0 km apart	Columbia	Los Angeles
+75	USC, McClintock 3520A,Los Angeles //SVC0e0594213b1104//,CA,US,90089	USC, McClintock_3520A_Los_Angeles_SVC0e0594213b1104_CA_US_90089	same postal code and street number; 657.6 km apart		Los Angeles

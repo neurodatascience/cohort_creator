@@ -13,6 +13,8 @@
 
 This file can be edited by hand (to fix a location or to group institutions):
 the institutions already in it are never changed by this script.
+The names that could not be located are listed in the alternative names
+of the "unlocated" entry: to locate one, move it to a new or existing entry.
 
 The institution names of the inventory that are not in it yet are geocoded
 with Nominatim (OpenStreetMap). A name located at the same address as an institution
@@ -24,10 +26,19 @@ if the script is stopped, run it again to continue where it stopped.
 locations.tsv (number of datasets and subjects of each located institution)
 and locations.html (map) are then generated from it.
 
-Usage: python localize_institutions.py
-(needs geopy: pip install geopy)
+Institutions that are probably the same can be regrouped:
+
+- ``python localize_institutions.py --suggest`` writes institution_matches.tsv
+  with the pairs of institutions that are probably the same;
+- review it: ``y`` in the ``accept`` column for the pairs to merge;
+- ``python localize_institutions.py --apply-matches`` merges them in institutions.json.
+
+Usage: python localize_institutions.py [--suggest | --apply-matches]
+(needs geopy, and rapidfuzz and unidecode for --suggest:
+pip install geopy rapidfuzz unidecode)
 """
 
+import argparse
 import json
 import re
 from pathlib import Path
@@ -44,6 +55,8 @@ from bids_inventory import load_inventory
 from bids_inventory.listing import _data_dir
 
 INSTITUTIONS_FILE = _data_dir() / "institutions.json"
+# entry of institutions.json listing (in its alternative names) the institutions not located
+UNLOCATED = "unlocated"
 LOCATIONS_FILE = Path(__file__).parent / "locations.tsv"
 FIGURE_FILE = Path(__file__).parent / "locations.html"
 
@@ -64,6 +77,43 @@ DEBUG = False
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--suggest",
+        action="store_true",
+        help="Write the pairs of institutions that are probably the same to institution_matches.tsv.",
+    )
+    group.add_argument(
+        "--apply-matches",
+        action="store_true",
+        help="Merge the pairs accepted in institution_matches.tsv into institutions.json.",
+    )
+    args = parser.parse_args()
+
+    if args.suggest:
+        from match_institutions import MATCHES_FILE, suggest_matches
+
+        matches = suggest_matches(explode_unlocated(load_institutions()), clean_address)
+        matches.to_csv(MATCHES_FILE, index=False, sep="\t", lineterminator="\n")
+        print(
+            f"Saved {len(matches)} possible matches to {MATCHES_FILE}:\n"
+            "write 'y' in the 'accept' column of the ones to merge, then run with --apply-matches"
+        )
+        return
+
+    if args.apply_matches:
+        from match_institutions import MATCHES_FILE, apply_matches
+
+        institutions = load_institutions()
+        locations = institutions_locations(institutions, count_institutions(load_inventory()))
+        counts = dict(zip(locations["name"], locations["count"]))
+        matches = pd.read_csv(MATCHES_FILE, sep="\t", dtype=str, keep_default_na=False)
+        merged = apply_matches(explode_unlocated(institutions), matches, counts)
+        save_institutions(gather_unlocated(merged))
+        print(f"Saved {INSTITUTIONS_FILE}")
+        return
+
     df = load_inventory()
     institutions = update_institutions(load_institutions(), count_institutions(df)["name"])
 
@@ -114,7 +164,7 @@ def load_institutions() -> dict[str, dict[str, Any]]:
         return {}
     institutions = json.loads(INSTITUTIONS_FILE.read_text(encoding="utf-8"))
     if all(isinstance(x, dict) for x in institutions.values()):
-        return institutions
+        return gather_unlocated(institutions)
 
     locations: dict[str, dict[str, Any]] = {}
     if LOCATIONS_FILE.exists():
@@ -128,7 +178,49 @@ def load_institutions() -> dict[str, dict[str, Any]]:
         converted[name] = new_institution(locations.get(name))
         converted[name]["AlternativeNames"] = sorted(set(names) - {name})
     print(f"Converted {INSTITUTIONS_FILE} to the new format")
-    return converted
+    return gather_unlocated(converted)
+
+
+def is_unlocated(institution: dict[str, Any]) -> bool:
+    """Return True for an institution without location, address or alternative names."""
+    return (
+        institution["Latitude"] is None
+        and institution["Longitude"] is None
+        and not institution["Address"]
+        and not institution["AlternativeNames"]
+    )
+
+
+def gather_unlocated(institutions: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Move the institutions that are not located to the "unlocated" entry.
+
+    Groups of names without location (with alternative names) are kept:
+    they were probably made by hand.
+    """
+    unlocated = institutions.get(UNLOCATED, new_institution())
+    names = set(unlocated["AlternativeNames"])
+    gathered = {}
+    for name, institution in institutions.items():
+        if name == UNLOCATED:
+            continue
+        if is_unlocated(institution):
+            names.add(name)
+        else:
+            gathered[name] = institution
+    if names:
+        gathered[UNLOCATED] = {**unlocated, "AlternativeNames": sorted(names)}
+    return gathered
+
+
+def explode_unlocated(institutions: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Turn each name of the "unlocated" entry into its own institution.
+
+    To compare them one by one with the other institutions.
+    """
+    exploded = {k: v for k, v in institutions.items() if k != UNLOCATED}
+    for name in institutions.get(UNLOCATED, {}).get("AlternativeNames", []):
+        exploded.setdefault(name, new_institution())
+    return exploded
 
 
 def save_institutions(institutions: dict[str, dict[str, Any]]) -> None:
@@ -207,11 +299,16 @@ def add_names(
 
     To the institution already at this address if there is one,
     otherwise as a new institution.
+    Names that could not be located are added to the "unlocated" entry.
     """
+    if not location.get("address"):
+        unlocated = institutions.setdefault(UNLOCATED, new_institution())
+        unlocated["AlternativeNames"] = sorted(set(unlocated["AlternativeNames"]) | set(names))
+        return
     same_address = [
         name
         for name, institution in institutions.items()
-        if location.get("address") and institution["Address"] == location["address"]
+        if institution["Address"] == location["address"]
     ]
     if same_address:
         name = same_address[0]
