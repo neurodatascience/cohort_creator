@@ -1,11 +1,8 @@
 """BIDS datasets dashboard, as a marimo notebook.
 
-The same dashboard as ``bids_inventory browse``:
+Opened by ``bids_inventory browse`` (``bids_inventory browse --edit`` to edit it).
 
-    marimo run packages/bids_inventory/notebooks/browse.py    # as an app
-    marimo edit packages/bids_inventory/notebooks/browse.py   # to edit it
-
-Needs: pip install './packages/bids_inventory[browse]' marimo
+Needs: pip install './packages/bids_inventory[browse]'
 """
 
 import marimo
@@ -68,7 +65,7 @@ def _(mo):
 @app.cell
 def _(KNOWN_DATATYPES, SOURCES, mo):
     def checklist(options: list[str]) -> mo.ui.array:
-        """Checkboxes, all checked, like a dash Checklist."""
+        """Return a list of checkboxes, all checked."""
         return mo.ui.array([mo.ui.checkbox(label=x, value=True) for x in options])
 
     def true_false_both() -> mo.ui.radio:

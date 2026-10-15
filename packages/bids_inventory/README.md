@@ -23,9 +23,8 @@ pip install ./packages/bids_inventory
 The base install is enough to load the listing.
 The commands need optional dependencies:
 
-- `bids-inventory[browse]`: `bids_inventory browse`, a dash app to browse and filter the listing
+- `bids-inventory[browse]`: `bids_inventory browse`, a dashboard to browse and filter the listing
 - `bids-inventory[update]`: `bids_inventory update`, to update the listing
-- `bids-inventory[notebook]`: `notebooks/browse.py`, the same dashboard as a marimo notebook
 
 ## Usage
 
@@ -37,20 +36,16 @@ df = load_inventory()
 eeg_datasets = filter_data(df, config={"datatypes": ["eeg"]})
 ```
 
-To browse the listing in a dash app:
+To browse the listing in a dashboard (a [marimo](https://marimo.io/) app) in the browser:
 
 ```bash
 pip install './packages/bids_inventory[browse]'
 bids_inventory browse
 ```
 
-The same dashboard is available as a [marimo](https://marimo.io/) notebook:
-
-```bash
-pip install './packages/bids_inventory[notebook]'
-marimo run packages/bids_inventory/notebooks/browse.py    # as an app
-marimo edit packages/bids_inventory/notebooks/browse.py   # to edit it
-```
+The filtered list of datasets can be downloaded from it as `datasets_results.tsv`.
+The dashboard is the marimo notebook `bids_inventory/browse_app.py`:
+`bids_inventory browse --edit` opens it in edit mode.
 
 ## Updating the inventory
 
