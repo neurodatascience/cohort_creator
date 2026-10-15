@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from bids import BIDSLayout
 from bids.layout import BIDSFile
+from bids_inventory.listing import known_datasets_df
 from datalad import api
 from rich.progress import (
     BarColumn,
@@ -23,7 +24,6 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from bids_inventory.listing import known_datasets_df
 from cohort_creator._version import __version__
 from cohort_creator.logger import cc_logger
 

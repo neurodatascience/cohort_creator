@@ -4,9 +4,8 @@ from io import TextIOWrapper
 from pathlib import Path
 
 import pandas as pd
-from rich import print
-
 from bids_inventory import load_inventory
+from rich import print
 
 OUTPUT_FILE = Path(__file__).parent / "source" / "accessible_datasets.md"
 

@@ -11,10 +11,10 @@ import subprocess
 from pathlib import Path
 
 import pandas as pd
+from bids_inventory.listing import is_known_dataset
 from datalad import api
 from datalad.support.exceptions import IncompleteResultsError
 
-from bids_inventory.listing import is_known_dataset
 from cohort_creator._utils import (
     add_study_tsv,
     copy_top_files,
