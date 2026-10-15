@@ -8,8 +8,10 @@ ignore-missing-imports = [
     "matplotlib",
     "mne.*",
     "plotly.*",
+    "rapidfuzz.*",
     "rich.*",
-    "rich_argparse"
+    "rich_argparse",
+    "unidecode"
 ]
 project-excludes = ["packages/*/*/_version.py"]
 project-includes = ["packages/bids_inventory/bids_inventory", "packages/cohort_creator/cohort_creator"]

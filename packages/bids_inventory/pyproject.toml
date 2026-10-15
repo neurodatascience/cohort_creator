@@ -28,7 +28,9 @@ requires-python = ">=3.11"
 [project.optional-dependencies]
 # marimo app to browse the listing: `bids_inventory browse`
 browse = ["marimo", "plotly"]
-dev = ["bids-inventory[browse,test,update]", "pandas-stubs", "pre-commit"]
+dev = ["bids-inventory[browse,institutions,test,update]", "pandas-stubs", "pre-commit"]
+# location of the institutions: `bids_inventory institutions`
+institutions = ["geopy", "rapidfuzz", "unidecode"]
 test = ["pytest", "pytest-cov"]
 # update of the listing: `bids_inventory update`
 update = ["datalad", "datalad-fuse", "mne", "nibabel", "pydantic>=2", "pyyaml", "requests"]

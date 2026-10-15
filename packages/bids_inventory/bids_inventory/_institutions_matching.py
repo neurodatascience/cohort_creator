@@ -1,13 +1,11 @@
 """Suggest institutions of institutions.json that are probably the same, and merge them.
 
-Used by localize_institutions.py:
-
-- ``--suggest`` writes institution_matches.tsv:
+- ``bids_inventory institutions suggest`` writes institution_matches.tsv:
   pairs of institutions that are probably the same, with a score and the reasons why.
 - after reviewing it (``y`` in the ``accept`` column for the pairs to merge),
-  ``--apply-matches`` merges the accepted pairs in institutions.json.
+  ``bids_inventory institutions apply-matches`` merges the accepted pairs in institutions.json.
 
-Needs rapidfuzz and unidecode: pip install rapidfuzz unidecode
+Needs the 'institutions' extra.
 """
 
 import math
@@ -21,7 +19,12 @@ import pandas as pd
 from rapidfuzz import fuzz
 from unidecode import unidecode
 
-MATCHES_FILE = Path(__file__).parent / "institution_matches.tsv"
+from bids_inventory.logger import bi_logger
+
+bi_log = bi_logger()
+
+# default name of the file with the matches to review
+MATCHES_FILE = Path("institution_matches.tsv")
 
 # only suggest pairs with a score of at least
 MIN_SCORE = 75
@@ -65,6 +68,8 @@ STOP_WORDS = {
 }  # fmt: skip
 # a word found in more than this fraction of the names is generic ("university", "mri"...)
 GENERIC_FRACTION = 0.02
+# ... and in at least this number of names (for files with few names)
+GENERIC_MIN_COUNT = 3
 POSTAL_CODE = re.compile(r"^(?=.*\d)[a-z0-9]{4,7}$")
 
 
@@ -191,7 +196,11 @@ def suggest_matches(
         word for splits in names.values() for inst, _ in splits for word in set(inst)
     )
     n_names = sum(len(splits) for splits in names.values())
-    generic = {word for word, count in word_counts.items() if count > GENERIC_FRACTION * n_names}
+    generic = {
+        word
+        for word, count in word_counts.items()
+        if count > GENERIC_FRACTION * n_names and count >= GENERIC_MIN_COUNT
+    }
 
     all_words = {
         key: {word for inst, address in splits for word in inst + address}
@@ -260,12 +269,14 @@ def apply_matches(
         return key
 
     accepted = matches[matches["accept"].astype(str).str.strip().str.lower().isin(["y", "yes"])]
-    for row in accepted.itertuples():
-        missing = [k for k in (row.institution_1, row.institution_2) if k not in institutions]
+    for institution_1, institution_2 in zip(
+        accepted["institution_1"].astype(str), accepted["institution_2"].astype(str)
+    ):
+        missing = [k for k in (institution_1, institution_2) if k not in institutions]
         if missing:
-            print(f"Skipping a match, not in institutions.json anymore: {missing}")
+            bi_log.warning(f"Skipping a match, not in institutions.json anymore: {missing}")
             continue
-        parent[find(row.institution_1)] = find(row.institution_2)
+        parent[find(institution_1)] = find(institution_2)
 
     groups: dict[str, list[str]] = {}
     for key in institutions:
@@ -282,5 +293,5 @@ def apply_matches(
         )
         names = {name for k in members for name in [k, *institutions[k]["AlternativeNames"]]}
         merged[key] = {**institutions[key], "AlternativeNames": sorted(names - {key})}
-        print(f"Merged into {key!r}: {sorted(set(members) - {key})}")
+        bi_log.info(f"Merged into {key!r}: {sorted(set(members) - {key})}")
     return merged

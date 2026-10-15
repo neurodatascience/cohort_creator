@@ -38,14 +38,14 @@ jobs:
                 sudo apt-get install -y git-annex
                 python -m pip install --upgrade pip
 
-        # TODO: install the 'browse' extra on all versions
+        # TODO: install the 'browse' and 'institutions' extras on all versions
         # once loro (a dependency of marimo) publishes wheels for python 3.15:
         # it cannot be built from source yet (PyO3 only supports python <= 3.14).
         # The tests of the dashboard are skipped without it.
         -   name: Install
             run: >
                 pip install
-                ./packages/bids_inventory[${{ matrix.python-version == '3.15' && 'test,update' || 'browse,test,update' }}]
+                ./packages/bids_inventory[${{ matrix.python-version == '3.15' && 'test,update' || 'browse,institutions,test,update' }}]
                 ./packages/cohort_creator[test]
 
         -   name: Post-install
