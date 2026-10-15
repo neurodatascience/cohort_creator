@@ -22,10 +22,16 @@ def _():
     from bids_inventory._plotting import (
         datatypes_histogram,
         histogram_tasks,
+        institutions_map,
         plot_dataset_size_vs_time,
         scatter_subject_vs,
     )
     from bids_inventory._version import version
+    from bids_inventory.institutions import (
+        count_institutions,
+        institutions_locations,
+        load_institutions,
+    )
     from bids_inventory.listing import KNOWN_DATATYPES, known_datasets_df
     from bids_inventory.wrangling import filter_data, save_dataset_listing, wrangle_data
 
@@ -33,10 +39,14 @@ def _():
         KNOWN_DATATYPES,
         Path,
         contextlib,
+        count_institutions,
         datatypes_histogram,
         filter_data,
         histogram_tasks,
+        institutions_locations,
+        institutions_map,
         known_datasets_df,
+        load_institutions,
         mo,
         plot_dataset_size_vs_time,
         save_dataset_listing,
@@ -48,10 +58,11 @@ def _():
 
 
 @app.cell
-def _(known_datasets_df, wrangle_data):
+def _(known_datasets_df, load_institutions, wrangle_data):
     df = wrangle_data(known_datasets_df())
     SOURCES = sorted(df["source"].unique().tolist())
-    return SOURCES, df
+    institutions = load_institutions()
+    return SOURCES, df, institutions
 
 
 @app.cell
@@ -261,6 +272,24 @@ def _(filtered_df, histogram_tasks, mo):
 @app.cell
 def _(filtered_df, mo, plot_dataset_size_vs_time):
     mo.vstack([mo.md("---"), plot_dataset_size_vs_time(filtered_df)])
+    return
+
+
+@app.cell
+def _(
+    count_institutions,
+    filtered_df,
+    institutions,
+    institutions_locations,
+    institutions_map,
+    mo,
+):
+    mo.vstack(
+        [
+            mo.md("---"),
+            institutions_map(institutions_locations(institutions, count_institutions(filtered_df))),
+        ]
+    )
     return
 
 

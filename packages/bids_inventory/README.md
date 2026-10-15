@@ -44,6 +44,8 @@ bids_inventory browse
 ```
 
 The filtered list of datasets can be downloaded from it as `datasets_results.tsv`.
+It also shows the institutions of the filtered datasets on a world map
+(from `bids_inventory/data/institutions.json`, updated with `tools/localize_institutions.py`).
 The dashboard is the marimo notebook `bids_inventory/browse_app.py`:
 `bids_inventory browse --edit` opens it in edit mode.
 

@@ -40,37 +40,33 @@ pip install geopy rapidfuzz unidecode)
 
 import argparse
 import json
-import re
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import plotly.express as px
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
 from geopy.location import Location
 from rich import print
 
 from bids_inventory import load_inventory
-from bids_inventory.listing import _data_dir
+from bids_inventory._plotting import institutions_map
+from bids_inventory.institutions import (
+    INSTITUTIONS_FILE,
+    UNLOCATED,
+    clean_address,
+    count_institutions,
+    explode_unlocated,
+    gather_unlocated,
+    institutions_locations,
+    known_names,
+    new_institution,
+    save_institutions,
+)
 
-INSTITUTIONS_FILE = _data_dir() / "institutions.json"
-# entry of institutions.json listing (in its alternative names) the institutions not located
-UNLOCATED = "unlocated"
 LOCATIONS_FILE = Path(__file__).parent / "locations.tsv"
 FIGURE_FILE = Path(__file__).parent / "locations.html"
 
-COLUMNS = ["name", "count", "nb_subjects", "address", "city", "country", "latitude", "longitude"]
-
-# values that are not part of an address
-PLACEHOLDERS = re.compile(
-    r"^(n/?a|none|null|unknown|anon(ymous|ymized)?|value was not specified|not specified|-)$",
-    re.IGNORECASE,
-)
-# words of the address template of some DICOM converters: "Street StreetNo,City,District,ZIP"
-TEMPLATE_WORDS = {"street", "streetno", "city", "district", "zip"}
-# scanner identifiers added to some addresses, for example "336C48"
-SCANNER_ID = re.compile(r"^(?=.*[0-9])(?=.*[a-fA-F])[0-9a-fA-F]{6}$")
 
 # only geocode a few institutions, for testing
 DEBUG = False
@@ -121,37 +117,10 @@ def main() -> None:
     locations.to_csv(LOCATIONS_FILE, index=False, sep="\t", lineterminator="\n")
     print(f"Saved {len(locations)} institutions to {LOCATIONS_FILE}")
 
-    located = locations.dropna(subset=["latitude", "longitude"])
-    fig = px.scatter_geo(
-        located,
-        lat="latitude",
-        lon="longitude",
-        hover_name="name",
-        hover_data=["address", "count", "nb_subjects"],
-        projection="natural earth",
-        size="count",
-    )
+    fig = institutions_map(locations)
     fig.write_html(FIGURE_FILE)
     print(f"Saved to {FIGURE_FILE}")
     fig.show()
-
-
-def new_institution(location: dict[str, Any] | None = None) -> dict[str, Any]:
-    location = location or {}
-    return {
-        "AlternativeNames": [],
-        "Address": location.get("address") or "",
-        "City": location.get("city") or "",
-        "Country": location.get("country") or "",
-        "Latitude": _to_float(location.get("latitude")),
-        "Longitude": _to_float(location.get("longitude")),
-    }
-
-
-def _to_float(value: Any) -> float | None:
-    if value is None or value == "" or pd.isna(value):
-        return None
-    return float(value)
 
 
 def load_institutions() -> dict[str, dict[str, Any]]:
@@ -179,70 +148,6 @@ def load_institutions() -> dict[str, dict[str, Any]]:
         converted[name]["AlternativeNames"] = sorted(set(names) - {name})
     print(f"Converted {INSTITUTIONS_FILE} to the new format")
     return gather_unlocated(converted)
-
-
-def is_unlocated(institution: dict[str, Any]) -> bool:
-    """Return True for an institution without location, address or alternative names."""
-    return (
-        institution["Latitude"] is None
-        and institution["Longitude"] is None
-        and not institution["Address"]
-        and not institution["AlternativeNames"]
-    )
-
-
-def gather_unlocated(institutions: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Move the institutions that are not located to the "unlocated" entry.
-
-    Groups of names without location (with alternative names) are kept:
-    they were probably made by hand.
-    """
-    unlocated = institutions.get(UNLOCATED, new_institution())
-    names = set(unlocated["AlternativeNames"])
-    gathered = {}
-    for name, institution in institutions.items():
-        if name == UNLOCATED:
-            continue
-        if is_unlocated(institution):
-            names.add(name)
-        else:
-            gathered[name] = institution
-    if names:
-        gathered[UNLOCATED] = {**unlocated, "AlternativeNames": sorted(names)}
-    return gathered
-
-
-def explode_unlocated(institutions: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Turn each name of the "unlocated" entry into its own institution.
-
-    To compare them one by one with the other institutions.
-    """
-    exploded = {k: v for k, v in institutions.items() if k != UNLOCATED}
-    for name in institutions.get(UNLOCATED, {}).get("AlternativeNames", []):
-        exploded.setdefault(name, new_institution())
-    return exploded
-
-
-def save_institutions(institutions: dict[str, dict[str, Any]]) -> None:
-    """Save institutions.json.
-
-    Through a temporary file: stopping the script while saving cannot leave a half-written file.
-    """
-    tmp_file = INSTITUTIONS_FILE.with_suffix(".json.tmp")
-    with open(tmp_file, "w", encoding="utf-8") as f:
-        json.dump(institutions, f, indent=4, ensure_ascii=False, sort_keys=True)
-        f.write("\n")
-    tmp_file.replace(INSTITUTIONS_FILE)
-
-
-def known_names(institutions: dict[str, dict[str, Any]]) -> dict[str, str]:
-    """Map each institution name (and alternative name) to its institution in the file."""
-    names = {}
-    for name, institution in institutions.items():
-        names[name] = name
-        for alternative in institution["AlternativeNames"]:
-            names.setdefault(alternative, name)
-    return names
 
 
 def update_institutions(
@@ -317,76 +222,6 @@ def add_names(
         institutions[name] = new_institution(location)
     alternatives = set(institutions[name]["AlternativeNames"]) | set(names)
     institutions[name]["AlternativeNames"] = sorted(alternatives - {name})
-
-
-def institutions_locations(
-    institutions: dict[str, dict[str, Any]], counts: pd.DataFrame
-) -> pd.DataFrame:
-    """Return the number of datasets and subjects of each institution, with its location."""
-    known = known_names(institutions)
-    totals: dict[str, dict[str, int]] = {}
-    for row in counts.itertuples():
-        if row.name not in known:  # not geocoded in debug mode
-            continue
-        total = totals.setdefault(known[row.name], {"count": 0, "nb_subjects": 0})
-        total["count"] += row.count
-        total["nb_subjects"] += row.nb_subjects
-    rows = []
-    for name, total in sorted(totals.items()):
-        institution = institutions[name]
-        rows.append(
-            {
-                "name": name,
-                **total,
-                "address": institution["Address"] or None,
-                "city": institution["City"] or None,
-                "country": institution["Country"] or None,
-                "latitude": institution["Latitude"],
-                "longitude": institution["Longitude"],
-            }
-        )
-    return pd.DataFrame(rows, columns=COLUMNS)
-
-
-def count_institutions(df: pd.DataFrame) -> pd.DataFrame:
-    """Count the datasets and subjects of each institution of the inventory."""
-    counts: dict[str, dict[str, int]] = {}
-    for row in df.itertuples():
-        for institution in row.institutions or []:
-            if not isinstance(institution, str) or not clean_address(institution):
-                continue
-            counts.setdefault(institution, {"count": 0, "nb_subjects": 0})
-            counts[institution]["count"] += 1
-            if pd.notna(row.nb_subjects):
-                counts[institution]["nb_subjects"] += int(row.nb_subjects)
-    return pd.DataFrame(
-        [{"name": name, **values} for name, values in sorted(counts.items())],
-        columns=["name", "count", "nb_subjects"],
-    )
-
-
-def clean_address(institution: str) -> str:
-    """Turn an institution string into an address to geocode.
-
-    Removes placeholders ("n/a", "Anon"...), unfilled address templates
-    ("Street_StreetNo_City_District_ZIP") and scanner identifiers ("336C48").
-    """
-    # the template can be spread over several parts: "Street StreetNo,City,District,KR,ZIP"
-    is_template = "streetno" in institution.lower()
-    parts = []
-    for part in institution.split(","):
-        part = part.strip()
-        if not part or PLACEHOLDERS.match(part):
-            continue
-        words = part.replace("_", " ").replace("/", " ").split()
-        words = [
-            word
-            for word in words
-            if not SCANNER_ID.match(word) and not (is_template and word.lower() in TEMPLATE_WORDS)
-        ]
-        if words:
-            parts.append(" ".join(words))
-    return ", ".join(parts)
 
 
 def _get_location(geocode: RateLimiter, address: str) -> None | Location:
