@@ -25,6 +25,7 @@ The commands need optional dependencies:
 
 - `bids-inventory[browse]`: `bids_inventory browse`, a dashboard to browse and filter the listing
 - `bids-inventory[update]`: `bids_inventory update`, to update the listing
+- `bids-inventory[institutions]`: `bids_inventory institutions`, to locate the institutions
 
 ## Usage
 
@@ -45,7 +46,7 @@ bids_inventory browse
 
 The filtered list of datasets can be downloaded from it as `datasets_results.tsv`.
 It also shows the institutions of the filtered datasets on a world map
-(from `bids_inventory/data/institutions.json`, updated with `tools/localize_institutions.py`).
+(from `bids_inventory/data/institutions.json`, see [Institutions](#institutions)).
 The dashboard is the marimo notebook `bids_inventory/browse_app.py`:
 `bids_inventory browse --edit` opens it in edit mode.
 
@@ -165,3 +166,38 @@ To increase this limit, create a GitHub API token and either:
 - set the `GITHUB_TOKEN` environment variable (it takes precedence),
 - or save it to a text file (not in the repository)
   and set `auth.token_file` to its path in your configuration file.
+
+## Institutions
+
+`bids_inventory/data/institutions.json` gives the location of the institutions
+found in the JSON sidecars of the datasets:
+
+```json
+"name": {
+    "AlternativeNames": ["other names of the same institution found in datasets"],
+    "Address": "",
+    "City": "",
+    "Country": "",
+    "Latitude": null,
+    "Longitude": null
+}
+```
+
+The names that could not be located are the alternative names of the `unlocated` entry.
+This file can be edited by hand, to fix a location or to group the names of an institution:
+the commands below never change the institutions already in it,
+they only add new names.
+
+```bash
+pip install -e './packages/bids_inventory[institutions]'
+
+# geocode the institution names of the inventory that are not in the file yet
+# (OpenStreetMap, 1 request per second; if stopped, run it again to continue)
+bids_inventory institutions update
+
+# regroup the names of the same institution:
+# write the pairs that are probably the same to institution_matches.tsv,
+bids_inventory institutions suggest
+# review it ('y' in the 'accept' column of the pairs to merge), then merge them
+bids_inventory institutions apply-matches
+```

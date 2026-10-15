@@ -7,6 +7,7 @@ from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 from rich_argparse import RichHelpFormatter
 
@@ -47,6 +48,8 @@ The filtered list of datasets can be downloaded as datasets_results.tsv.""",
         help="Open the dashboard notebook in marimo's edit mode.",
     )
     _add_verbosity(browse_parser)
+
+    _add_institutions_parser(subparsers, parser.formatter_class)
 
     remove_parser = subparsers.add_parser(
         "remove",
@@ -128,6 +131,113 @@ for example so that the next 'bids_inventory update' indexes them again.""",
     return parser
 
 
+def _add_institutions_parser(subparsers: Any, formatter_class: Any) -> None:
+    institutions_parser = subparsers.add_parser(
+        "institutions",
+        help="""Locate the institutions of the inventory (bids_inventory/data/institutions.json)
+and regroup the different names of the same institution.""",
+        formatter_class=formatter_class,
+    )
+    institutions_subparsers = institutions_parser.add_subparsers(
+        dest="institutions_command",
+        help="Choose a subcommand",
+        required=True,
+    )
+
+    update_parser = institutions_subparsers.add_parser(
+        "update",
+        help="""Geocode the institution names of the inventory that are not in institutions.json yet
+(with OpenStreetMap, 1 request per second).
+The file is saved after each geocoded address: if stopped, run it again to continue.""",
+        formatter_class=formatter_class,
+    )
+    update_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Only geocode a few addresses.",
+    )
+    _add_verbosity(update_parser)
+
+    suggest_parser = institutions_subparsers.add_parser(
+        "suggest",
+        help="""Write the pairs of institutions that are probably the same to a TSV file.
+Review it ('y' in the 'accept' column for the pairs to merge),
+then merge them with 'bids_inventory institutions apply-matches'.""",
+        formatter_class=formatter_class,
+    )
+    suggest_parser.add_argument(
+        "--output",
+        help="File where to save the pairs (default: %(default)s).",
+        default=Path("institution_matches.tsv"),
+        type=Path,
+    )
+    _add_verbosity(suggest_parser)
+
+    apply_parser = institutions_subparsers.add_parser(
+        "apply-matches",
+        help="Merge the pairs of institutions accepted in the file written by 'suggest'.",
+        formatter_class=formatter_class,
+    )
+    apply_parser.add_argument(
+        "--matches",
+        help="File with the reviewed pairs (default: %(default)s).",
+        default=Path("institution_matches.tsv"),
+        type=Path,
+    )
+    _add_verbosity(apply_parser)
+
+
+def _run_institutions(args: Any) -> None:
+    """Run the 'institutions' subcommands."""
+    import pandas as pd
+
+    from bids_inventory import load_inventory
+    from bids_inventory.institutions import (
+        INSTITUTIONS_FILE,
+        clean_address,
+        count_institutions,
+        explode_unlocated,
+        gather_unlocated,
+        institutions_locations,
+        load_institutions,
+        save_institutions,
+    )
+
+    institutions = gather_unlocated(load_institutions())
+
+    if args.institutions_command == "update":
+        with _check_extra("institutions"):
+            from bids_inventory._institutions_update import update_institutions
+
+        names = count_institutions(load_inventory())["name"]
+        update_institutions(institutions, names, debug=args.debug)
+        bi_log.info(f"Saved {INSTITUTIONS_FILE}")
+        return
+
+    with _check_extra("institutions"):
+        from bids_inventory._institutions_matching import apply_matches, suggest_matches
+
+    if args.institutions_command == "suggest":
+        matches = suggest_matches(explode_unlocated(institutions), clean_address)
+        matches.to_csv(args.output, index=False, sep="\t", lineterminator="\n")
+        bi_log.info(
+            f"Saved {len(matches)} possible matches to {args.output}: "
+            "write 'y' in the 'accept' column of the ones to merge, "
+            "then run 'bids_inventory institutions apply-matches'"
+        )
+        return
+
+    if not args.matches.is_file():
+        bi_log.error(f"File not found: {args.matches}. Run 'bids_inventory institutions suggest'.")
+        sys.exit(1)
+    locations = institutions_locations(institutions, count_institutions(load_inventory()))
+    counts = dict(zip(locations["name"], locations["count"]))
+    matches = pd.read_csv(args.matches, sep="\t", dtype=str, keep_default_na=False)
+    merged = apply_matches(explode_unlocated(institutions), matches, counts)
+    save_institutions(gather_unlocated(merged))
+    bi_log.info(f"Saved {INSTITUTIONS_FILE}")
+
+
 def _add_verbosity(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--verbosity",
@@ -175,6 +285,9 @@ def cli(argv: Sequence[str] = sys.argv) -> None:
             from bids_inventory._browse import browse
 
         browse(edit=args.edit)
+
+    elif args.command == "institutions":
+        _run_institutions(args)
 
     elif args.command == "remove":
         from bids_inventory.listing import (
