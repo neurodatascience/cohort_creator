@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import plotly.express as px
-
 from bids_inventory import filter_data, load_inventory
 from bids_inventory._plotting import (
     LABELS,

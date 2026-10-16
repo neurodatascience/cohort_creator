@@ -1,0 +1,45 @@
+# Configuration of the tools used in this repository.
+# Each python package has its own pyproject.toml in packages/.
+
+[tool.codespell]
+skip = "./.git,./packages/bids_inventory,env,venv,.venv,outputs,htmlcov,bids-examples"
+
+[tool.pyrefly]
+ignore-missing-imports = [
+    "bids.*",
+    "bids_inventory.*",
+    "cohort_creator._version",
+    "datalad.*",
+    "geopy.*",
+    "marimo",
+    "matplotlib",
+    "mne.*",
+    "plotly.*",
+    "rapidfuzz.*",
+    "rich.*",
+    "rich_argparse",
+    "unidecode"
+]
+project-excludes = ["packages/*/*/_version.py"]
+project-includes = ["packages/cohort_creator/cohort_creator"]
+search-path = ["packages/bids_inventory", "packages/cohort_creator"]
+
+[tool.ruff]
+extend-exclude = ["docs/source/conf.py", "packages/*/tests/data", "packages/*/*/_version.py", "packages/bids_inventory"]
+line-length = 100
+src = ["packages/bids_inventory", "packages/cohort_creator"]
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = ["D101", "D103", "E501"]
+mccabe = { max-complexity = 12 }
+# E, W: pycodestyle / F: pyflakes / C90: mccabe / D: pydocstyle
+# I: isort / UP: pyupgrade / FLY: flynt
+select = ["C90", "D", "E", "F", "FLY", "I", "UP", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["D100", "D104"]
+"__init__.py" = ["D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

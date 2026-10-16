@@ -38,15 +38,9 @@ jobs:
                 sudo apt-get install -y git-annex
                 python -m pip install --upgrade pip
 
-        # TODO: install the 'browse' and 'institutions' extras on all versions
-        # once loro (a dependency of marimo) publishes wheels for python 3.15:
-        # it cannot be built from source yet (PyO3 only supports python <= 3.14).
-        # The tests of the dashboard are skipped without it.
+        # bids_inventory is a submodule: its tests run in its own repository
         -   name: Install
-            run: >
-                pip install
-                ./packages/bids_inventory[${{ matrix.python-version == '3.15' && 'test,update' || 'browse,institutions,test,update' }}]
-                ./packages/cohort_creator[test]
+            run: pip install ./packages/bids_inventory ./packages/cohort_creator[test]
 
         -   name: Post-install
             run: |
@@ -56,12 +50,7 @@ jobs:
         -   name: Check set up
             run: |
                 datalad wtf
-                bids_inventory --version
                 cohort_creator --version
-
-        -   name: unit tests bids_inventory
-            working-directory: packages/bids_inventory
-            run: python -m pytest --cov-report=xml
 
         -   name: unit tests cohort_creator
             working-directory: packages/cohort_creator
@@ -70,6 +59,5 @@ jobs:
         -   name: Upload coverage to Codecov
             uses: codecov/codecov-action@v7
             with:
-                files: ./packages/bids_inventory/coverage.xml,./packages/cohort_creator/coverage.xml
-                name: codecov-umbrella
+                files: ./packages/cohort_creator/coverage.xml
                 fail_ci_if_error: false
